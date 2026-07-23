@@ -6,7 +6,7 @@ const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const CORS = {
-  "Access-Control-Allow-Origin": "https://jee-adv-osint.vercel.app/admin.html",
+  "Access-Control-Allow-Origin": "https://jee-adv-osint.vercel.app",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
