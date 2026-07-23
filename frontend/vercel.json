@@ -4,7 +4,7 @@
       "source": "/",
       "destination": "/admin",
       "permanent": false,
-      "has": [{ "type": "host", "value": "admin.jeetrack.in" }]
+      "has": [{ "type": "host", "value": "jee-adv-osint.vercel.app" }]
     }
   ],
   "rewrites": [

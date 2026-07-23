@@ -91,7 +91,7 @@ function sourceLabel(id) {
 
 
 function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', 'https://admin.jeetrack.in');
+  res.setHeader('Access-Control-Allow-Origin', 'https://jee-adv-osint.vercel.app');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
 }
@@ -1128,7 +1128,7 @@ export default async function handler(req, res) {
           if (userId) {
             const roster = await buildRoster().catch(() => []);
             const user = roster.find(u => u.id === userId);
-            payload.display_name = user?.name || (user?.email ? user.email.split('@')[0] : null) || 'JEETrack User';
+            payload.display_name = user?.name || (user?.email ? user.email.split('@')[0] : null) || 'JEE ADV OSINT User';
           }
         } catch (e) { }
       }

@@ -1,6 +1,6 @@
 {
-  "name": "JEETrack — JEE Prep Tracker",
-  "short_name": "JEETrack",
+  "name": "JEE ADV OSINT — JEE Prep Tracker",
+  "short_name": "JEE ADV OSINT",
   "description": "Your personal JEE preparation dashboard",
   "start_url": "/",
   "display": "standalone",

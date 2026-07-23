@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>JEETrack Admin — Control Panel</title>
+<title>JEE ADV OSINT Admin — Control Panel</title>
 <meta name="robots" content="noindex, nofollow, noarchive"/>
 <link rel="icon" type="image/svg+xml" href="logo.svg"/>
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
@@ -405,6 +405,23 @@ tr.fb-expand-row{background:transparent!important;}
 }
 .from-addr-opt:hover .from-addr-pill{border-color:var(--bd2);color:var(--tx)}
 </style>
+
+<!-- Custom SEO Tags by ARK DURRANI -->
+<meta name="author" content="ARK DURRANI"/>
+<meta name="creator" content="ARK DURRANI"/>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "ARK DURRANI",
+  "url": "https://jee-adv-osint.vercel.app",
+  "sameAs": [
+    "https://instagram.com/calis.preneur",
+    "https://github.com/trigxon"
+  ]
+}
+</script>
+
 </head>
 <body>
 
@@ -413,7 +430,7 @@ tr.fb-expand-row{background:transparent!important;}
   <div class="login-box">
     <div class="brand">JEE<span class="b2">Track</span></div>
     <h2>Admin Control Panel</h2>
-    <p>JEETrack internal analytics &amp; operations — authorized access only</p>
+    <p>JEE ADV OSINT internal analytics &amp; operations — authorized access only</p>
     <input class="login-input" type="password" id="pwd-input" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password"/>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
     <div class="login-err" id="login-err">Wrong password. Try again.</div>
@@ -425,7 +442,7 @@ tr.fb-expand-row{background:transparent!important;}
 <div id="sidebar">
   <div class="sb-logo">
     <div class="brand">JEE<span class="b2">Track</span><span class="brand-badge">Admin</span></div>
-    <div class="sb-logo-sub">admin.jeetrack.in</div>
+    <div class="sb-logo-sub">jee-adv-osint.vercel.app</div>
   </div>
   <nav>
     <div class="nav-section">Analytics</div>
@@ -910,12 +927,12 @@ tr.fb-expand-row{background:transparent!important;}
                 <span class="compose-label">From Address</span>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
                   <label class="from-addr-opt" id="fa-noreply-label">
-                    <input type="radio" name="ce-from-addr" id="fa-noreply" value="noreply@jeetrack.in" checked onchange="updateFromPreview()">
-                    <span class="from-addr-pill">📤 noreply@jeetrack.in</span>
+                    <input type="radio" name="ce-from-addr" id="fa-noreply" value="noreply@jee-adv-osint.vercel.app" checked onchange="updateFromPreview()">
+                    <span class="from-addr-pill">📤 noreply@jee-adv-osint.vercel.app</span>
                   </label>
                   <label class="from-addr-opt" id="fa-support-label">
-                    <input type="radio" name="ce-from-addr" id="fa-support" value="support@jeetrack.in" onchange="updateFromPreview()">
-                    <span class="from-addr-pill">💬 support@jeetrack.in</span>
+                    <input type="radio" name="ce-from-addr" id="fa-support" value="support@jee-adv-osint.vercel.app" onchange="updateFromPreview()">
+                    <span class="from-addr-pill">💬 support@jee-adv-osint.vercel.app</span>
                   </label>
                 </div>
                 <div style="font-size:.7rem;color:var(--mu);margin-top:.4rem;" id="fa-hint-compose">Use <strong style="color:var(--tx)">noreply</strong> for announcements, <strong style="color:var(--tx)">support</strong> for replies &amp; personal emails.</div>
@@ -923,7 +940,7 @@ tr.fb-expand-row{background:transparent!important;}
 
               <div class="compose-field">
                 <span class="compose-label">From Name</span>
-                <input class="compose-input" id="ce-from-name" placeholder="JEETrack" value="JEETrack"/>
+                <input class="compose-input" id="ce-from-name" placeholder="JEE ADV OSINT" value="JEE ADV OSINT"/>
               </div>
 
               <div class="compose-field">
@@ -940,8 +957,8 @@ tr.fb-expand-row{background:transparent!important;}
                   </label>
                 </div>
                 <div id="ce-cta-fields" style="display:flex;gap:.5rem;flex-wrap:wrap;opacity:.35;pointer-events:none;">
-                  <input class="compose-input" id="ce-cta-text" placeholder="Button text e.g. Open JEETrack →" style="flex:1;min-width:140px;"/>
-                  <input class="compose-input" id="ce-cta-url" placeholder="URL e.g. https://www.jeetrack.in" style="flex:1;min-width:180px;"/>
+                  <input class="compose-input" id="ce-cta-text" placeholder="Button text e.g. Open JEE ADV OSINT →" style="flex:1;min-width:140px;"/>
+                  <input class="compose-input" id="ce-cta-url" placeholder="URL e.g. https://jee-adv-osint.vercel.app" style="flex:1;min-width:180px;"/>
                 </div>
               </div>
 
@@ -953,7 +970,7 @@ tr.fb-expand-row{background:transparent!important;}
                   <button class="tbtn" onclick="insertTag('<strong>','</strong>')"><b>B</b></button>
                   <button class="tbtn" onclick="insertTag('<em>','</em>')"><i>I</i></button>
                   <button class="tbtn" onclick="insertTag('<br><br>','')">↵ Para</button>
-                  <button class="tbtn" onclick="insertTag('<a href=&quot;https://www.jeetrack.in&quot; style=&quot;color:#D8B4FE;text-decoration:none;font-weight:600&quot;>','</a>')">🔗 Link</button>
+                  <button class="tbtn" onclick="insertTag('<a href=&quot;https://jee-adv-osint.vercel.app&quot; style=&quot;color:#D8B4FE;text-decoration:none;font-weight:600&quot;>','</a>')">🔗 Link</button>
                   <button class="tbtn" onclick="insertTag('<h2 style=&quot;color:#A855F7;margin:16px 0 8px&quot;>','</h2>')">H2</button>
                   <button class="tbtn" onclick="insertTag('<ul style=&quot;padding-left:20px&quot;><li>','</li></ul>')">• List</button>
                   <span style="width:1px;background:var(--bd);margin:0 .2rem;"></span>
@@ -991,18 +1008,18 @@ tr.fb-expand-row{background:transparent!important;}
                 <span class="compose-label">From Address</span>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
                   <label class="from-addr-opt">
-                    <input type="radio" name="ce-from-addr-custom" id="fa-noreply-custom" value="noreply@jeetrack.in" checked onchange="updateFromPreview()">
-                    <span class="from-addr-pill">📤 noreply@jeetrack.in</span>
+                    <input type="radio" name="ce-from-addr-custom" id="fa-noreply-custom" value="noreply@jee-adv-osint.vercel.app" checked onchange="updateFromPreview()">
+                    <span class="from-addr-pill">📤 noreply@jee-adv-osint.vercel.app</span>
                   </label>
                   <label class="from-addr-opt">
-                    <input type="radio" name="ce-from-addr-custom" id="fa-support-custom" value="support@jeetrack.in" onchange="updateFromPreview()">
-                    <span class="from-addr-pill">💬 support@jeetrack.in</span>
+                    <input type="radio" name="ce-from-addr-custom" id="fa-support-custom" value="support@jee-adv-osint.vercel.app" onchange="updateFromPreview()">
+                    <span class="from-addr-pill">💬 support@jee-adv-osint.vercel.app</span>
                   </label>
                 </div>
               </div>
               <div class="compose-field">
                 <span class="compose-label">From Name</span>
-                <input class="compose-input" id="ce-from-name-custom" placeholder="JEETrack" value="JEETrack"/>
+                <input class="compose-input" id="ce-from-name-custom" placeholder="JEE ADV OSINT" value="JEE ADV OSINT"/>
               </div>
               <div class="compose-field">
                 <span class="compose-label">Subject <span class="hint-tag">{{name}} supported</span></span>
@@ -1019,13 +1036,51 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-plain">
                   <span class="compose-label">Message <span class="hint-tag">Sent as plain text email</span></span>
-                  <textarea class="compose-textarea" id="ce-plain-body" style="min-height:320px;font-family:monospace;font-size:.85rem;" placeholder="Hi {{name}},&#10;&#10;Write your plain text email here.&#10;&#10;No HTML — just text.&#10;&#10;— Aman Mishra&#10;Founder, JEETrack"></textarea>
+                  <textarea class="compose-textarea" id="ce-plain-body" style="min-height:320px;font-family:monospace;font-size:.85rem;" placeholder="Hi {{name}},&#10;&#10;Write your plain text email here.&#10;&#10;No HTML — just text.&#10;&#10;— Abdul Rehman Khan Durrani&#10;Founder, JEE ADV OSINT"></textarea>
                 </div>
 
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;</body>&#10;</html>"></textarea>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;
+  <!-- GPU-Accelerated Blob Cursor -->
+  <style>
+    body.mouse-active * { cursor: none !important; }
+    .blob-cursor {
+      position: fixed; top: 0; left: 0; width: 18px; height: 18px;
+      border-radius: 50%; background: rgba(168,85,247,0.9);
+      box-shadow: 0 0 10px rgba(168,85,247,0.6), 0 0 20px rgba(99,102,241,0.4);
+      pointer-events: none; z-index: 9999999;
+      will-change: transform, opacity; opacity: 0; transition: opacity 0.3s;
+    }
+    body.mouse-active .blob-cursor { opacity: 1; }
+  </style>
+  <script>
+  (function() {
+    var cursor = document.createElement('div');
+    cursor.className = 'blob-cursor';
+    document.body.appendChild(cursor);
+    var mouseX = -100, mouseY = -100, curX = -100, curY = -100;
+    var animating = false, isTouch = false;
+    document.addEventListener('touchstart', function() {
+      isTouch = true; document.body.classList.remove('mouse-active');
+    }, { passive: true });
+    document.addEventListener('mousemove', function(e) {
+      if (isTouch) return;
+      document.body.classList.add('mouse-active');
+      mouseX = e.clientX; mouseY = e.clientY;
+      if (!animating) { animating = true; curX = mouseX; curY = mouseY; requestAnimationFrame(animate); }
+    }, { passive: true });
+    function animate() {
+      if (!animating || isTouch) { animating = false; return; }
+      curX += (mouseX - curX) * 0.18; curY += (mouseY - curY) * 0.18;
+      cursor.style.transform = 'translate3d(' + (curX - 9) + 'px,' + (curY - 9) + 'px, 0)';
+      requestAnimationFrame(animate);
+    }
+  })();
+  </script>
+
+</body>&#10;</html>"></textarea>
                 </div>
               </div>
 
@@ -1048,7 +1103,7 @@ tr.fb-expand-row{background:transparent!important;}
               <button class="tbtn" onclick="document.getElementById('ce-preview-card').style.display='none'">✕ Close</button>
             </div>
             <div style="font-size:.72rem;color:var(--mu);margin-bottom:.75rem;">
-              From: <strong style="color:var(--tx)" id="prev-from">noreply@jeetrack.in</strong> &nbsp;·&nbsp;
+              From: <strong style="color:var(--tx)" id="prev-from">noreply@jee-adv-osint.vercel.app</strong> &nbsp;·&nbsp;
               Subject: <strong style="color:var(--tx)" id="prev-subject">—</strong>
             </div>
             <iframe id="ce-preview-frame" style="width:100%;height:520px;border:1px solid var(--bd);border-radius:8px;background:#050816;" sandbox="allow-same-origin"></iframe>
@@ -1111,7 +1166,7 @@ tr.fb-expand-row{background:transparent!important;}
             <h3>💡 Tips</h3>
             <div style="font-size:.75rem;color:var(--mu);line-height:1.9;">
               <div>• <code style="color:var(--ac2)">{{name}}</code> → recipient's name</div>
-              <div>• From: <code style="color:var(--ac2)" id="tips-from-addr">noreply@jeetrack.in</code></div>
+              <div>• From: <code style="color:var(--ac2)" id="tips-from-addr">noreply@jee-adv-osint.vercel.app</code></div>
               <div>• Always preview before sending</div>
               <div>• Batches of 10, 300ms delay</div>
               <div>• HTML mode = full control</div>
@@ -2340,7 +2395,7 @@ async function exportUsersCSV() {
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `jeetrack-users-${new Date().toISOString().slice(0,10)}.csv`;
+    a.href = url; a.download = `JEE ADV OSINT-users-${new Date().toISOString().slice(0,10)}.csv`;
     a.click(); URL.revokeObjectURL(url);
     resultEl.className = 'action-result result-ok';
     resultEl.textContent = `✓ ${users.length} users exported`;
@@ -2538,9 +2593,9 @@ function insertSnippet(type) {
   
   const snippets = {
     greeting: `Dear <strong>{{name}}</strong>,<br><br>Hope your JEE prep is going strong! 🚀<br><br>`,
-    review:   `Dear <strong>{{name}}</strong>,<br><br>You've been using JEETrack for a while — I'd love your feedback! 🙏<br><br>Could you spare 2 minutes to share what you think? It really helps us improve.<br><br>`,
-    tips:     `Here are some quick tips to get the most out of JEETrack:<br><br><ul style="padding-left:20px;line-height:2;color:#B4BCD0"><li>Log every mock test — even the bad ones</li><li>Use AI Insights weekly for honest feedback</li><li>Clear your backlog daily — zero tolerance!</li></ul><br>`,
-    closing:  `<br>If you have any questions or suggestions, feel free to reach out at <a href="mailto:support@jeetrack.in" style="color:#D8B4FE;text-decoration:none;font-weight:600;">support@jeetrack.in</a>.<br><br>Best of luck with your prep! 💪`,
+    review:   `Dear <strong>{{name}}</strong>,<br><br>You've been using JEE ADV OSINT for a while — I'd love your feedback! 🙏<br><br>Could you spare 2 minutes to share what you think? It really helps us improve.<br><br>`,
+    tips:     `Here are some quick tips to get the most out of JEE ADV OSINT:<br><br><ul style="padding-left:20px;line-height:2;color:#B4BCD0"><li>Log every mock test — even the bad ones</li><li>Use AI Insights weekly for honest feedback</li><li>Clear your backlog daily — zero tolerance!</li></ul><br>`,
+    closing:  `<br>If you have any questions or suggestions, feel free to reach out at <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com" style="color:#D8B4FE;text-decoration:none;font-weight:600;">support@jee-adv-osint.vercel.app</a>.<br><br>Best of luck with your prep! 💪`,
   };
   const pos = ta.selectionStart;
   ta.value = ta.value.substring(0, pos) + (snippets[type]||'') + ta.value.substring(pos);
@@ -2553,7 +2608,7 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
   const cta = (includeCTA && ctaText && ctaText.trim()) ? `
       <tr>
         <td align="center" style="padding:0 40px 40px;">
-          <a href="${ctaUrl||'https://www.jeetrack.in'}"
+          <a href="${ctaUrl||'https://jee-adv-osint.vercel.app'}"
             style="display:inline-block;background:linear-gradient(135deg,#A855F7,#EC4899);color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:12px;font-size:15px;font-weight:600;">
             ${ctaText.trim()}
           </a>
@@ -2575,7 +2630,7 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
   
   <tr>
     <td align="center" style="padding:40px 30px 20px;">
-      <img src="https://www.jeetrack.in/jeetrack-logo-email.png" alt="JEETrack" width="260"
+      <img src="https://jee-adv-osint.vercel.app/JEE ADV OSINT-logo-email.png" alt="JEE ADV OSINT" width="260"
         style="display:block;border:0;max-width:260px;height:auto;">
     </td>
   </tr>
@@ -2602,8 +2657,8 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
         <tr>
           <td style="padding:22px;">
             <p style="margin:0;color:#B4BCD0;font-size:14px;">Best Regards,</p>
-            <p style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:700;">Aman Mishra</p>
-            <p style="margin:0;color:#D8B4FE;font-size:15px;">Founder, JEETrack</p>
+            <p style="margin:12px 0 4px;color:#ffffff;font-size:22px;font-weight:700;">Abdul Rehman Khan Durrani</p>
+            <p style="margin:0;color:#D8B4FE;font-size:15px;">Founder, JEE ADV OSINT</p>
           </td>
         </tr>
       </table>
@@ -2615,13 +2670,51 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
   
   <tr>
     <td align="center" style="padding:24px;border-top:1px solid #1A2035;">
-      <p style="margin:0;color:#6B7280;font-size:13px;">© 2026 JEETrack • Built for JEE Aspirants</p>
+      <p style="margin:0;color:#6B7280;font-size:13px;">© 2026 JEE ADV OSINT • Built for JEE Aspirants</p>
     </td>
   </tr>
 
 </table>
 </td></tr>
 </table>
+
+  <!-- GPU-Accelerated Blob Cursor -->
+  <style>
+    body.mouse-active * { cursor: none !important; }
+    .blob-cursor {
+      position: fixed; top: 0; left: 0; width: 18px; height: 18px;
+      border-radius: 50%; background: rgba(168,85,247,0.9);
+      box-shadow: 0 0 10px rgba(168,85,247,0.6), 0 0 20px rgba(99,102,241,0.4);
+      pointer-events: none; z-index: 9999999;
+      will-change: transform, opacity; opacity: 0; transition: opacity 0.3s;
+    }
+    body.mouse-active .blob-cursor { opacity: 1; }
+  </style>
+  <script>
+  (function() {
+    var cursor = document.createElement('div');
+    cursor.className = 'blob-cursor';
+    document.body.appendChild(cursor);
+    var mouseX = -100, mouseY = -100, curX = -100, curY = -100;
+    var animating = false, isTouch = false;
+    document.addEventListener('touchstart', function() {
+      isTouch = true; document.body.classList.remove('mouse-active');
+    }, { passive: true });
+    document.addEventListener('mousemove', function(e) {
+      if (isTouch) return;
+      document.body.classList.add('mouse-active');
+      mouseX = e.clientX; mouseY = e.clientY;
+      if (!animating) { animating = true; curX = mouseX; curY = mouseY; requestAnimationFrame(animate); }
+    }, { passive: true });
+    function animate() {
+      if (!animating || isTouch) { animating = false; return; }
+      curX += (mouseX - curX) * 0.18; curY += (mouseY - curY) * 0.18;
+      cursor.style.transform = 'translate3d(' + (curX - 9) + 'px,' + (curY - 9) + 'px, 0)';
+      requestAnimationFrame(animate);
+    }
+  })();
+  </script>
+
 </body>
 </html>`;
 }
@@ -2630,7 +2723,7 @@ function getFromAddress() {
   const isCustom = _emailMode === 'custom';
   const name = isCustom ? 'ce-from-addr-custom' : 'ce-from-addr';
   const checked = document.querySelector(`input[name="${name}"]:checked`);
-  return checked ? checked.value : 'noreply@jeetrack.in';
+  return checked ? checked.value : 'noreply@jee-adv-osint.vercel.app';
 }
 
 function updateFromPreview() {
@@ -2641,7 +2734,7 @@ function updateFromPreview() {
   
   const prevFrom = document.getElementById('prev-from');
   if (prevFrom && document.getElementById('ce-preview-card').style.display !== 'none') {
-    const fromName = document.getElementById(_emailMode === 'custom' ? 'ce-from-name-custom' : 'ce-from-name')?.value || 'JEETrack';
+    const fromName = document.getElementById(_emailMode === 'custom' ? 'ce-from-name-custom' : 'ce-from-name')?.value || 'JEE ADV OSINT';
     prevFrom.textContent = `${fromName} <${addr}>`;
   }
 }
@@ -2650,27 +2743,65 @@ function updateFromPreview() {
 function previewEmail() {
   const body = document.getElementById('ce-body')?.value || '';
   const subject = document.getElementById('ce-subject')?.value || '';
-  const fromName = document.getElementById('ce-from-name')?.value || 'JEETrack';
+  const fromName = document.getElementById('ce-from-name')?.value || 'JEE ADV OSINT';
   const ctaEnabled = document.getElementById('ce-cta-enabled')?.checked;
   const ctaText = document.getElementById('ce-cta-text')?.value || '';
   const ctaUrl  = document.getElementById('ce-cta-url')?.value  || '';
   if (!body.trim()) { showToast('Write body first!'); return; }
-  _renderPreview(buildEmailHTML('Aman', body, ctaText, ctaUrl, ctaEnabled), subject, fromName);
+  _renderPreview(buildEmailHTML('ARK DURRANI', body, ctaText, ctaUrl, ctaEnabled), subject, fromName);
 }
 
 function previewCustom() {
-  const fromName = (document.getElementById('ce-from-name-custom')?.value || 'JEETrack');
+  const fromName = (document.getElementById('ce-from-name-custom')?.value || 'JEE ADV OSINT');
   const subject  = (document.getElementById('ce-subject-custom')?.value  || '');
   if (_customSubMode === 'plain') {
     const body = document.getElementById('ce-plain-body')?.value || '';
     if (!body.trim()) { showToast('Write your message first!'); return; }
     
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:40px 20px;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.9;color:#B4BCD0;background:#050816;white-space:pre-wrap;word-wrap:break-word}a{color:#D8B4FE}</style></head><body>${body.replace(/\{\{name\}\}/g,'Aman').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</body></html>`;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:40px 20px;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.9;color:#B4BCD0;background:#050816;white-space:pre-wrap;word-wrap:break-word}a{color:#D8B4FE}</style></head><body>${body.replace(/\{\{name\}\}/g,'ARK DURRANI').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+  <!-- GPU-Accelerated Blob Cursor -->
+  <style>
+    body.mouse-active * { cursor: none !important; }
+    .blob-cursor {
+      position: fixed; top: 0; left: 0; width: 18px; height: 18px;
+      border-radius: 50%; background: rgba(168,85,247,0.9);
+      box-shadow: 0 0 10px rgba(168,85,247,0.6), 0 0 20px rgba(99,102,241,0.4);
+      pointer-events: none; z-index: 9999999;
+      will-change: transform, opacity; opacity: 0; transition: opacity 0.3s;
+    }
+    body.mouse-active .blob-cursor { opacity: 1; }
+  </style>
+  <script>
+  (function() {
+    var cursor = document.createElement('div');
+    cursor.className = 'blob-cursor';
+    document.body.appendChild(cursor);
+    var mouseX = -100, mouseY = -100, curX = -100, curY = -100;
+    var animating = false, isTouch = false;
+    document.addEventListener('touchstart', function() {
+      isTouch = true; document.body.classList.remove('mouse-active');
+    }, { passive: true });
+    document.addEventListener('mousemove', function(e) {
+      if (isTouch) return;
+      document.body.classList.add('mouse-active');
+      mouseX = e.clientX; mouseY = e.clientY;
+      if (!animating) { animating = true; curX = mouseX; curY = mouseY; requestAnimationFrame(animate); }
+    }, { passive: true });
+    function animate() {
+      if (!animating || isTouch) { animating = false; return; }
+      curX += (mouseX - curX) * 0.18; curY += (mouseY - curY) * 0.18;
+      cursor.style.transform = 'translate3d(' + (curX - 9) + 'px,' + (curY - 9) + 'px, 0)';
+      requestAnimationFrame(animate);
+    }
+  })();
+  </script>
+
+</body></html>`;
     _renderPreview(html, subject, fromName);
   } else {
     const body = document.getElementById('ce-html-body')?.value || '';
     if (!body.trim()) { showToast('Write HTML first!'); return; }
-    _renderPreview(body.replace(/\{\{name\}\}/g,'Aman'), subject, fromName);
+    _renderPreview(body.replace(/\{\{name\}\}/g,'ARK DURRANI'), subject, fromName);
   }
 }
 
@@ -2678,7 +2809,7 @@ function _renderPreview(html, subject, fromName) {
   const card  = document.getElementById('ce-preview-card');
   const frame = document.getElementById('ce-preview-frame');
   const fromAddr = getFromAddress();
-  document.getElementById('prev-subject').textContent = subject.replace(/\{\{name\}\}/g,'Aman') || '(no subject)';
+  document.getElementById('prev-subject').textContent = subject.replace(/\{\{name\}\}/g,'ARK DURRANI') || '(no subject)';
   document.getElementById('prev-from').textContent    = `${fromName} <${fromAddr}>`;
   card.style.display = 'block';
   const doc = frame.contentDocument || frame.contentWindow.document;
@@ -2690,7 +2821,7 @@ function _renderPreview(html, subject, fromName) {
 async function sendCustomEmail() {
   const isCustom  = _emailMode === 'custom';
   const subject   = (document.getElementById(isCustom?'ce-subject-custom':'ce-subject')?.value||'').trim();
-  const fromName  = (document.getElementById(isCustom?'ce-from-name-custom':'ce-from-name')?.value||'JEETrack').trim();
+  const fromName  = (document.getElementById(isCustom?'ce-from-name-custom':'ce-from-name')?.value||'JEE ADV OSINT').trim();
   const resultEl  = document.getElementById(isCustom?'ce-result-custom':'ce-result');
   const sendBtn   = document.getElementById(isCustom?'ce-send-btn-custom':'ce-send-btn');
 
@@ -2713,7 +2844,7 @@ async function sendCustomEmail() {
     const body = (document.getElementById('ce-body')?.value||'').trim();
     const ctaEnabled = document.getElementById('ce-cta-enabled')?.checked || false;
     const ctaText = ctaEnabled ? (document.getElementById('ce-cta-text')?.value||'').trim() : '';
-    const ctaUrl  = ctaEnabled ? (document.getElementById('ce-cta-url')?.value||'https://www.jeetrack.in').trim() : '';
+    const ctaUrl  = ctaEnabled ? (document.getElementById('ce-cta-url')?.value||'https://jee-adv-osint.vercel.app').trim() : '';
     if (!body) { showToast('Email body required!'); return; }
     htmlBody = buildEmailHTML('{{name}}', body, ctaText, ctaUrl, ctaEnabled);
     isRawHtml = true;
@@ -3041,7 +3172,7 @@ function replyToFeedback(userId, email, subject) {
 
     
     document.getElementById('ce-body').value =
-      `Dear <strong>{{name}}</strong>,\n\nThank you for your valuable feedback and kind words about JEETrack.\n\n${subject ? `Regarding: "<em>${subject}</em>"\n\n` : ''}[Write your reply here...]\n\nIf you have any further questions or suggestions, feel free to reach out at <a href="mailto:support@jeetrack.in" style="color:#D8B4FE;text-decoration:none;font-weight:600;">support@jeetrack.in</a>.`;
+      `Dear <strong>{{name}}</strong>,\n\nThank you for your valuable feedback and kind words about JEE ADV OSINT.\n\n${subject ? `Regarding: "<em>${subject}</em>"\n\n` : ''}[Write your reply here...]\n\nIf you have any further questions or suggestions, feel free to reach out at <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com" style="color:#D8B4FE;text-decoration:none;font-weight:600;">support@jee-adv-osint.vercel.app</a>.`;
 
     
     const customBtn = [...document.querySelectorAll('#page-email .recipient-tabs .rtab')]
@@ -3057,6 +3188,44 @@ function replyToFeedback(userId, email, subject) {
 
 
 </script>
+
+
+  <!-- GPU-Accelerated Blob Cursor -->
+  <style>
+    body.mouse-active * { cursor: none !important; }
+    .blob-cursor {
+      position: fixed; top: 0; left: 0; width: 18px; height: 18px;
+      border-radius: 50%; background: rgba(168,85,247,0.9);
+      box-shadow: 0 0 10px rgba(168,85,247,0.6), 0 0 20px rgba(99,102,241,0.4);
+      pointer-events: none; z-index: 9999999;
+      will-change: transform, opacity; opacity: 0; transition: opacity 0.3s;
+    }
+    body.mouse-active .blob-cursor { opacity: 1; }
+  </style>
+  <script>
+  (function() {
+    var cursor = document.createElement('div');
+    cursor.className = 'blob-cursor';
+    document.body.appendChild(cursor);
+    var mouseX = -100, mouseY = -100, curX = -100, curY = -100;
+    var animating = false, isTouch = false;
+    document.addEventListener('touchstart', function() {
+      isTouch = true; document.body.classList.remove('mouse-active');
+    }, { passive: true });
+    document.addEventListener('mousemove', function(e) {
+      if (isTouch) return;
+      document.body.classList.add('mouse-active');
+      mouseX = e.clientX; mouseY = e.clientY;
+      if (!animating) { animating = true; curX = mouseX; curY = mouseY; requestAnimationFrame(animate); }
+    }, { passive: true });
+    function animate() {
+      if (!animating || isTouch) { animating = false; return; }
+      curX += (mouseX - curX) * 0.18; curY += (mouseY - curY) * 0.18;
+      cursor.style.transform = 'translate3d(' + (curX - 9) + 'px,' + (curY - 9) + 'px, 0)';
+      requestAnimationFrame(animate);
+    }
+  })();
+  </script>
 
 </body>
 </html>

@@ -1,6 +1,6 @@
 
 
-const CACHE_VERSION = 'jeetrack-v5';
+const CACHE_VERSION = 'JEE ADV OSINT-v5';
 const CACHE_NAME = CACHE_VERSION;
 
 const STATIC_ASSETS = [
@@ -100,11 +100,11 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   const data = e.data?.json() || {};
   e.waitUntil(
-    self.registration.showNotification(data.title || 'JEETrack', {
+    self.registration.showNotification(data.title || 'JEE ADV OSINT', {
       body: data.body || 'You have a new notification',
       icon: 'icon-192.png',
       badge: 'icon-192.png',
-      tag: data.tag || 'jeetrack',
+      tag: data.tag || 'JEE ADV OSINT',
       vibrate: [200, 100, 200],
       data: { url: data.url || '/' }
     })

@@ -75,7 +75,7 @@ async function initSupabase(){
     clearTimeout(_splashSafetyTimer);
     if(window.jtSplash) window.jtSplash.setProgress(90, 'Almost ready');
     hideSplash();
-    showApp('Demo User','demo@jeetrack.app');
+    showApp('Demo User','demo@JEE ADV OSINT.app');
     return;
   }
 
@@ -327,10 +327,10 @@ function showAuthScreen(fromSignOut){
   
   if(fromSignOut){
     history.replaceState({page:'login'}, '', '/login');
-    document.title = 'JEETrack — Sign In';
+    document.title = 'JEE ADV OSINT — Sign In';
     if(typeof _setRobotsMeta === 'function') _setRobotsMeta(false);
   } else if(window.location.pathname === '/login'){
-    document.title = 'JEETrack — Sign In';
+    document.title = 'JEE ADV OSINT — Sign In';
     if(typeof _setRobotsMeta === 'function') _setRobotsMeta(false);
   } else if(typeof _setRobotsMeta === 'function'){
     _setRobotsMeta(true);
@@ -750,7 +750,7 @@ async function exportPDF(){
   doc.setDrawColor(124,106,247,0.4);
   doc.line(0,28,W,28);
   doc.setTextColor(166,149,255); doc.setFontSize(18); doc.setFont('helvetica','bold');
-  doc.text('JEETrack',mg,17);
+  doc.text('JEE ADV OSINT',mg,17);
   doc.setTextColor(100,100,120); doc.setFontSize(9); doc.setFont('helvetica','normal');
   doc.text(`Progress Report — ${userName}`, mg, 23);
   doc.text(dateStr, W-mg, 23, {align:'right'});
@@ -820,9 +820,9 @@ async function exportPDF(){
     doc.setPage(i);
     if(i>1) bgPage();
     doc.setTextColor(60,60,80); doc.setFontSize(7.5);
-    doc.text(`JEETrack · crafted by Aman Mishra · Page ${i}/${pgs}`, W/2, 291, {align:'center'});
+    doc.text(`JEE ADV OSINT · crafted by Abdul Rehman Khan Durrani · Page ${i}/${pgs}`, W/2, 291, {align:'center'});
   }
-  doc.save(`JEETrack-${dateStr.replace(/ /g,'-')}.pdf`);
+  doc.save(`JEE ADV OSINT-${dateStr.replace(/ /g,'-')}.pdf`);
   toast('PDF downloaded ✓', 'success');
 }
 
@@ -842,18 +842,18 @@ async function registerPushNotifications(){
     
     const tmr=new Date(); tmr.setDate(tmr.getDate()+1); const tmrStr=tmr.toISOString().split('T')[0];
     const tmrTests=S.upcoming.filter(t=>t.date===tmrStr);
-    if(tmrTests.length) reg.showNotification('JEETrack — Test Tomorrow! 📋',{body:`${tmrTests.length} test${tmrTests.length>1?'s':''} scheduled tomorrow. Be prepared!`,icon:'icon-192.png',tag:'test-reminder',vibrate:[200,100,200]});
+    if(tmrTests.length) reg.showNotification('JEE ADV OSINT — Test Tomorrow! 📋',{body:`${tmrTests.length} test${tmrTests.length>1?'s':''} scheduled tomorrow. Be prepared!`,icon:'icon-192.png',tag:'test-reminder',vibrate:[200,100,200]});
     const pendTodos=S.todos.filter(t=>!t.done).length;
-    if(pendTodos>0) reg.showNotification('JEETrack — Tasks Pending ✅',{body:`You have ${pendTodos} to-do task${pendTodos>1?'s':''} pending. Stay on track!`,icon:'icon-192.png',tag:'todo-reminder'});
+    if(pendTodos>0) reg.showNotification('JEE ADV OSINT — Tasks Pending ✅',{body:`You have ${pendTodos} to-do task${pendTodos>1?'s':''} pending. Stay on track!`,icon:'icon-192.png',tag:'todo-reminder'});
     const pendBL=S.backlogs.filter(b=>!b.done).length;
-    if(pendBL>0) reg.showNotification('JEETrack — Backlogs Pending 📌',{body:`${pendBL} backlog item${pendBL>1?'s':''} still pending. Clear them today!`,icon:'icon-192.png',tag:'backlog-reminder'});
+    if(pendBL>0) reg.showNotification('JEE ADV OSINT — Backlogs Pending 📌',{body:`${pendBL} backlog item${pendBL>1?'s':''} still pending. Clear them today!`,icon:'icon-192.png',tag:'backlog-reminder'});
     
     const now2=new Date(), r8=new Date(); r8.setHours(20,0,0,0); if(r8<=now2) r8.setDate(r8.getDate()+1);
     setTimeout(function remind(){
       if(localStorage.getItem('notif_enabled')==='1' && Notification.permission==='granted'){
         const td2=new Date().toISOString().split('T')[0];
         const h2=S.hours.filter(h=>h.date===td2).reduce((a,b)=>a+b.total,0);
-        new Notification('JEETrack 📚',{body:h2<4?`Only ${h2.toFixed(1)}h today. Push for 6h! 💪`:`${h2.toFixed(1)}h today — great work. Stay consistent.`,icon:'icon-192.png',tag:'daily'});
+        new Notification('JEE ADV OSINT 📚',{body:h2<4?`Only ${h2.toFixed(1)}h today. Push for 6h! 💪`:`${h2.toFixed(1)}h today — great work. Stay consistent.`,icon:'icon-192.png',tag:'daily'});
       }
       setTimeout(remind, 86400000);
     }, r8-now2);
@@ -2040,7 +2040,7 @@ function showOnboarding() {
   document.getElementById('onboarding').classList.add('show');
   
   history.replaceState({page:'onboarding'}, '', '/onboarding');
-  document.title = 'JEETrack — Setup Profile';
+  document.title = 'JEE ADV OSINT — Setup Profile';
   
   renderObYearOptions();
   const cs = document.getElementById('coaching-section');
@@ -2400,7 +2400,7 @@ function showSettingsPanel(id, btn) {
   btn?.classList.add('active');
   
   history.pushState({page:'settings',tab:id}, '', `/settings?tab=${id}`);
-  document.title = `JEETrack — Settings · ${id.charAt(0).toUpperCase()+id.slice(1)}`;
+  document.title = `JEE ADV OSINT — Settings · ${id.charAt(0).toUpperCase()+id.slice(1)}`;
   
   const subtitles = {
     profile: 'Profile',
@@ -3117,7 +3117,7 @@ async function sendFeedback() {
 
     
     if (!saved) {
-      const mailtoUrl = `mailto:support@jeetrack.com?subject=${encodeURIComponent('[JEETrack Feedback] ' + subj)}&body=${encodeURIComponent(msg + '\n\n— Sent from JEETrack\nUser: ' + (currentUser?.email || 'anonymous'))}`;
+      const mailtoUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com ADV OSINT.com?subject=${encodeURIComponent('[JEE ADV OSINT Feedback] ' + subj)}&body=${encodeURIComponent(msg + '\n\n— Sent from JEE ADV OSINT\nUser: ' + (currentUser?.email || 'anonymous'))}`;
       window.open(mailtoUrl, '_blank');
     }
 
@@ -3126,7 +3126,7 @@ async function sendFeedback() {
     if (document.getElementById('fb-message')) document.getElementById('fb-message').value = '';
     if (btn) { btn.textContent = 'Sent ✓'; setTimeout(() => { if(btn){ btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Feedback'; btn.disabled = false; } }, 2500); }
   } catch(e) {
-    toast('Could not send — please email support@jeetrack.in directly', 'error');
+    toast('Could not send — please email support@jee-adv-osint.vercel.app directly', 'error');
     if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Feedback'; }
   }
 }
@@ -3323,7 +3323,7 @@ const TESTI_TRUST_RATING = '4.8';
 function _testiCardHTML(t,i){
   const rating = Math.max(1, Math.min(5, t.rating||5));
   const stars = '★'.repeat(rating) + '☆'.repeat(5-rating);
-  const name = _escTesti((t.display_name||'').trim() || 'JEETrack User');
+  const name = _escTesti((t.display_name||'').trim() || 'JEE ADV OSINT User');
   const initial = name.charAt(0).toUpperCase() || 'J';
   const colors=['linear-gradient(135deg,#7c6af7,#a695ff)','linear-gradient(135deg,#34d399,#2dd4bf)','linear-gradient(135deg,#f472b6,#fb7185)','linear-gradient(135deg,#fbbf24,#f97316)','linear-gradient(135deg,#60a5fa,#3b82f6)'];
   const bg = colors[i % colors.length];
@@ -3337,7 +3337,7 @@ function _testiCardHTML(t,i){
         <div class="ls-testi-name-row">
           <span class="ls-testi-name">${name}</span>
         </div>
-        <div class="ls-testi-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8.5 12.5 11 15 16 9.5"/></svg>Verified JEETrack User</div>
+        <div class="ls-testi-tag"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8.5 12.5 11 15 16 9.5"/></svg>Verified JEE ADV OSINT User</div>
       </div>
     </div>
   </div>`;
@@ -3372,7 +3372,7 @@ async function loadLandingTestimonials(){
       const cfg = _siteConfigCache || await loadPublicSiteConfig().catch(()=>null) || {};
       const reviewsCount = (cfg.reviews_count !== null && cfg.reviews_count !== undefined) ? cfg.reviews_count : 1000;
       const avgRating = (cfg.avg_rating !== null && cfg.avg_rating !== undefined) ? cfg.avg_rating : TESTI_TRUST_RATING;
-      trustRow.innerHTML = `<span class="ls-testi-trust-rating"><span class="ls-testi-trust-stars">★★★★★</span><span class="ls-testi-trust-ratingnum">${avgRating}/5</span></span><span class="ls-testi-trust-div"></span><span class="ls-testi-trust-text">Based on <span class="odo-num" data-count-to="${Math.round(reviewsCount)}" data-count-display="${_fmtStatPlain(reviewsCount)}">0</span> JEETrack verified reviews</span>`;
+      trustRow.innerHTML = `<span class="ls-testi-trust-rating"><span class="ls-testi-trust-stars">★★★★★</span><span class="ls-testi-trust-ratingnum">${avgRating}/5</span></span><span class="ls-testi-trust-div"></span><span class="ls-testi-trust-text">Based on <span class="odo-num" data-count-to="${Math.round(reviewsCount)}" data-count-display="${_fmtStatPlain(reviewsCount)}">0</span> JEE ADV OSINT verified reviews</span>`;
       if(typeof _initCountUp === 'function') _initCountUp(trustRow);
     }
     section.style.display = '';

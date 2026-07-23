@@ -12,7 +12,7 @@ async function initAnalytics() {
     const res = await fetch('/api/config');
     const cfg = await res.json();
     if (!cfg.posthogKey) {
-      console.warn('[JEETrack Analytics] No PostHog key found');
+      console.warn('[JEE ADV OSINT Analytics] No PostHog key found');
       return;
     }
 
@@ -30,12 +30,12 @@ async function initAnalytics() {
         }
       },
       loaded: function() {
-        console.log('[JEETrack Analytics] Ready ✓');
+        console.log('[JEE ADV OSINT Analytics] Ready ✓');
         attachPatches();
       }
     });
   } catch(e) {
-    console.warn('[JEETrack Analytics] Init failed:', e);
+    console.warn('[JEE ADV OSINT Analytics] Init failed:', e);
   }
 }
 
@@ -71,7 +71,7 @@ function attachPatches() {
       _jtTrack('page_viewed', { page: page });
       return _orig.call(this, page, _pushState);
     };
-    console.log('[JEETrack Analytics] Nav tracking active ✓');
+    console.log('[JEE ADV OSINT Analytics] Nav tracking active ✓');
   };
   _patchNav();
 
@@ -217,7 +217,7 @@ function attachPatches() {
       } catch(e) {}
       return _orig.call(this);
     };
-    console.log('[JEETrack Analytics] Save tracking active ✓');
+    console.log('[JEE ADV OSINT Analytics] Save tracking active ✓');
   };
   _patchSave();
 
@@ -232,7 +232,7 @@ function attachPatches() {
         has_syllabus_data: Object.values(window.S?.syllabus || {}).some(a => a.length > 0),
       });
     });
-    console.log('[JEETrack Analytics] AI button tracking active ✓');
+    console.log('[JEE ADV OSINT Analytics] AI button tracking active ✓');
   };
   _watchAI();
 
