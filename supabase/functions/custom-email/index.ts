@@ -6,7 +6,7 @@ const SUPABASE_URL         = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const CORS = {
-  "Access-Control-Allow-Origin": "https://admin.jeetrack.in",
+  "Access-Control-Allow-Origin": "https://jee-adv-osint.vercel.app/admin.html",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
@@ -69,8 +69,8 @@ serve(async (req) => {
     // ── Send in batches ──────────────────────────────────────
     // is_raw_html=true  → send exactly as built by the frontend (compose preset HTML or custom HTML/text)
     // is_raw_html=false/absent → also send as-is (compose mode now builds full HTML via buildEmailHTML)
-    const fromAddr = (from_address === "support@jeetrack.in") ? "support@jeetrack.in" : "noreply@jeetrack.in";
-    const from = `${from_name || "JEETrack"} <${fromAddr}>`;
+    const fromAddr = (from_address === "5073340abdulrehmankhandurrani@gmail.com") ? "5073340abdulrehmankhandurrani@gmail.com" : "5073340abdulrehmankhandurrani@gmail.com";
+    const from = `${from_name || "JEE ADV OSINT"} <${fromAddr}>`;
     let sent = 0, failed = 0, failedEmails: string[] = [];
 
     for (let i = 0; i < recipients.length; i += 10) {

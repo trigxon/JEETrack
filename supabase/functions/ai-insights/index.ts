@@ -8,11 +8,11 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const ALLOWED_ORIGINS = [
-  Deno.env.get("APP_URL") || "https://jeetrack.in",
-  "https://jeetrack.in",
-  "https://www.jeetrack.in",
-  "https://jeetrack.vercel.app",
-  "https://development.jeetrack.in",
+  Deno.env.get("APP_URL") || "https://jee-adv-osint.vercel.app",
+  "https://jee-adv-osint.vercel.app",
+  "https://jee-adv-osint.vercel.app",
+  "https://JEE ADV OSINT.vercel.app",
+  "https://development.jee-adv-osint.vercel.app",
 ];
 
 function getCorsHeaders(req: Request) {

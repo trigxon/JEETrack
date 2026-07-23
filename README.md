@@ -132,7 +132,7 @@ JEE ADV OSINT/
 ### 1 · Clone the repository
 
 ```bash
-git clone https://github.com/trigxon/JEETrack.git
+git clone https://github.com/trigxon/JEE ADV OSINT.git
 cd JEE ADV OSINT
 ```
 

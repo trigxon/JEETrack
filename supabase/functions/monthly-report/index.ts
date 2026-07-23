@@ -6,8 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "reports@jeetrack.app";
-const APP_URL = Deno.env.get("APP_URL") || "https://jeetrack.app";
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "5073340abdulrehmankhandurrani@gmail.com";
+const APP_URL = Deno.env.get("APP_URL") || "https://jee-adv-osint.vercel.app";
 
 const INACTIVE_DAYS = 20;
 
@@ -102,12 +102,12 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: `JEETrack Reports <${FROM_EMAIL}>`,
+          from: `JEE ADV OSINT Reports <${FROM_EMAIL}>`,
           to: [email],
-          subject: `Your JEETrack Monthly Report — ${monthName}`,
+          subject: `Your JEE ADV OSINT Monthly Report — ${monthName}`,
           html: emailHtml,
           attachments: pdfBase64 ? [{
-            filename: `JEETrack-Report-${monthName.replace(" ", "-")}.pdf`,
+            filename: `JEE ADV OSINT-Report-${monthName.replace(" ", "-")}.pdf`,
             content: pdfBase64,
           }] : undefined,
         }),
@@ -232,7 +232,7 @@ function generateReportPDF(name: string, month: string, stats: any, tests: any[]
 
   // ── header band ──────────────────────────────────────────────────────────
   ops.push(rect(0, H - 80, W, 80, 0.067, 0.067, 0.094));
-  ops.push(txtB(40, H - 38, 20, 0.94, 0.94, 0.96, "JEETrack"));
+  ops.push(txtB(40, H - 38, 20, 0.94, 0.94, 0.96, "JEE ADV OSINT"));
   ops.push(txtB(155, H - 38, 20, 0.58, 0.42, 0.97, "Monthly Report"));
   ops.push(txt(40, H - 58, 10, 0.47, 0.47, 0.56, month));
   ops.push(txt(40, H - 72, 9, 0.47, 0.47, 0.56,
@@ -321,7 +321,7 @@ function generateReportPDF(name: string, month: string, stats: any, tests: any[]
   // ── footer ────────────────────────────────────────────────────────────────
   ops.push(rect(0, 0, W, 36, 0.067, 0.067, 0.094));
   ops.push(txt(40, 13, 8, 0.47, 0.47, 0.56,
-    "JEETrack  -  Your JEE preparation companion  |  Built by Aman Mishra  |  jeetrack.in"));
+    "JEE ADV OSINT  -  Your JEE preparation companion  |  Built by ARK DURRANI  |  jee-adv-osint.vercel.app"));
 
   // ── assemble PDF ──────────────────────────────────────────────────────────
   const stream = ops.join("\n");
@@ -467,14 +467,14 @@ function generateEmailHTML(name: string, month: string, stats: any, appUrl: stri
   <!-- CTA -->
   <div style="text-align:center;margin:24px 0">
     <a href="${appUrl}" style="background:linear-gradient(135deg,#7c6af7,#f472b6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;display:inline-block">
-      Open JEETrack →
+      Open JEE ADV OSINT →
     </a>
   </div>
 
   <!-- Footer -->
   <div style="text-align:center;padding:24px 0;border-top:1px solid rgba(255,255,255,0.06)">
     <div style="font-size:12px;color:#4a4960;line-height:1.8">
-      JEETrack · Your JEE preparation companion<br>
+      JEE ADV OSINT · Your JEE preparation companion<br>
       Built for aspirants who take their prep seriously<br><br>
       <a href="${appUrl}/settings?tab=alerts" style="color:#4a4960">Unsubscribe from monthly reports</a>
     </div>

@@ -1,5 +1,5 @@
 -- =====================================================
--- JEETrack Email Reports — Migration
+-- JEE ADV OSINT Email Reports — Migration
 -- Run this in: Supabase → SQL Editor → Run
 -- =====================================================
 
