@@ -1,6 +1,6 @@
 
 
-const CACHE_VERSION = 'JEE ADV OSINT-v5';
+const CACHE_VERSION = 'JEE ADV OSINT-v6';
 const CACHE_NAME = CACHE_VERSION;
 
 const STATIC_ASSETS = [
@@ -53,7 +53,7 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
   
-  if (NEVER_CACHE.some(p => url.pathname.startsWith(p))) {
+  if (NEVER_CACHE.some(p => url.pathname.startsWith(p)) || url.hostname.includes('supabase.co') || url.hostname.includes('supabase.in')) {
     e.respondWith(fetch(e.request));
     return;
   }
