@@ -390,10 +390,4 @@ function toggle(btn) {
       if (!animating || isTouch) { animating = false; return; }
       curX += (mouseX - curX) * 0.18; curY += (mouseY - curY) * 0.18;
       cursor.style.transform = 'translate3d(' + (curX - 9) + 'px,' + (curY - 9) + 'px, 0)';
-      requestAnimationFrame(animate);
-    }
-  })();
-  </script>
-
-</body>
-</html>
+      requestAnimationFrame(animat
