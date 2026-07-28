@@ -3118,26 +3118,26 @@ window.ensureJsPdf=function(){return loadScript(window._jsPdfUrl);};
       <div class="pmo-grid3">
         <div class="pmo-field">
           <label class="pmo-label pmo-label-phy">⚛ Physics</label>
-          <input type="number" class="pmo-input pmo-score-inp" id="at-phy" placeholder="0" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_atAutoSum();clearFieldErr('at-phy','at-sum-err');clearFieldErr('at-chem','at-sum-err');clearFieldErr('at-math','at-sum-err')"/>
+          <input type="number" class="pmo-input pmo-score-inp" id="at-phy" placeholder="0" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_atAutoSum();clearFieldErr('at-phy','at-sum-err');clearFieldErr('at-chem','at-sum-err');clearFieldErr('at-math','at-sum-err')"/>
         </div>
         <div class="pmo-field">
           <label class="pmo-label pmo-label-chem">⚗ Chemistry</label>
-          <input type="number" class="pmo-input pmo-score-inp" id="at-chem" placeholder="0" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_atAutoSum();clearFieldErr('at-phy','at-sum-err');clearFieldErr('at-chem','at-sum-err');clearFieldErr('at-math','at-sum-err')"/>
+          <input type="number" class="pmo-input pmo-score-inp" id="at-chem" placeholder="0" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_atAutoSum();clearFieldErr('at-phy','at-sum-err');clearFieldErr('at-chem','at-sum-err');clearFieldErr('at-math','at-sum-err')"/>
         </div>
         <div class="pmo-field">
           <label class="pmo-label pmo-label-math">∑ Maths</label>
-          <input type="number" class="pmo-input pmo-score-inp" id="at-math" placeholder="0" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_atAutoSum();clearFieldErr('at-phy','at-sum-err');clearFieldErr('at-chem','at-sum-err');clearFieldErr('at-math','at-sum-err')"/>
+          <input type="number" class="pmo-input pmo-score-inp" id="at-math" placeholder="0" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_atAutoSum();clearFieldErr('at-phy','at-sum-err');clearFieldErr('at-chem','at-sum-err');clearFieldErr('at-math','at-sum-err')"/>
         </div>
       </div>
       <div class="pmo-grid2" style="margin-top:10px">
         <div class="pmo-field">
           <label class="pmo-label">Total Score</label>
-          <input type="number" class="pmo-input pmo-input-total" id="at-total" placeholder="e.g. 210" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_atUpdateBar();clearFieldErr('at-total','at-total-err')"/>
+          <input type="number" class="pmo-input pmo-input-total" id="at-total" placeholder="e.g. 210" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_atUpdateBar();clearFieldErr('at-total','at-total-err')"/>
           <span class="fi-err-msg" id="at-total-err"></span>
         </div>
         <div class="pmo-field">
           <label class="pmo-label">Max Score</label>
-          <input type="number" class="pmo-input" id="at-max" placeholder="300" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_atUpdateBar()"/>
+          <input type="number" class="pmo-input" id="at-max" placeholder="300" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_atUpdateBar()"/>
         </div>
       </div>
       <span class="fi-err-msg" id="at-sum-err" style="margin-top:4px;display:none"></span>
@@ -3882,15 +3882,15 @@ window.ensureJsPdf=function(){return loadScript(window._jsPdfUrl);};
       <div class="pmo-grid3">
         <div class="pmo-field">
           <label class="pmo-label pmo-label-phy">⚛ Physics</label>
-          <input type="number" class="pmo-input pmo-score-inp" id="hwt-phy" placeholder="0" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_hwtAutoSum()"/>
+          <input type="number" class="pmo-input pmo-score-inp" id="hwt-phy" placeholder="0" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_hwtAutoSum()"/>
         </div>
         <div class="pmo-field">
           <label class="pmo-label pmo-label-chem">⚗ Chemistry</label>
-          <input type="number" class="pmo-input pmo-score-inp" id="hwt-chem" placeholder="0" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_hwtAutoSum()"/>
+          <input type="number" class="pmo-input pmo-score-inp" id="hwt-chem" placeholder="0" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_hwtAutoSum()"/>
         </div>
         <div class="pmo-field">
           <label class="pmo-label pmo-label-math">∑ Maths</label>
-          <input type="number" class="pmo-input pmo-score-inp" id="hwt-math" placeholder="0" min="0" max="999" oninput="if(this.value.length>3)this.value=this.value.slice(0,3);_hwtAutoSum()"/>
+          <input type="number" class="pmo-input pmo-score-inp" id="hwt-math" placeholder="0" min="-100" max="999" oninput="if(this.value.length>4)this.value=this.value.slice(0,4);_hwtAutoSum()"/>
         </div>
       </div>
       <div class="pmo-grid2" style="margin-top:10px">
@@ -5852,8 +5852,15 @@ function calcTotal(){
 function quickLog(type){currentQLType=type;document.getElementById('ql-title').textContent='Quick Log — '+cap(type);document.getElementById('ql-hrs').value='';openM('quickLog')}
 
 function _atAutoSum(){
-  const p=+document.getElementById('at-phy').value||0,c=+document.getElementById('at-chem').value||0,m=+document.getElementById('at-math').value||0;
-  const s=p+c+m;if(s>0){document.getElementById('at-total').value=s;_atUpdateBar();}
+  const pStr=document.getElementById('at-phy').value, cStr=document.getElementById('at-chem').value, mStr=document.getElementById('at-math').value;
+  const p=pStr===''?0:+pStr, c=cStr===''?0:+cStr, m=mStr===''?0:+mStr;
+  const s=p+c+m;
+  if(pStr!==''||cStr!==''||mStr!=='') {
+    document.getElementById('at-total').value=s;
+  } else {
+    document.getElementById('at-total').value='';
+  }
+  _atUpdateBar();
 }
 function _atUpdateBar(){
   const t=+document.getElementById('at-total').value||0,mx=+document.getElementById('at-max').value||300;
@@ -6142,10 +6149,7 @@ function saveTest(){
     return;
   }
   
-  if(phy<0||chem<0||math<0){
-    _showGroupErr(['at-phy','at-chem','at-math'],'at-sum-err','Subject scores cannot be negative');
-    return;
-  }
+  
   
   if(phy>total||chem>total||math>total){
     const culprits=[];
