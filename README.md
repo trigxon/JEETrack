@@ -2,18 +2,18 @@
 
 <br/>
 
-<img src="frontend/favicon.svg" alt="JEETrack Logo" width="100" />
+<img src="frontend/favicon.svg" alt="JEE ADV OSINT Logo" width="100" />
 
 <br/>
 <br/>
 
-# JEETrack
+# JEE ADV OSINT
 
 ### The all-in-one preparation tracker for JEE aspirants
 
 <br/>
 
-[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jeetrack.in-6366f1?style=for-the-badge&logoColor=white)](https://jeetrack.in)
+[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jee-adv-osint.vercel.app-6366f1?style=for-the-badge&logoColor=white)](https://jee-adv-osint.vercel.app)
 
 <br/>
 
@@ -35,7 +35,7 @@
 <br/>
 
 <div align="center">
-  <img src="screenshots/dashboard.png" alt="JEETrack Dashboard" width="90%" />
+  <img src="screenshots/dashboard.png" alt="JEE ADV OSINT Dashboard" width="90%" />
   <br/><br/>
   <sub><i>Dashboard — daily study tracking, countdowns, score trends and subject progress at a glance</i></sub>
 </div>
@@ -103,7 +103,7 @@ Cron        pg_cron (Supabase)
 ## 📁 Project Structure
 
 ```
-jeetrack/
+JEE ADV OSINT/
 ├── frontend/                     # Static PWA — deployed to Vercel
 │   ├── api/
 │   │   └── config.js             # Serverless function — serves env vars to frontend
@@ -133,7 +133,7 @@ jeetrack/
 
 ```bash
 git clone https://github.com/AmanxMishraDev/JEETrack.git
-cd JEETrack
+cd JEE ADV OSINT
 ```
 
 ### 2 · Set up Supabase
@@ -245,7 +245,7 @@ git checkout -b feature/your-feature-name
 
 ## 👨‍💻 Author
 
-**Aman Mishra** · [@AmanxMishraDev](https://github.com/AmanxMishraDev)
+**Abdul Rehman Khan Durrani** · [@AmanxMishraDev](https://github.com/AmanxMishraDev)
 
 ---
 
@@ -257,12 +257,12 @@ git checkout -b feature/your-feature-name
 
 <br/>
 
-⭐ &nbsp;Star this repo if JEETrack helped your preparation
+⭐ &nbsp;Star this repo if JEE ADV OSINT helped your preparation
 
 <br/>
 <br/>
 
-[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jeetrack.in-6366f1?style=for-the-badge&logoColor=white)](https://jeetrack.in)
+[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jee-adv-osint.vercel.app-6366f1?style=for-the-badge&logoColor=white)](https://jee-adv-osint.vercel.app)
 
 <br/>
 

@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_XuOSopbevlRSh9RlHdekwZTfn4H8",
+  "orgId": "team_zvJOSVpbi8Eht2zX58O3mCdx",
+  "projectName": "jee-trackz",
+  "settings": {
+    "createdAt": 1784069496282,
+    "framework": null,
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

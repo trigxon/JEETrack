@@ -1,5 +1,5 @@
 -- =====================================================
--- JEETrack — Supabase Database Schema
+-- JEE ADV OSINT — Supabase Database Schema
 -- Paste this entire file in: Supabase → SQL Editor → Run
 -- =====================================================
 

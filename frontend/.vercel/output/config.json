@@ -1,0 +1,82 @@
+{
+  "version": 3,
+  "routes": [
+    {
+      "src": "^/$",
+      "headers": {
+        "Location": "/admin"
+      },
+      "status": 307,
+      "has": [
+        {
+          "type": "host",
+          "value": "jee-adv-osint.vercel.app"
+        }
+      ]
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "^/api(?:/(.*))$",
+      "dest": "/api/$1",
+      "check": true
+    },
+    {
+      "src": "^/faq$",
+      "dest": "/faq.html",
+      "check": true
+    },
+    {
+      "src": "^/privacy$",
+      "dest": "/privacy.html",
+      "check": true
+    },
+    {
+      "src": "^/terms$",
+      "dest": "/terms.html",
+      "check": true
+    },
+    {
+      "src": "^/features$",
+      "dest": "/features.html",
+      "check": true
+    },
+    {
+      "src": "^/about$",
+      "dest": "/about.html",
+      "check": true
+    },
+    {
+      "src": "^/admin$",
+      "dest": "/admin.html",
+      "check": true
+    },
+    {
+      "src": "^(?:/((?!faq\\.html|privacy\\.html|terms\\.html|features\\.html|about\\.html|admin\\.html|sitemap\\.xml|robots\\.txt|google.*\\.html|icon.*|logo\\.svg|manifest\\.json|sw\\.js).*))$",
+      "dest": "/index.html",
+      "check": true
+    },
+    {
+      "src": "^/api(/.*)?$",
+      "status": 404
+    },
+    {
+      "handle": "error"
+    },
+    {
+      "status": 404,
+      "src": "^(?!/api).*$",
+      "dest": "/404.html"
+    },
+    {
+      "handle": "miss"
+    },
+    {
+      "src": "^/api/(.+)(?:\\.(?:js))$",
+      "dest": "/api/$1",
+      "check": true
+    }
+  ],
+  "crons": []
+}

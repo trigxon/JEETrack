@@ -1,5 +1,5 @@
 -- Practice Log feature — Supabase table
--- Run this in the Supabase SQL editor for your JEETrack project.
+-- Run this in the Supabase SQL editor for your JEE ADV OSINT project.
 
 create table if not exists practice_logs (
   id           bigint primary key,

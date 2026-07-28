@@ -1,5 +1,5 @@
 -- =====================================================
--- JEETrack — Onboarding Trigger
+-- JEE ADV OSINT — Onboarding Trigger
 -- Run this in: Supabase → SQL Editor → Run
 -- 
 -- What this does:

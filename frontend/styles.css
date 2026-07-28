@@ -1722,7 +1722,7 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
 .auth-modal-scrim{
   display:none;position:fixed;inset:0;z-index:500;
   background:rgba(4,3,10,.72);
-  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);-webkit-
   align-items:center;justify-content:center;padding:20px;
   opacity:0;transition:opacity .25s ease;
 }
