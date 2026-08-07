@@ -1202,9 +1202,9 @@ function initHeroDemo() {
 
     (function tick() {
       const s = tiltState.cur, t = tiltState.target;
-      s.rx += (t.rx - s.rx) * 0.16;
-      s.ry += (t.ry - s.ry) * 0.16;
-      s.tz += (0 - s.tz) * 0.16;
+      s.rx += (t.rx - s.rx) * 0.08;
+      s.ry += (t.ry - s.ry) * 0.08;
+      s.tz += (0 - s.tz) * 0.08;
       card.style.transform = `perspective(1400px) rotateX(${s.rx.toFixed(2)}deg) rotateY(${s.ry.toFixed(2)}deg) translateZ(${s.tz.toFixed(2)}px)`;
       requestAnimationFrame(tick);
     })();
@@ -1244,11 +1244,11 @@ function initHeroDemo() {
   
   
   
-  const CURSOR_MS = 780;
-  const CURSOR_SLOW_MS = 1180;
-  const CINEMATIC_ZOOM_SCALE = 1.55;
-  const CINEMATIC_HOLD_MS = 170;
-  const CINEMATIC_OUT_MS = 780;
+  const CURSOR_MS = 1350;
+  const CURSOR_SLOW_MS = 1900;
+  const CINEMATIC_ZOOM_SCALE = 1.45;
+  const CINEMATIC_HOLD_MS = 350;
+  const CINEMATIC_OUT_MS = 1200;
 
   function moveCursorTo(el, onArrive, opts) {
     opts = opts || {};
@@ -1365,7 +1365,7 @@ function initHeroDemo() {
     ring2.className = 'land-dash-click-ring pulse-2';
     cursor.appendChild(ring2);
 
-    setTimeout(() => { dot.remove(); ring1.remove(); ring2.remove(); }, 780);
+    setTimeout(() => { dot.remove(); ring1.remove(); ring2.remove(); }, 1100);
   }
 
   function activateView(name) {
@@ -1435,7 +1435,7 @@ function initHeroDemo() {
       }
     };
     tick();
-    _insLoadTimer = setInterval(tick, 480);
+    _insLoadTimer = setInterval(tick, 850);
   }
 
   function showInsightsResults() {
@@ -1458,7 +1458,7 @@ function initHeroDemo() {
       setTimeout(() => {
         playInsightsLoading(() => {
           showInsightsResults();
-          _heroDemoTimer = setTimeout(loop, 3400);
+          _heroDemoTimer = setTimeout(loop, 5500);
         });
         zoomCinematicOut();
       }, CINEMATIC_HOLD_MS);
@@ -1472,7 +1472,7 @@ function initHeroDemo() {
     idx = order.indexOf('insights');
     moveCursorTo(insightsTab, () => {
       activateView('insights');
-      setTimeout(runInsightsGenerateDemo, 900);
+      setTimeout(runInsightsGenerateDemo, 1600);
     });
   }
 
@@ -1558,7 +1558,7 @@ function initHeroDemo() {
     
     moveCursorTo(partial, () => {
       setFilter('partial', true, { syncZoomOut: true });
-      setTimeout(goToInsightsAndGenerate, 1700);
+      setTimeout(goToInsightsAndGenerate, 2800);
     }, { slow: true, cinematic: true });
   }
 
@@ -1574,13 +1574,13 @@ function initHeroDemo() {
     moveCursorTo(tabEl, () => {
       activateView(name);
       if (name === 'tests') {
-        setTimeout(toggleFilterDemo, 1100);
+        setTimeout(toggleFilterDemo, 2000);
         
         
         
         
       } else {
-        _heroDemoTimer = setTimeout(loop, 2600);
+        _heroDemoTimer = setTimeout(loop, 4500);
       }
     });
   }
@@ -1611,7 +1611,7 @@ function initHeroDemo() {
           
           
         } else {
-          const resumeDelay = name === 'insights' ? 3000 : 2200;
+          const resumeDelay = name === 'insights' ? 5000 : 4000;
           _heroDemoTimer = setTimeout(loop, resumeDelay);
         }
       });
@@ -1632,7 +1632,7 @@ function initHeroDemo() {
         punchZoomAt(x + 3, y + 3);
         setTimeout(() => cursor.classList.remove('clicking'), 460);
         setFilter(f.dataset.filter, true);
-        _heroDemoTimer = setTimeout(loop, 4600);
+        _heroDemoTimer = setTimeout(loop, 6000);
       });
     });
     if (insGenBtn) {
@@ -1654,7 +1654,7 @@ function initHeroDemo() {
         setTimeout(() => cursor.classList.remove('clicking'), 460);
         playInsightsLoading(() => {
           showInsightsResults();
-          _heroDemoTimer = setTimeout(loop, 3400);
+          _heroDemoTimer = setTimeout(loop, 5500);
         });
       });
     }
@@ -1676,7 +1676,7 @@ function initHeroDemo() {
         setTimeout(() => cursor.classList.remove('clicking'), 460);
         playInsightsLoading(() => {
           showInsightsResults();
-          _heroDemoTimer = setTimeout(loop, 3400);
+          _heroDemoTimer = setTimeout(loop, 5500);
         });
       });
     }
@@ -1693,11 +1693,11 @@ function initHeroDemo() {
   });
 
   clearTimeout(_heroDemoTimer);
-  _heroDemoTimer = setTimeout(loop, 3000);
+  _heroDemoTimer = setTimeout(loop, 4500);
 }
 
 let slideIdx = 0, slideTimer = null, slideInterval = null;
-const SLIDE_DURATION = 4500;
+const SLIDE_DURATION = 6500;
 
 function initSlideshow() {
   const wrap = document.getElementById('slides-wrap');
