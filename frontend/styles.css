@@ -2,6 +2,7 @@
 :root{--bg:#0a0a0f;--sf:#111118;--sf2:#18181f;--sf3:#1e1e28;--bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.12);--tx:#f0eff5;--mu:#7a7990;--mu2:#4a4960;--ac:#7c6af7;--ac2:#a695ff;--gn:#34d399;--gd:rgba(52,211,153,0.12);--am:#fbbf24;--ad:rgba(251,191,36,0.1);--rd:#f87171;--rdm:rgba(248,113,113,0.1);--bl:#60a5fa;--bld:rgba(96,165,250,0.1);--tl:#2dd4bf;--pk:#f472b6;--r:12px;--rs:8px}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden;font-size:14px}
+body * { cursor: none !important; }
 
 .sp,.sv,.prem-stat-val,.prem-stat-num,
 [data-num],
