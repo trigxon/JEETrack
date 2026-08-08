@@ -43,8 +43,8 @@
       margin-left: -8px;
       margin-top: -8px;
       border-radius: 50%;
-      background: rgba(110, 80, 210, 0.7);
-      box-shadow: 0 0 10px rgba(110, 80, 210, 0.8), 0 0 20px rgba(110, 80, 210, 0.6);
+      background: rgba(25, 25, 25, 0.95);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
       pointer-events: none;
       z-index: 999999;
       will-change: transform;
