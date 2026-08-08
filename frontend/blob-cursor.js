@@ -38,13 +38,13 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 32px;
-      height: 32px;
-      margin-left: -16px;
-      margin-top: -16px;
+      width: 24px;
+      height: 24px;
+      margin-left: -12px;
+      margin-top: -12px;
       border-radius: 50%;
       background: rgba(166,149,255, 0.4);
-      box-shadow: 0 0 15px rgba(166,149,255, 0.6), 0 0 30px rgba(166,149,255, 0.4);
+      box-shadow: 0 0 12px rgba(166,149,255, 0.6), 0 0 24px rgba(166,149,255, 0.4);
       pointer-events: none;
       z-index: 999999;
       will-change: transform;
