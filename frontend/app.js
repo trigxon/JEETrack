@@ -368,11 +368,51 @@ async function doAuthPro(mode){
 
 function doAuth(){ return doAuthPro(authTab); }
 
-async function doGoogleAuth(){
-  if(!sb){ showAuthErrPro(authTab, 'Supabase not configured yet.'); return; }
-  const { error } = await sb.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.origin } });
-  if(error) showAuthErrPro(authTab, error.message);
+async function handleGoogleCallback(response) {
+  if (response.credential) {
+    if(!sb){ showAuthErrPro(authTab, 'Supabase not configured yet.'); return; }
+    const btnContainers = document.querySelectorAll('.google-btn-container');
+    btnContainers.forEach(c => c.style.opacity = '0.5'); // simple loading state
+    
+    const { data, error } = await sb.auth.signInWithIdToken({
+      provider: 'google',
+      token: response.credential
+    });
+    
+    if (error) {
+      showAuthErrPro(authTab, error.message);
+      btnContainers.forEach(c => c.style.opacity = '1');
+    } else {
+      closeAuthModal();
+      btnContainers.forEach(c => c.style.opacity = '1');
+      // Auth listener handles the rest
+    }
+  }
 }
+
+function initGoogleAuth() {
+  if (typeof google === 'undefined' || !google.accounts) {
+    setTimeout(initGoogleAuth, 100);
+    return;
+  }
+  
+  google.accounts.id.initialize({
+    client_id: '804150722605-jg9au33aor3sdmgeg1276p3o77rqueo5.apps.googleusercontent.com',
+    callback: handleGoogleCallback,
+    context: 'use'
+  });
+  
+  const btnContainers = document.querySelectorAll('.google-btn-container');
+  btnContainers.forEach(container => {
+    // Render the beautiful native Google button
+    google.accounts.id.renderButton(
+      container,
+      { theme: "filled_black", size: "large", width: 330, shape: "pill", text: "continue_with" }
+    );
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initGoogleAuth);
 
 async function signOut(){
   if(sb){
