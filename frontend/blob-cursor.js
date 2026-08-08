@@ -20,8 +20,8 @@
       position: fixed; 
       top: 0; 
       left: 0; 
-      width: 20px; 
-      height: 20px;
+      width: 14px; 
+      height: 14px;
       border-radius: 50%; 
       background: rgba(168, 85, 247, 1);
       box-shadow: 0 0 15px rgba(168, 85, 247, 1), 0 0 30px rgba(168, 85, 247, 1);
@@ -39,8 +39,8 @@
     a:hover ~ #custom-cursor, button:hover ~ #custom-cursor, .ob-opt:hover ~ #custom-cursor,
     a:hover + #custom-cursor, button:hover + #custom-cursor,
     :hover > #custom-cursor {
-      width: 30px !important;
-      height: 30px !important;
+      width: 22px !important;
+      height: 22px !important;
       background: rgba(168, 85, 247, 0.5);
       box-shadow: 0 0 20px rgba(168, 85, 247, 1);
     }
@@ -54,12 +54,12 @@
   // Alternative to CSS combinators which can be flaky: add a class to the cursor when hovering over interactive elements
   style.innerHTML += `
     #custom-cursor.cursor-hovering {
-      width: 30px !important;
-      height: 30px !important;
+      width: 22px !important;
+      height: 22px !important;
       background: rgba(168, 85, 247, 0.5) !important;
       box-shadow: 0 0 20px rgba(168, 85, 247, 1) !important;
-      margin-left: -5px;
-      margin-top: -5px;
+      margin-left: -4px;
+      margin-top: -4px;
     }
   `;
 
@@ -108,7 +108,7 @@
   function render() {
     currentX += (mouseX - currentX) * 0.35; 
     currentY += (mouseY - currentY) * 0.35;
-    cursor.style.transform = `translate3d(${currentX - 10}px, ${currentY - 10}px, 0)`;
+    cursor.style.transform = `translate3d(${currentX - 7}px, ${currentY - 7}px, 0)`;
     
     const dx = mouseX - currentX;
     const dy = mouseY - currentY;
