@@ -376,7 +376,7 @@ function doGoogleAuth() {
 }
 
 // Handle Google OAuth callback on load
-document.addEventListener('DOMContentLoaded', async () => {
+(async () => {
   const hash = window.location.hash;
   if (hash && hash.includes('id_token=')) {
     const params = new URLSearchParams(hash.substring(1));
@@ -395,7 +395,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   }
-});
+})();
 
 async function signOut(){
   if(sb){
