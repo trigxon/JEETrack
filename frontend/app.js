@@ -368,51 +368,34 @@ async function doAuthPro(mode){
 
 function doAuth(){ return doAuthPro(authTab); }
 
-async function handleGoogleCallback(response) {
-  if (response.credential) {
-    if(!sb){ showAuthErrPro(authTab, 'Supabase not configured yet.'); return; }
-    const btnContainers = document.querySelectorAll('.google-btn-container');
-    btnContainers.forEach(c => c.style.opacity = '0.5'); // simple loading state
-    
-    const { data, error } = await sb.auth.signInWithIdToken({
-      provider: 'google',
-      token: response.credential
-    });
-    
-    if (error) {
-      showAuthErrPro(authTab, error.message);
-      btnContainers.forEach(c => c.style.opacity = '1');
-    } else {
-      closeAuthModal();
-      btnContainers.forEach(c => c.style.opacity = '1');
-      // Auth listener handles the rest
+function doGoogleAuth() {
+  const clientId = '804150722605-jg9au33aor3sdmgeg1276p3o77rqueo5.apps.googleusercontent.com';
+  const redirectUri = window.location.origin;
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=email%20profile&nonce=jeetrack_${Date.now()}`;
+  window.location.href = url;
+}
+
+// Handle Google OAuth callback on load
+document.addEventListener('DOMContentLoaded', async () => {
+  const hash = window.location.hash;
+  if (hash && hash.includes('id_token=')) {
+    const params = new URLSearchParams(hash.substring(1));
+    const idToken = params.get('id_token');
+    if (idToken) {
+      window.location.hash = '';
+      if(sb) {
+        const { error } = await sb.auth.signInWithIdToken({
+          provider: 'google',
+          token: idToken
+        });
+        if (error) {
+          console.error("Google Auth Error:", error.message);
+          alert("Login failed: " + error.message);
+        }
+      }
     }
   }
-}
-
-function initGoogleAuth() {
-  if (typeof google === 'undefined' || !google.accounts) {
-    setTimeout(initGoogleAuth, 100);
-    return;
-  }
-  
-  google.accounts.id.initialize({
-    client_id: '804150722605-jg9au33aor3sdmgeg1276p3o77rqueo5.apps.googleusercontent.com',
-    callback: handleGoogleCallback,
-    context: 'use'
-  });
-  
-  const btnContainers = document.querySelectorAll('.google-btn-container');
-  btnContainers.forEach(container => {
-    // Render the Google button (which is invisible via opacity: 0.01)
-    google.accounts.id.renderButton(
-      container,
-      { theme: "outline", size: "large", width: 350, type: "standard", text: "continue_with" }
-    );
-  });
-}
-
-document.addEventListener('DOMContentLoaded', initGoogleAuth);
+});
 
 async function signOut(){
   if(sb){
