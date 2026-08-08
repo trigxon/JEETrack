@@ -44,17 +44,14 @@ body::before{
 ::selection{background:rgba(124,106,247,.35)}
 a{color:inherit}
 
-
 ::-webkit-scrollbar{width:9px;height:9px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.09);border-radius:99px}
 ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
 
-
 .brand{font-family:'Syne',sans-serif;font-weight:800;letter-spacing:-.02em;color:var(--tx);display:inline-flex;align-items:baseline;gap:.05em;line-height:1;white-space:nowrap}
 .brand .b2{background:linear-gradient(135deg,#a695ff,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .brand-badge{font-size:.6rem;font-weight:700;background:rgba(124,106,247,.14);color:var(--ac2);padding:.18rem .5rem;border-radius:99px;border:1px solid rgba(124,106,247,.35);letter-spacing:.04em;text-transform:uppercase;margin-left:.5rem;vertical-align:middle}
-
 
 #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:100;overflow:hidden}
 #login-screen::before{
@@ -84,7 +81,6 @@ a{color:inherit}
 .login-btn:active{transform:translateY(0)}
 .login-err{color:var(--rd);font-size:.78rem;margin-top:.9rem;display:none;background:var(--rdm);border:1px solid rgba(248,113,113,.25);border-radius:8px;padding:.5rem .7rem}
 
-
 #sidebar{
   width:var(--sidebar);background:var(--sf);border-right:1px solid var(--bd);
   display:none;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:20;
@@ -109,7 +105,6 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .logout-btn{display:flex;align-items:center;gap:.65rem;padding:.6rem .75rem;border-radius:var(--rs);cursor:pointer;font-size:.825rem;font-weight:500;color:var(--rd);transition:all .16s var(--ease);width:100%;border:none;background:none;font-family:inherit}
 .logout-btn:hover{background:rgba(248,113,113,.08)}
 
-
 #main{margin-left:var(--sidebar);flex:1;display:none;flex-direction:column;min-height:100vh;position:relative;z-index:1;min-width:0;width:0}
 .topbar{
   display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.75rem;
@@ -130,11 +125,9 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .icon-btn:hover{background:var(--sf3);border-color:var(--bd2);transform:rotate(-8deg)}
 .icon-btn svg{width:14px;height:14px}
 
-
 .content{padding:1.5rem 1.75rem 3rem;max-width:1440px;width:100%;overflow-x:hidden}
 .section-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.09em;color:var(--mu2);font-weight:700;margin-bottom:.85rem;display:flex;align-items:center;gap:.5rem}
 .section-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--bd),transparent)}
-
 
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:.9rem;margin-bottom:1.75rem}
 .stat{
@@ -148,7 +141,6 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .stat-label{font-size:.72rem;color:var(--mu);margin-bottom:.3rem;font-weight:500}
 .stat-value{font-size:1.65rem;font-weight:700;letter-spacing:-.02em;line-height:1;font-family:'Space Grotesk',sans-serif}
 .stat-sub{font-size:.68rem;color:var(--mu2);margin-top:.35rem}
-
 @keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .stats-grid .stat:nth-child(1){animation-delay:.02s}.stats-grid .stat:nth-child(2){animation-delay:.05s}
 .stats-grid .stat:nth-child(3){animation-delay:.08s}.stats-grid .stat:nth-child(4){animation-delay:.11s}
@@ -157,12 +149,10 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .stats-grid .stat:nth-child(9){animation-delay:.26s}.stats-grid .stat:nth-child(10){animation-delay:.29s}
 .stats-grid .stat:nth-child(11){animation-delay:.32s}.stats-grid .stat:nth-child(12){animation-delay:.35s}
 
-
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.4rem}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.4rem}
 .grid-main-side{display:grid;grid-template-columns:1.6fr 1fr;gap:1rem;margin-bottom:1.4rem}
 @media(max-width:980px){.grid-2,.grid-3,.grid-main-side{grid-template-columns:1fr}}
-
 
 .card{
   background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1.25rem 1.3rem;
@@ -173,7 +163,6 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .card h3 .ic{font-size:.95rem}
 .card-foot{font-size:.7rem;color:var(--mu2);margin-top:.85rem;padding-top:.75rem;border-top:1px solid var(--bd)}
 
-
 .bar-chart{display:flex;flex-direction:column;gap:.65rem}
 .bar-row{display:flex;align-items:center;gap:.7rem}
 .bar-label{font-size:.74rem;color:var(--mu);width:128px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -181,10 +170,8 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .bar-fill{height:100%;border-radius:99px;transition:width .7s var(--ease);background:var(--grad)}
 .bar-count{font-size:.72rem;color:var(--mu);width:34px;text-align:right;flex-shrink:0;font-family:'Space Grotesk',sans-serif}
 
-
 .line-wrap{position:relative;height:115px;margin-top:.5rem}
 .line-wrap svg{width:100%;height:100%}
-
 
 .funnel{display:flex;flex-direction:column;gap:.55rem}
 .f-step{display:flex;align-items:center;gap:.65rem}
@@ -194,7 +181,6 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .f-fill span{font-size:.7rem;font-weight:600;color:#fff;white-space:nowrap}
 .f-pct{font-size:.7rem;color:var(--mu);width:38px;text-align:right;font-family:'Space Grotesk',sans-serif}
 .f-drop{font-size:.66rem;color:var(--rd);width:50px;text-align:right}
-
 
 .table-wrap{overflow-x:auto;border-radius:var(--rs)}
 table{width:100%;border-collapse:collapse;font-size:.79rem}
@@ -222,7 +208,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .user-cell{display:flex;align-items:center;gap:.6rem}
 .avatar{width:30px;height:30px;border-radius:9px;background:var(--grad-soft);color:var(--ac2);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;flex-shrink:0;font-family:'Syne',sans-serif}
 
-
 .filter-bar{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:1.1rem;align-items:center}
 .fselect,.fsearch{
   background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);
@@ -233,7 +218,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .fselect{cursor:pointer;min-width:140px}
 .filter-clear{font-size:.74rem;color:var(--ac2);cursor:pointer;padding:.55rem .5rem;font-weight:600}
 .filter-clear:hover{text-decoration:underline}
-
 
 .action-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:1.25rem 1.3rem}
 .action-card h3{font-size:.85rem;font-weight:700;margin-bottom:.35rem;font-family:'Syne',sans-serif}
@@ -254,7 +238,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .result-ok{background:var(--gd);color:var(--gn);border:1px solid rgba(52,211,153,.25)}
 .result-err{background:var(--rdm);color:var(--rd);border:1px solid rgba(248,113,113,.25)}
 
-
 .podium{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.9rem;margin-bottom:1.4rem}
 .podium-card{
   position:relative;border-radius:var(--r);padding:1.2rem 1rem 1.1rem;text-align:center;overflow:hidden;
@@ -274,7 +257,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .podium-score-label{font-size:.62rem;color:var(--mu2);text-transform:uppercase;letter-spacing:.05em}
 @media(max-width:700px){.podium{grid-template-columns:1fr;}.podium-card{order:0!important}}
 
-
 .dist-row{display:flex;align-items:center;gap:.7rem;margin-bottom:.55rem}
 .dist-swatch{width:9px;height:9px;border-radius:3px;flex-shrink:0}
 .dist-label{font-size:.78rem;flex:1;color:var(--tx)}
@@ -282,12 +264,10 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .dist-track{flex:2;background:var(--sf3);border-radius:99px;height:7px;overflow:hidden}
 .dist-fill{height:100%;border-radius:99px;transition:width .7s var(--ease)}
 
-
 .streak-row{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .streak-row:last-child{border-bottom:none}
 .streak-fire{font-size:1.1rem;width:28px;text-align:center}
 .streak-days{font-weight:800;font-size:1rem;font-family:'Space Grotesk',sans-serif;color:var(--am);width:46px}
-
 
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.9rem;margin-bottom:1.4rem}
 .kpi-card{
@@ -298,7 +278,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .kpi-card .kpi-label{font-size:.72rem;color:var(--mu);margin-bottom:.5rem;font-weight:600}
 .kpi-card .kpi-name{font-size:1.05rem;font-weight:800;font-family:'Syne',sans-serif;margin-bottom:.15rem}
 .kpi-card .kpi-sub{font-size:.72rem;color:var(--ac2);font-weight:600}
-
 
 .modal-overlay{position:fixed;inset:0;background:rgba(5,5,8,.78);z-index:50;display:none;align-items:center;justify-content:center;padding:1rem}
 .modal{
@@ -336,13 +315,11 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .subject-bar-mini .fil{height:100%;border-radius:99px;transition:width .6s var(--ease)}
 .subject-bar-mini .pctval{font-size:.7rem;width:34px;text-align:right;color:var(--mu);font-family:'Space Grotesk',sans-serif}
 
-
 .loading{text-align:center;padding:2.2rem;color:var(--mu)}
 .spinner{width:26px;height:26px;border:2.5px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto .8rem}
 @keyframes spin{to{transform:rotate(360deg)}}
 .no-data{text-align:center;padding:1.8rem;color:var(--mu);font-size:.82rem}
 .no-data .emoji{font-size:1.6rem;display:block;margin-bottom:.4rem;opacity:.6}
-
 
 .toast{
   position:fixed;bottom:1.5rem;right:1.5rem;background:rgba(28,28,39,.96);
@@ -352,19 +329,15 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 }
 .toast.show{transform:translateY(0) scale(1);opacity:1}
 
-
 .page{display:none}
 .page.active{display:block;animation:pageIn .35s var(--ease)}
 @keyframes pageIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-
 .dau-labels{display:flex;justify-content:space-between;margin-top:.4rem}
 .dau-labels span{font-size:.64rem;color:var(--mu2)}
 
-
 .pagination{display:flex;align-items:center;gap:.85rem;margin-top:1.1rem}
 .page-info{font-size:.78rem;color:var(--mu)}
-
 
 .mobile-topbar{display:none}
 @media(max-width:880px){
@@ -379,7 +352,6 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 }
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
 .sb-overlay.show{display:block}
-
 .fb-msg-cell{cursor:pointer;position:relative;}
 .fb-msg-cell:hover .fb-msg-preview{color:var(--tx);}
 .fb-msg-preview{font-size:.75rem;color:var(--mu);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .15s;}
@@ -408,7 +380,6 @@ tr.fb-expand-row{background:transparent!important;}
 </head>
 <body>
 
-
 <div id="login-screen">
   <div class="login-box">
     <div class="brand">JEE<span class="b2">Track</span></div>
@@ -419,7 +390,6 @@ tr.fb-expand-row{background:transparent!important;}
     <div class="login-err" id="login-err">Wrong password. Try again.</div>
   </div>
 </div>
-
 
 <div class="sb-overlay" id="sb-overlay" onclick="toggleSidebar(false)"></div>
 <div id="sidebar">
@@ -484,7 +454,6 @@ tr.fb-expand-row{background:transparent!important;}
   </div>
 </div>
 
-
 <div id="main">
   <div class="topbar">
     <div class="topbar-left">
@@ -508,9 +477,7 @@ tr.fb-expand-row{background:transparent!important;}
       </button>
     </div>
   </div>
-
   <div class="content">
-
     
     <div class="page active" id="page-overview">
       <div class="section-title">Key Metrics<span class="line"></span></div>
@@ -540,7 +507,6 @@ tr.fb-expand-row{background:transparent!important;}
         </div>
       </div>
     </div>
-
     
     <div class="page" id="page-features">
       <div class="section-title">Feature Usage<span class="line"></span></div>
@@ -556,7 +522,6 @@ tr.fb-expand-row{background:transparent!important;}
         </a>
       </div>
     </div>
-
     
     <div class="page" id="page-funnel">
       <div class="section-title">User Journey Funnel<span class="line"></span></div>
@@ -582,7 +547,6 @@ tr.fb-expand-row{background:transparent!important;}
         <p id="ret-note" style="font-size:.72rem;color:var(--mu);margin-top:.6rem;"></p>
       </div>
     </div>
-
     
     <div class="page" id="page-dau">
       <div class="section-title">Daily Active Users<span class="line"></span></div>
@@ -598,11 +562,9 @@ tr.fb-expand-row{background:transparent!important;}
         </a>
       </div>
     </div>
-
     
     <div class="page" id="page-new_users">
       <div class="section-title">New User Signups<span class="line"></span></div>
-
       
       <div class="stats-grid" id="nu-kpi-grid" style="margin-bottom:1.25rem;grid-template-columns:repeat(3,1fr);">
         <div class="stat" style="--stat-bg:rgba(124,106,247,.16)">
@@ -624,7 +586,6 @@ tr.fb-expand-row{background:transparent!important;}
           <div class="stat-sub" id="nu-peak-date">—</div>
         </div>
       </div>
-
       
       <div class="card" style="margin-bottom:1.25rem;">
         <h3><span class="ic">📊</span>Daily Signups Chart</h3>
@@ -632,7 +593,6 @@ tr.fb-expand-row{background:transparent!important;}
           <div class="loading"><div class="spinner"></div></div>
         </div>
       </div>
-
       
       <div class="card" style="padding:0;">
         <div style="padding:1rem 1.25rem .75rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
@@ -655,7 +615,6 @@ tr.fb-expand-row{background:transparent!important;}
         </div>
       </div>
     </div>
-
     
     <div class="page" id="page-users">
       <div class="section-title">All Users — Full Profile Data<span class="line"></span></div>
@@ -710,7 +669,6 @@ tr.fb-expand-row{background:transparent!important;}
         </div>
       </div>
     </div>
-
     
     <div class="page" id="page-demographics">
       <div class="section-title">User Segmentation<span class="line"></span></div>
@@ -733,14 +691,12 @@ tr.fb-expand-row{background:transparent!important;}
         <div id="source-dist"><div class="loading"><div class="spinner"></div></div></div>
       </div>
     </div>
-
     
     <div class="page" id="page-db">
       <div class="section-title">Supabase Database Stats<span class="line"></span></div>
       <div class="stats-grid" id="db-stats-grid">
         <div class="loading"><div class="spinner"></div></div>
       </div>
-
       <div class="card" style="margin-top:1.4rem;">
         <h3><span class="ic">🩺</span>DB Reads/Writes &amp; System Health</h3>
         <p style="font-size:.76rem;color:var(--mu);margin-bottom:1rem;">
@@ -758,7 +714,6 @@ tr.fb-expand-row{background:transparent!important;}
           </a>
         </div>
       </div>
-
       <div class="card" style="margin-top:1.4rem;">
         <h3><span class="ic">💰</span>Monthly Infra Cost</h3>
         <p style="font-size:.76rem;color:var(--mu);margin-bottom:1rem;">
@@ -773,12 +728,10 @@ tr.fb-expand-row{background:transparent!important;}
         </div>
       </div>
     </div>
-
     
     <div class="page" id="page-actions">
       <div class="section-title">Admin Controls<span class="line"></span></div>
       <div class="grid-2">
-
         <div class="action-card">
           <h3>📧 Monthly Report Email</h3>
           <p>Trigger the monthly progress report email to all users who have email reports enabled and were active in the last 20 days.</p>
@@ -788,7 +741,6 @@ tr.fb-expand-row{background:transparent!important;}
           </button>
           <div class="action-result" id="result-monthly"></div>
         </div>
-
         <div class="action-card">
           <h3>⭐ Review Request Email</h3>
           <p>Send a review/feedback request email to active users. Helps collect ratings and testimonials from engaged users.</p>
@@ -798,7 +750,6 @@ tr.fb-expand-row{background:transparent!important;}
           </button>
           <div class="action-result" id="result-review"></div>
         </div>
-
         <div class="action-card">
           <h3>📥 Export Users CSV</h3>
           <p>Download a CSV of all registered users — name, email, class, coaching, source, joined date, and last active.</p>
@@ -808,7 +759,6 @@ tr.fb-expand-row{background:transparent!important;}
           </button>
           <div class="action-result" id="result-export"></div>
         </div>
-
         <div class="action-card">
           <h3>🔔 New Feedback Alert</h3>
           <p>Last time feedback was checked. Unread count refreshes on each visit to this page.</p>
@@ -818,14 +768,11 @@ tr.fb-expand-row{background:transparent!important;}
           </div>
           <button class="action-btn btn-ghost btn-sm" onclick="showPage('feedback', document.querySelector('.nav-item[onclick*=\'feedback\']'))">View Feedback →</button>
         </div>
-
       </div>
-
       <div class="section-title" style="margin-top:.4rem">Landing Page &amp; App Settings<span class="line"></span></div>
       <div class="action-card" style="max-width:860px">
         <h3>🌐 Public Stats &amp; App Version</h3>
         <p>These power the animated stat counters on the landing page (hero strip + testimonials trust bar) and the app version shown in Settings → About. Changes apply live to new page loads — no redeploy needed.</p>
-
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.9rem 1rem;margin-bottom:1.1rem">
           <div class="compose-field" style="margin-bottom:0">
             <span class="compose-label">Mock Tests Logged</span>
@@ -856,7 +803,6 @@ tr.fb-expand-row{background:transparent!important;}
             <input class="compose-input" type="text" id="cfg-version" placeholder="v2.0">
           </div>
         </div>
-
         <div style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap">
           <button class="action-btn btn-primary" onclick="saveSiteConfig()">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -868,27 +814,21 @@ tr.fb-expand-row{background:transparent!important;}
         <div class="action-result" id="result-config"></div>
       </div>
     </div>
-
     
     <div class="page" id="page-email">
       <div class="section-title">Email Composer<span class="line"></span></div>
-
       
       <div style="display:flex;gap:.5rem;margin-bottom:1.1rem;flex-wrap:wrap;">
         <button class="rtab active" onclick="setEmailMode('compose',this)" id="mode-compose">✉️ Compose with Preset</button>
         <button class="rtab" onclick="setEmailMode('custom',this)" id="mode-custom">🧑‍💻 Custom (No Wrapper)</button>
       </div>
-
       <div class="email-composer">
-
         
         <div>
-
           
           <div id="em-compose-mode">
             <div class="compose-card" style="margin-bottom:1rem;">
               <h3>✉️ Compose with Preset Template</h3>
-
               <div class="compose-field">
                 <span class="compose-label">From Address</span>
                 <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
@@ -903,17 +843,14 @@ tr.fb-expand-row{background:transparent!important;}
                 </div>
                 <div style="font-size:.7rem;color:var(--mu);margin-top:.4rem;" id="fa-hint-compose">Use <strong style="color:var(--tx)">noreply</strong> for announcements, <strong style="color:var(--tx)">support</strong> for replies &amp; personal emails.</div>
               </div>
-
               <div class="compose-field">
                 <span class="compose-label">From Name</span>
                 <input class="compose-input" id="ce-from-name" placeholder="JEE ADV OSINT" value="JEE ADV OSINT"/>
               </div>
-
               <div class="compose-field">
                 <span class="compose-label">Subject <span class="hint-tag">{{name}} supported</span></span>
                 <input class="compose-input" id="ce-subject" placeholder="Hey {{name}}, something exciting!"/>
               </div>
-
               
               <div class="compose-field">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
@@ -927,7 +864,6 @@ tr.fb-expand-row{background:transparent!important;}
                   <input class="compose-input" id="ce-cta-url" placeholder="URL e.g. https://jee-adv-osint.vercel.app" style="flex:1;min-width:180px;"/>
                 </div>
               </div>
-
               <div class="compose-field">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
                   <span class="compose-label" style="margin:0;">Email Body <span class="hint-tag">{{name}} supported</span></span>
@@ -947,7 +883,6 @@ tr.fb-expand-row{background:transparent!important;}
                 </div>
                 <textarea class="compose-textarea" id="ce-body" placeholder="Hi {{name}},&#10;&#10;Write your email here...&#10;&#10;HTML tags are supported!" style="min-height:260px;"></textarea>
               </div>
-
               <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
                 <button class="action-btn btn-primary" onclick="previewEmail()">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -962,7 +897,6 @@ tr.fb-expand-row{background:transparent!important;}
               <div class="compose-result" id="ce-result"></div>
             </div>
           </div>
-
           
           <div id="em-custom-mode" style="display:none;">
             <div class="compose-card" style="margin-bottom:1rem;">
@@ -991,28 +925,23 @@ tr.fb-expand-row{background:transparent!important;}
                 <span class="compose-label">Subject <span class="hint-tag">{{name}} supported</span></span>
                 <input class="compose-input" id="ce-subject-custom" placeholder="Subject line here..."/>
               </div>
-
               
               <div class="compose-field">
                 <div style="display:flex;gap:.4rem;margin-bottom:.75rem;">
                   <button class="rtab active" id="custom-sub-plain" onclick="setCustomSubMode('plain',this)">📝 Plain Text</button>
                   <button class="rtab" id="custom-sub-html" onclick="setCustomSubMode('html',this)">&lt;/&gt; Full HTML</button>
                 </div>
-
                 
                 <div id="em-custom-plain">
                   <span class="compose-label">Message <span class="hint-tag">Sent as plain text email</span></span>
                   <textarea class="compose-textarea" id="ce-plain-body" style="min-height:320px;font-family:monospace;font-size:.85rem;" placeholder="Hi {{name}},&#10;&#10;Write your plain text email here.&#10;&#10;No HTML — just text.&#10;&#10;— Abdul Rehman Khan Durrani&#10;Founder, JEE ADV OSINT"></textarea>
                 </div>
-
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;<script src="/cursor.js"></script>
-</body>&#10;</html>"></textarea>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;</body>&#10;</html>"></textarea>
                 </div>
               </div>
-
               <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
                 <button class="action-btn btn-primary" onclick="previewCustom()">👁️ Preview</button>
                 <button class="action-btn btn-green" onclick="sendCustomEmail()" id="ce-send-btn-custom">
@@ -1024,7 +953,6 @@ tr.fb-expand-row{background:transparent!important;}
               <div class="compose-result" id="ce-result-custom"></div>
             </div>
           </div>
-
           
           <div class="compose-card" id="ce-preview-card" style="display:none;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;">
@@ -1038,7 +966,6 @@ tr.fb-expand-row{background:transparent!important;}
             <iframe id="ce-preview-frame" style="width:100%;height:520px;border:1px solid var(--bd);border-radius:8px;background:#050816;" sandbox="allow-same-origin"></iframe>
           </div>
         </div>
-
         
         <div>
           <div class="compose-card" style="margin-bottom:1rem;">
@@ -1049,7 +976,6 @@ tr.fb-expand-row{background:transparent!important;}
               <button class="rtab" onclick="setRecipientTab('all',this)">All</button>
               <button class="rtab" onclick="setRecipientTab('custom',this)">Custom</button>
             </div>
-
             
             <div class="recipient-panel active" id="rp-select">
               
@@ -1068,28 +994,24 @@ tr.fb-expand-row{background:transparent!important;}
                 <div style="text-align:center;padding:1rem;color:var(--mu);font-size:.8rem;">Loading...</div>
               </div>
             </div>
-
             
             <div class="recipient-panel" id="rp-all_active">
               <div style="background:rgba(124,106,247,.08);border:1px solid rgba(124,106,247,.2);border-radius:8px;padding:.85rem;font-size:.8rem;line-height:1.6;color:var(--mu);">
                 📨 Sends to all users <strong style="color:var(--tx)">active in last 30 days</strong>.
               </div>
             </div>
-
             
             <div class="recipient-panel" id="rp-all">
               <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;padding:.85rem;font-size:.8rem;line-height:1.6;color:var(--mu);">
                 ⚠️ Sends to <strong style="color:#f87171">ALL users</strong>. Use carefully!
               </div>
             </div>
-
             
             <div class="recipient-panel" id="rp-custom">
               <span class="compose-label">Emails (one per line or comma separated)</span>
               <textarea class="compose-textarea" id="ce-custom-emails" style="min-height:120px;" placeholder="user1@gmail.com&#10;user2@gmail.com"></textarea>
             </div>
           </div>
-
           
           <div class="compose-card">
             <h3>💡 Tips</h3>
@@ -1102,16 +1024,12 @@ tr.fb-expand-row{background:transparent!important;}
             </div>
           </div>
         </div>
-
       </div>
     </div>
-
-
 
     
     <div class="page" id="page-feedback">
       <div class="section-title">Feedback Analytics<span class="line"></span></div>
-
       
       <div class="stats-grid" id="fb-stats-grid" style="margin-bottom:1.25rem;">
         <div class="stat" style="--stat-bg:rgba(45,212,191,.14)"><div class="stat-icon-wrap">💬</div><div class="stat-label">Total Feedbacks</div><div class="stat-value" id="fb-total">—</div></div>
@@ -1119,7 +1037,6 @@ tr.fb-expand-row{background:transparent!important;}
         <div class="stat" style="--stat-bg:rgba(251,191,36,.13)"><div class="stat-icon-wrap">⭐</div><div class="stat-label">Avg Rating</div><div class="stat-value" id="fb-avg-rating">—</div></div>
         <div class="stat" style="--stat-bg:rgba(124,106,247,.16)"><div class="stat-icon-wrap">🏷️</div><div class="stat-label">Top Category</div><div class="stat-value" style="font-size:1rem;" id="fb-top-cat">—</div></div>
       </div>
-
       <div class="grid-2" style="margin-bottom:1.25rem;">
         
         <div class="card">
@@ -1135,7 +1052,6 @@ tr.fb-expand-row{background:transparent!important;}
           <div class="bar-chart" id="fb-month-chart"><div class="loading"><div class="spinner"></div></div></div>
         </div>
       </div>
-
       
       <div class="card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;flex-wrap:wrap;gap:.5rem;">
@@ -1145,7 +1061,6 @@ tr.fb-expand-row{background:transparent!important;}
             <input class="compose-input" id="fb-search" placeholder="Search feedbacks..." style="padding-left:1.8rem;width:220px;" oninput="filterFeedbacks(this.value)"/>
           </div>
         </div>
-
         
         <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.9rem;padding-bottom:.9rem;border-bottom:1px solid var(--bd);">
           <label style="display:flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--mu);cursor:pointer;user-select:none;">
@@ -1165,9 +1080,7 @@ tr.fb-expand-row{background:transparent!important;}
             <button class="action-btn btn-primary" id="fb-view-featured-btn" style="font-size:.72rem;padding:.3rem .7rem;" onclick="viewAllFeatured(this)">★ View All Featured</button>
           </div>
         </div>
-
         <div id="fb-warning-banner" style="display:none;background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);color:#fbbf24;border-radius:8px;padding:.6rem .8rem;font-size:.74rem;margin-bottom:.9rem;"></div>
-
         <div class="table-wrap">
           <table>
             <thead>
@@ -1186,7 +1099,6 @@ tr.fb-expand-row{background:transparent!important;}
           <button class="action-btn btn-primary" onclick="loadFeedbacks(_fbPage+1)" id="fb-next" style="font-size:.75rem;padding:.35rem .75rem;">Next →</button>
         </div>
       </div>
-
     </div>
   </div>
 </div>
@@ -1228,7 +1140,6 @@ tr.fb-expand-row{background:transparent!important;}
 .tbtn:hover { background: var(--sf2); color: var(--tx); }
 </style>
 
-
 <div class="modal-overlay" id="user-modal">
   <div class="modal">
     <div class="modal-header">
@@ -1253,12 +1164,9 @@ tr.fb-expand-row{background:transparent!important;}
 </div>
 </div>
 
-
 <div class="toast" id="toast"></div>
 
-
 <script>
-
 const API_BASE = '/api/admin';
 let _token = null;
 let _days = 7;
@@ -1266,14 +1174,11 @@ let _currentPage = 'overview';
 let _modalUserId = null;
 let _modalData = null;
 
-
 const _pagination = { users: 0, feedback: 0 };
 let _userPage = 0;   
 let _fbPage   = 0;   
-
 let _userSort = { by: 'created_at', dir: 'desc' };
 let _userSearchTimer = null;
-
 const COACHING_OPTIONS = [
   ['pw_online','PW Online'],['allen_online','Allen Online'],['unacademy','Unacademy'],
   ['vedantu','Vedantu'],['aakash_online','Aakash Digital'],['motion_online','Motion Online'],
@@ -1282,10 +1187,8 @@ const COACHING_OPTIONS = [
   ['motion','Motion'],['narayana','Narayana'],['sri_chaitanya','Sri Chaitanya'],
   ['other_offline','Other (Offline)'],['self','Self Study'],
 ];
-
 const SUBJECT_COLORS = { physics:'#60a5fa', chemistry:'#34d399', maths:'#fbbf24' };
 const SUBJECT_ICONS  = { physics:'⚛️', chemistry:'🧪', maths:'📐' };
-
 document.addEventListener('DOMContentLoaded', () => {
   const sel = document.getElementById('filter-coaching');
   if (sel) {
@@ -1296,7 +1199,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
-
 
 async function doLogin() {
   const pwd = document.getElementById('pwd-input').value;
@@ -1318,26 +1220,22 @@ async function doLogin() {
     errEl.style.display = 'block';
   }
 }
-
 function enterDashboard() {
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('sidebar').style.display = 'flex';
   document.getElementById('main').style.display = 'flex';
   loadAll();
 }
-
 function doLogout() {
   sessionStorage.removeItem('jt_admin_token');
   _token = null;
   location.reload();
 }
 
-
 function toggleSidebar(open) {
   document.getElementById('sidebar').classList.toggle('open', open);
   document.getElementById('sb-overlay').classList.toggle('show', open);
 }
-
 
 async function api(action, extra = '') {
   const res = await fetch(`${API_BASE}?action=${action}&days=${_days}${extra}`, {
@@ -1347,7 +1245,6 @@ async function api(action, extra = '') {
   if (!res.ok) throw new Error(`API error ${res.status}`);
   return res.json();
 }
-
 async function apiPost(action, body = {}) {
   const res = await fetch(`${API_BASE}?action=${action}`, {
     method: 'POST',
@@ -1360,7 +1257,6 @@ async function apiPost(action, body = {}) {
   if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
   return res.json();
 }
-
 
 const PAGE_META = {
   overview:      { title: 'Overview',          sub: 'Platform-wide snapshot' },
@@ -1375,7 +1271,6 @@ const PAGE_META = {
   email:         { title: 'Email Composer',     sub: 'Send custom emails to your users' },
   feedback:      { title: 'Feedback Analytics',  sub: 'User feedback and reviews' },
 };
-
 function showPage(page, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -1390,7 +1285,6 @@ function showPage(page, el) {
   toggleSidebar(false);
   loadCurrentPage();
 }
-
 function loadCurrentPage() {
   const loaders = {
     overview:     loadOverview,
@@ -1415,23 +1309,19 @@ function loadCurrentPage() {
     if (btn) btn.style.animation = 'none';
   });
 }
-
 function setRange(days, btn) {
   _days = days;
   document.querySelectorAll('.rbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   loadCurrentPage();
 }
-
 function loadAll() { loadCurrentPage(); }
-
 
 async function loadOverview() {
   loadStats();
   loadSubjectChart();
   loadExamChart();
 }
-
 async function loadStats() {
   const el = document.getElementById('stats-grid');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -1458,10 +1348,8 @@ async function loadStats() {
     el.innerHTML = `<div class="no-data">Error: ${esc(e.message)}</div>`;
   }
 }
-
 // NOTE: loadPagesChart() removed — that data is now the PostHog
 // "Feature Usage Comparison" insight (Activation & Engagement dashboard).
-
 async function loadSubjectChart() {
   const el = document.getElementById('subject-chart');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -1477,7 +1365,6 @@ async function loadSubjectChart() {
     `).join('');
   } catch(e) { el.innerHTML = `<div class="no-data">${esc(e.message)}</div>`; }
 }
-
 async function loadExamChart() {
   const el = document.getElementById('exam-chart');
   el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
@@ -1494,20 +1381,16 @@ async function loadExamChart() {
     `).join('');
   } catch(e) { el.innerHTML = `<div class="no-data">${esc(e.message)}</div>`; }
 }
-
 // NOTE: loadDAUMini() and the Overview mini-DAU element were removed —
 // that card is now a static PostHog link (see page-overview HTML).
-
 // NOTE: Feature Analytics page is now a static PostHog link — no API call needed.
 async function loadFeatures() {}
-
 
 // NOTE: the Signup->Engagement funnel steps are now a static PostHog link
 // (see page-funnel HTML) — this just loads the still-unique Retention data.
 async function loadFunnel() {
   loadRetention();
 }
-
 async function loadRetention() {
   try {
     const d = await api('retention');
@@ -1526,36 +1409,29 @@ async function loadRetention() {
   }
 }
 
-
 // NOTE: DAU Trend page is now a static PostHog link — no API call needed.
 async function loadDAU() {}
-
 
 async function loadNewUsers() {
   const chartWrap = document.getElementById('nu-chart-wrap');
   const table     = document.getElementById('nu-table');
   chartWrap.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
   table.innerHTML     = '<tr><td colspan="5"><div class="loading"><div class="spinner"></div></div></td></tr>';
-
   try {
     const d = await api('new_users');
     const { labels = [], values = [], total = 0, avg = 0, peak = 0, peakDay } = d;
-
     
     document.getElementById('nu-total').textContent     = fmt(total);
     document.getElementById('nu-total-sub').textContent = _days === 9999 ? 'All time' : `in last ${_days} days`;
     document.getElementById('nu-avg').textContent       = avg % 1 === 0 ? avg : avg.toFixed(1);
     document.getElementById('nu-peak').textContent      = fmt(peak);
     document.getElementById('nu-peak-date').textContent = peakDay ? fmtDate(peakDay) : '—';
-
     
     chartWrap.innerHTML = renderLineChart(values, labels, 220);
-
     
     const days_arr = labels.map((l, i) => ({ label: l, count: values[i] })).reverse();
     const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const avgVal = avg || 0;
-
     table.innerHTML = days_arr.map(row => {
       const date = new Date(row.label);
       const dayName = dayNames[date.getDay()];
@@ -1579,19 +1455,16 @@ async function loadNewUsers() {
         </td>
       </tr>`;
     }).join('');
-
   } catch(e) {
     chartWrap.innerHTML = `<div class="no-data">${esc(e.message)}</div>`;
     table.innerHTML     = `<tr><td colspan="5"><div class="no-data">${esc(e.message)}</div></td></tr>`;
   }
 }
 
-
 function debounceUserSearch() {
   clearTimeout(_userSearchTimer);
   _userSearchTimer = setTimeout(() => loadUsers(0), 350);
 }
-
 function clearUserFilters() {
   document.getElementById('user-search').value = '';
   document.getElementById('filter-class').value = '';
@@ -1599,7 +1472,6 @@ function clearUserFilters() {
   document.getElementById('filter-source').value = '';
   loadUsers(0);
 }
-
 function setUserSort(by) {
   if (_userSort.by === by) {
     _userSort.dir = _userSort.dir === 'desc' ? 'asc' : 'desc';
@@ -1609,7 +1481,6 @@ function setUserSort(by) {
   updateSortHeaders();
   loadUsers(0);
 }
-
 function updateSortHeaders() {
   document.querySelectorAll('#page-users th.sortable').forEach(th => {
     const isActive = th.dataset.sort === _userSort.by;
@@ -1618,7 +1489,6 @@ function updateSortHeaders() {
     if (arrow) arrow.textContent = isActive ? (_userSort.dir === 'desc' ? '↓' : '↑') : '↕';
   });
 }
-
 async function loadUsers(page = 0) {
   _userPage = page;
   _pagination.users = page;
@@ -1675,7 +1545,6 @@ async function loadUsers(page = 0) {
   }
 }
 
-
 async function viewUser(id, name) {
   _modalUserId = id;
   document.getElementById('modal-title').textContent = name || 'Loading…';
@@ -1696,12 +1565,10 @@ async function viewUser(id, name) {
     document.getElementById('modal-body-content').innerHTML = `<div class="no-data">Error: ${esc(e.message)}</div>`;
   }
 }
-
 function switchModalTab(tab, skipRender) {
   document.querySelectorAll('.modal-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
   if (!skipRender && _modalData) renderModalTab(tab);
 }
-
 function renderModalTab(tab) {
   const el = document.getElementById('modal-body-content');
   if (!_modalData) { el.innerHTML = '<div class="loading"><div class="spinner"></div></div>'; return; }
@@ -1710,7 +1577,6 @@ function renderModalTab(tab) {
   else if (tab === 'tests') el.innerHTML = renderTestsTab(d);
   else if (tab === 'activity') el.innerHTML = renderActivityTab(d);
 }
-
 function renderSummaryTab(d) {
   const t = d.tests || {}, h = d.hours || {}, c = d.consistency || {}, pl = d.practiceLog || {};
   return `
@@ -1752,7 +1618,6 @@ function renderSummaryTab(d) {
     </div>
   `;
 }
-
 function subjectMiniBar(label, val, max, color, unit) {
   val = val || 0;
   const pct = max ? Math.round(val/max*100) : 0;
@@ -1765,7 +1630,6 @@ function subjectMiniBar(label, val, max, color, unit) {
     </div>
   `;
 }
-
 function renderTestsTab(d) {
   const t = d.tests || {};
   const recent = t.recent || [];
@@ -1794,7 +1658,6 @@ function renderTestsTab(d) {
     </div>
   `;
 }
-
 function renderActivityTab(d) {
   const c = d.consistency || {};
   const streak = d.streak || {};
@@ -1822,13 +1685,10 @@ function renderActivityTab(d) {
     </div>
   `;
 }
-
 function closeModal() {
   document.getElementById('user-modal').style.display = 'none';
   _modalData = null;
 }
-
-
 
 
 async function loadDemographics() {
@@ -1851,7 +1711,6 @@ async function loadDemographics() {
     classEl.innerHTML = coachEl.innerHTML = yearEl.innerHTML = sourceEl.innerHTML = `<div class="no-data">Error: ${esc(e.message)}</div>`;
   }
 }
-
 function renderDistribution(list, colors) {
   if (!list || !list.length) return emptyState('No data yet');
   return list.map((d, i) => `
@@ -1863,7 +1722,6 @@ function renderDistribution(list, colors) {
     </div>
   `).join('');
 }
-
 
 async function loadDBStats() {
   const el = document.getElementById('db-stats-grid');
@@ -1889,7 +1747,6 @@ async function loadDBStats() {
   } catch(e) { el.innerHTML = `<div class="no-data">Error: ${esc(e.message)}</div>`; }
   loadInfraCost();
 }
-
 async function loadInfraCost() {
   try {
     const d = await api('get_site_config');
@@ -1897,7 +1754,6 @@ async function loadInfraCost() {
     if (input) input.value = d.monthly_infra_cost || '';
   } catch(e) {}
 }
-
 async function saveInfraCost() {
   const input = document.getElementById('infra-cost-input');
   const savedEl = document.getElementById('infra-cost-saved');
@@ -1909,7 +1765,6 @@ async function saveInfraCost() {
     setTimeout(() => { savedEl.textContent = ''; }, 2000);
   } catch(e) { showToast('Failed to save'); }
 }
-
 
 async function triggerAction(action, resultId) {
   const resultEl = document.getElementById(resultId);
@@ -1928,7 +1783,6 @@ async function triggerAction(action, resultId) {
     showToast('Error: ' + e.message);
   }
 }
-
 
 function renderLineChart(values, labels, height) {
   if (!values || !values.length) return emptyState('No data');
@@ -1955,41 +1809,34 @@ function renderLineChart(values, labels, height) {
   `;
 }
 
-
 function fmt(n) {
   if (!n) return '0';
   if (n >= 1000) return (n/1000).toFixed(1) + 'k';
   return String(Math.round(n*10)/10);
 }
-
 function fmtDate(d) {
   if (!d) return '—';
   try { return new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'2-digit' }); }
   catch { return d; }
 }
-
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-
 function initials(name) {
   if (!name || name === 'Unknown') return '?';
   const parts = String(name).trim().split(/\s+/);
   if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
   return (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
 }
-
 function emptyState(msg) {
   return `<div class="no-data"><span class="emoji">🗒️</span>${esc(msg)}</div>`;
 }
-
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
 }
-
 
 async function loadActionsPage() {
   
@@ -2002,7 +1849,6 @@ async function loadActionsPage() {
   } catch(e) {}
   loadSiteConfig();
 }
-
 async function loadSiteConfig() {
   const resultEl = document.getElementById('result-config');
   if (resultEl) resultEl.style.display = 'none';
@@ -2025,7 +1871,6 @@ async function loadSiteConfig() {
     }
   }
 }
-
 async function saveSiteConfig() {
   const resultEl = document.getElementById('result-config');
   resultEl.style.display = 'none';
@@ -2055,7 +1900,6 @@ async function saveSiteConfig() {
     showToast('Error: ' + e.message);
   }
 }
-
 async function exportUsersCSV() {
   const resultEl = document.getElementById('result-export');
   resultEl.style.display = 'none';
@@ -2089,23 +1933,18 @@ async function exportUsersCSV() {
   }
 }
 
-
 const saved = sessionStorage.getItem('jt_admin_token');
 if (saved) {
   _token = saved;
   enterDashboard();
 }
-
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
   if (e.key === 'Escape') closeModal();
 });
-
 document.getElementById('user-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
-
-
 
 
 document.addEventListener('click', (e) => {
@@ -2121,12 +1960,10 @@ document.addEventListener('click', (e) => {
   }
 });
 
-
 let _recipientTab = 'select';
 let _emailUsers   = [];
 let _emailMode    = 'compose';
 let _supabaseUrl  = '';
-
 async function loadSupabaseConfig() {
   if (_supabaseUrl) return;
   try {
@@ -2136,9 +1973,7 @@ async function loadSupabaseConfig() {
   } catch(e) {}
 }
 
-
 let _customSubMode = 'plain';
-
 function setEmailMode(mode, btn) {
   _emailMode = mode;
   document.querySelectorAll('#mode-compose,#mode-custom').forEach(b => b.classList.remove('active'));
@@ -2148,7 +1983,6 @@ function setEmailMode(mode, btn) {
   document.getElementById('ce-preview-card').style.display = 'none';
   updateRecipientCount();
 }
-
 function setCustomSubMode(sub, btn) {
   _customSubMode = sub;
   document.querySelectorAll('#custom-sub-plain,#custom-sub-html').forEach(b => b.classList.remove('active'));
@@ -2156,13 +1990,11 @@ function setCustomSubMode(sub, btn) {
   document.getElementById('em-custom-plain').style.display = sub === 'plain' ? 'block' : 'none';
   document.getElementById('em-custom-html').style.display  = sub === 'html'  ? 'block' : 'none';
 }
-
 function toggleCTA() {
   const en = document.getElementById('ce-cta-enabled').checked;
   document.getElementById('ce-cta-fields').style.opacity = en ? '1' : '.35';
   document.getElementById('ce-cta-fields').style.pointerEvents = en ? 'auto' : 'none';
 }
-
 
 async function loadEmailUsers() {
   const el = document.getElementById('user-check-list');
@@ -2176,7 +2008,6 @@ async function loadEmailUsers() {
     el.innerHTML = `<div style="text-align:center;padding:1rem;color:var(--rd);font-size:.8rem;">Error: ${e.message}</div>`;
   }
 }
-
 function filterEmailUsers(q) {
   const filtered = q.trim()
     ? _emailUsers.filter(u =>
@@ -2186,7 +2017,6 @@ function filterEmailUsers(q) {
     : _emailUsers;
   renderEmailUsers(filtered);
 }
-
 function renderEmailUsers(users) {
   const el = document.getElementById('user-check-list');
   if (!users.length) {
@@ -2207,19 +2037,16 @@ function renderEmailUsers(users) {
   `).join('');
   updateSelectedCount();
 }
-
 function toggleSelectAll(cb) {
   document.querySelectorAll('.user-email-cb').forEach(c => c.checked = cb.checked);
   updateSelectedCount();
 }
-
 function updateSelectedCount() {
   const n = document.querySelectorAll('.user-email-cb:checked').length;
   const el = document.getElementById('selected-count');
   if (el) el.textContent = `${n} selected`;
   updateRecipientCount();
 }
-
 function setRecipientTab(tab, btn) {
   _recipientTab = tab;
   
@@ -2231,7 +2058,6 @@ function setRecipientTab(tab, btn) {
   if (tab === 'select') loadEmailUsers();
   updateRecipientCount();
 }
-
 function updateRecipientCount() {
   ['ce-count','ce-count-custom'].forEach(id => {
     const el = document.getElementById(id);
@@ -2249,12 +2075,10 @@ function updateRecipientCount() {
     }
   });
 }
-
 function getCustomEmails() {
   const raw = document.getElementById('ce-custom-emails')?.value || '';
   return raw.split(/[\n,]/).map(e => e.trim()).filter(e => e.includes('@'));
 }
-
 
 function insertTag(open, close) {
   const ta = document.getElementById(_emailMode === 'html' ? 'ce-html-body' : 'ce-body');
@@ -2266,7 +2090,6 @@ function insertTag(open, close) {
   ta.selectionEnd   = s + open.length + sel.length;
   ta.focus();
 }
-
 function insertSnippet(type) {
   const ta = document.getElementById('ce-body');
   if (!ta) return;
@@ -2284,7 +2107,6 @@ function insertSnippet(type) {
   ta.focus();
 }
 
-
 function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
   const cta = (includeCTA && ctaText && ctaText.trim()) ? `
       <tr>
@@ -2295,7 +2117,6 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
           </a>
         </td>
       </tr>` : '';
-
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -2307,7 +2128,6 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
 <tr><td align="center">
 <table width="620" cellpadding="0" cellspacing="0" border="0"
   style="max-width:620px;background:#0B1020;border:1px solid #1A2035;border-radius:20px;overflow:hidden;">
-
   
   <tr>
     <td align="center" style="padding:40px 30px 20px;">
@@ -2315,21 +2135,18 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
         style="display:block;border:0;max-width:260px;height:auto;">
     </td>
   </tr>
-
   
   <tr>
     <td>
       <div style="height:1px;background:linear-gradient(90deg,transparent,#A855F7,#EC4899,transparent);"></div>
     </td>
   </tr>
-
   
   <tr>
     <td style="padding:40px;color:#B4BCD0;font-size:16px;line-height:1.9;">
       ${bodyHtml.replace(/\{\{name\}\}/g, name).replace(/\n/g, '<br>')}
     </td>
   </tr>
-
   
   <tr>
     <td style="padding:0 40px 40px;">
@@ -2345,31 +2162,25 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
       </table>
     </td>
   </tr>
-
   ${cta}
-
   
   <tr>
     <td align="center" style="padding:24px;border-top:1px solid #1A2035;">
       <p style="margin:0;color:#6B7280;font-size:13px;">© 2026 JEE ADV OSINT • Built for JEE Aspirants</p>
     </td>
   </tr>
-
 </table>
 </td></tr>
 </table>
-<script src="/cursor.js"></script>
 </body>
 </html>`;
 }
-
 function getFromAddress() {
   const isCustom = _emailMode === 'custom';
   const name = isCustom ? 'ce-from-addr-custom' : 'ce-from-addr';
   const checked = document.querySelector(`input[name="${name}"]:checked`);
   return checked ? checked.value : '5073340abdulrehmankhandurrani@gmail.com';
 }
-
 function updateFromPreview() {
   const addr = getFromAddress();
   
@@ -2383,7 +2194,6 @@ function updateFromPreview() {
   }
 }
 
-
 function previewEmail() {
   const body = document.getElementById('ce-body')?.value || '';
   const subject = document.getElementById('ce-subject')?.value || '';
@@ -2394,7 +2204,6 @@ function previewEmail() {
   if (!body.trim()) { showToast('Write body first!'); return; }
   _renderPreview(buildEmailHTML('ARK DURRANI', body, ctaText, ctaUrl, ctaEnabled), subject, fromName);
 }
-
 function previewCustom() {
   const fromName = (document.getElementById('ce-from-name-custom')?.value || 'JEE ADV OSINT');
   const subject  = (document.getElementById('ce-subject-custom')?.value  || '');
@@ -2402,8 +2211,7 @@ function previewCustom() {
     const body = document.getElementById('ce-plain-body')?.value || '';
     if (!body.trim()) { showToast('Write your message first!'); return; }
     
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:40px 20px;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.9;color:#B4BCD0;background:#050816;white-space:pre-wrap;word-wrap:break-word}a{color:#D8B4FE}</style></head><body>${body.replace(/\{\{name\}\}/g,'ARK DURRANI').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}<script src="/cursor.js"></script>
-</body></html>`;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:40px 20px;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.9;color:#B4BCD0;background:#050816;white-space:pre-wrap;word-wrap:break-word}a{color:#D8B4FE}</style></head><body>${body.replace(/\{\{name\}\}/g,'ARK DURRANI').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}</body></html>`;
     _renderPreview(html, subject, fromName);
   } else {
     const body = document.getElementById('ce-html-body')?.value || '';
@@ -2411,7 +2219,6 @@ function previewCustom() {
     _renderPreview(body.replace(/\{\{name\}\}/g,'ARK DURRANI'), subject, fromName);
   }
 }
-
 function _renderPreview(html, subject, fromName) {
   const card  = document.getElementById('ce-preview-card');
   const frame = document.getElementById('ce-preview-frame');
@@ -2424,17 +2231,14 @@ function _renderPreview(html, subject, fromName) {
   card.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
-
 async function sendCustomEmail() {
   const isCustom  = _emailMode === 'custom';
   const subject   = (document.getElementById(isCustom?'ce-subject-custom':'ce-subject')?.value||'').trim();
   const fromName  = (document.getElementById(isCustom?'ce-from-name-custom':'ce-from-name')?.value||'JEE ADV OSINT').trim();
   const resultEl  = document.getElementById(isCustom?'ce-result-custom':'ce-result');
   const sendBtn   = document.getElementById(isCustom?'ce-send-btn-custom':'ce-send-btn');
-
   let htmlBody = '';
   let isRawHtml = false;
-
   if (isCustom) {
     if (_customSubMode === 'plain') {
       const body = (document.getElementById('ce-plain-body')?.value||'').trim();
@@ -2456,10 +2260,8 @@ async function sendCustomEmail() {
     htmlBody = buildEmailHTML('{{name}}', body, ctaText, ctaUrl, ctaEnabled);
     isRawHtml = true;
   }
-
   if (!subject) { showToast('Subject required!'); return; }
   if (!htmlBody) { showToast('Email body required!'); return; }
-
   const payload = {
     subject,
     from_name: fromName,
@@ -2467,7 +2269,6 @@ async function sendCustomEmail() {
     is_raw_html: isRawHtml,
     ...(isCustom && _customSubMode === 'plain' ? { text: htmlBody } : { html: htmlBody }),
   };
-
   if (_recipientTab === 'select') {
     const ids = [...document.querySelectorAll('.user-email-cb:checked')].map(c => c.value);
     if (!ids.length) { showToast('Select at least one user!'); return; }
@@ -2479,22 +2280,17 @@ async function sendCustomEmail() {
   } else {
     payload.type = _recipientTab;
   }
-
   const recipLabel = _recipientTab==='select' ? `${payload.to_user_ids?.length} users`
     : _recipientTab==='custom' ? `${payload.to_emails?.length} emails`
     : _recipientTab==='all_active' ? 'all active users' : 'ALL users';
-
   if (!confirm(`Send to ${recipLabel}?\n\nSubject: ${subject}\n\nCannot be undone!`)) return;
-
   sendBtn.disabled = true;
   sendBtn.textContent = 'Sending...';
   resultEl.style.display = 'none';
   showToast('Sending emails...');
-
   try {
     await loadSupabaseConfig();
     if (!_supabaseUrl) throw new Error('Supabase URL not configured');
-
     const res = await fetch(`/api/admin?action=send_custom_email`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${_token}`, 'Content-Type': 'application/json' },
@@ -2502,7 +2298,6 @@ async function sendCustomEmail() {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || `HTTP ${res.status}`);
-
     resultEl.className = 'compose-result compose-ok';
     resultEl.innerHTML = `✓ <strong>${d.sent}</strong> sent!${d.failed?` <span style="color:#f87171">${d.failed} failed</span>`:''}`;
     resultEl.style.display = 'block';
@@ -2519,7 +2314,6 @@ async function sendCustomEmail() {
   }
 }
 
-
 window.openEmailComposerWith = function(subject, toUserIds) {
   showPage('email', document.querySelector('.nav-item[onclick*="email"]'));
   setTimeout(() => {
@@ -2535,16 +2329,12 @@ window.openEmailComposerWith = function(subject, toUserIds) {
     }
   }, 300);
 };
-
 document.addEventListener('input', e => {
   if (e.target.id === 'ce-custom-emails') updateRecipientCount();
 });
 
-
-
 let _allFeedbacks = [];
 let _filteredFeedbacks = [];
-
 async function loadFeedbackStats() {
   try {
     const d = await api('feedback_stats');
@@ -2607,10 +2397,8 @@ async function loadFeedbackStats() {
     });
   }
 }
-
 let _fbRatingFilter = '';
 let _fbFeaturedOnly = false;
-
 async function loadFeedbacks(page = 0) {
   _fbPage = page;
   _pagination.feedback = page;
@@ -2626,7 +2414,6 @@ async function loadFeedbacks(page = 0) {
     document.getElementById('fb-prev').disabled = page === 0;
     document.getElementById('fb-next').disabled = _allFeedbacks.length < 20;
     document.getElementById('fb-page-info').textContent = `Page ${page+1} · ${d.total||''} total`;
-
     const banner = document.getElementById('fb-warning-banner');
     if (d.warning) {
       banner.textContent = '⚠️ ' + d.warning;
@@ -2638,7 +2425,6 @@ async function loadFeedbacks(page = 0) {
     tbody.innerHTML = `<tr><td colspan="8"><div class="no-data">Error loading feedbacks: ${e.message}</div></td></tr>`;
   }
 }
-
 function setFbRatingFilter(val, btn) {
   _fbRatingFilter = val;
   document.querySelectorAll('.fb-rtab').forEach(b => { b.classList.remove('active','btn-primary'); b.classList.add('btn-ghost'); });
@@ -2646,7 +2432,6 @@ function setFbRatingFilter(val, btn) {
   btn.classList.add('active','btn-primary');
   loadFeedbacks(0);
 }
-
 function viewAllFeatured(btn) {
   _fbFeaturedOnly = !_fbFeaturedOnly;
   btn.classList.toggle('btn-primary', _fbFeaturedOnly);
@@ -2654,7 +2439,6 @@ function viewAllFeatured(btn) {
   btn.textContent = _fbFeaturedOnly ? '✕ Showing Featured Only' : '★ View All Featured';
   loadFeedbacks(0);
 }
-
 function filterFeedbacks(q) {
   _filteredFeedbacks = q.trim()
     ? _allFeedbacks.filter(f =>
@@ -2665,7 +2449,6 @@ function filterFeedbacks(q) {
     : _allFeedbacks;
   renderFeedbackTable(_filteredFeedbacks);
 }
-
 function renderFeedbackTable(feedbacks) {
   const tbody = document.getElementById('fb-table');
   if (!feedbacks.length) {
@@ -2703,24 +2486,20 @@ function renderFeedbackTable(feedbacks) {
       </td>
     </tr>`;
   }).join('');
-
   
   tbody._feedbacks = feedbacks;
 }
-
 async function toggleFeatured(i) {
   const tbody = document.getElementById('fb-table');
   const feedbacks = tbody._feedbacks || _filteredFeedbacks;
   const f = feedbacks[i];
   if (!f) return;
-
   const nextState = !f.featured;
   const name = f.account_name || f.email?.split('@')[0] || 'this user';
   const confirmMsg = nextState
     ? `Feature ${name}'s review on the landing page?\n\n"${f.message}"\n\nTheir account name will be shown publicly.`
     : `Remove ${name}'s review from the landing page?`;
   if (!confirm(confirmMsg)) return;
-
   try {
     const result = await apiPost('feedback_feature', { id: f.id, featured: nextState });
     if (result && result.error) throw new Error(result.error);
@@ -2732,13 +2511,11 @@ async function toggleFeatured(i) {
     showToast('Failed to save: ' + e.message);
   }
 }
-
 function toggleFeedbackExpand(i, cell) {
   const tbody = document.getElementById('fb-table');
   const feedbacks = tbody._feedbacks || _filteredFeedbacks;
   const f = feedbacks[i];
   if (!f) return;
-
   const existingRow = document.getElementById(`fb-expand-${i}`);
   if (existingRow) {
     
@@ -2747,14 +2524,11 @@ function toggleFeedbackExpand(i, cell) {
     if (arrow) arrow.textContent = '▼';
     return;
   }
-
   
   const mainRow = document.getElementById(`fb-row-${i}`);
   if (!mainRow) return;
-
   const arrow = cell.querySelector('span');
   if (arrow) arrow.textContent = '▲';
-
   const expandRow = document.createElement('tr');
   expandRow.id = `fb-expand-${i}`;
   expandRow.className = 'fb-expand-row';
@@ -2766,37 +2540,28 @@ function toggleFeedbackExpand(i, cell) {
   </td>`;
   mainRow.insertAdjacentElement('afterend', expandRow);
 }
-
 function replyToFeedback(userId, email, subject) {
   
   const navEl = document.querySelector('.nav-item[onclick*=\'email\']');
   if (navEl) showPage('email', navEl);
-
   setTimeout(() => {
     
     const replySubject = subject ? `Re: ${subject}` : 'Thank You for Your Feedback!';
     document.getElementById('ce-subject').value = replySubject;
-
     
     document.getElementById('ce-body').value =
       `Dear <strong>{{name}}</strong>,\n\nThank you for your valuable feedback and kind words about JEE ADV OSINT.\n\n${subject ? `Regarding: "<em>${subject}</em>"\n\n` : ''}[Write your reply here...]\n\nIf you have any further questions or suggestions, feel free to reach out at <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com" style="color:#D8B4FE;text-decoration:none;font-weight:600;">5073340abdulrehmankhandurrani@gmail.com</a>.`;
-
     
     const customBtn = [...document.querySelectorAll('#page-email .recipient-tabs .rtab')]
       .find(b => b.textContent.trim().toLowerCase() === 'custom');
     if (customBtn) setRecipientTab('custom', customBtn);
     const ta = document.getElementById('ce-custom-emails');
     if (ta && email) { ta.value = email; updateRecipientCount(); }
-
     showToast('Reply ready in Email Composer ✓');
   }, 350);
 }
 
-
-
 </script>
-
-<script src="/cursor.js"></script>
   <script src="blob-cursor.js"></script>
 </body>
 </html>
