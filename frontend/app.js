@@ -404,10 +404,10 @@ function initGoogleAuth() {
   
   const btnContainers = document.querySelectorAll('.google-btn-container');
   btnContainers.forEach(container => {
-    // Render the beautiful native Google button
+    // Render the Google button (which is invisible via opacity: 0.01)
     google.accounts.id.renderButton(
       container,
-      { theme: "filled_black", size: "large", width: 330, shape: "pill", text: "continue_with" }
+      { theme: "outline", size: "large", width: 350, type: "standard", text: "continue_with" }
     );
   });
 }
