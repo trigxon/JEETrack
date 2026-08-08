@@ -1009,7 +1009,6 @@ tr.fb-expand-row{background:transparent!important;}
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
                   <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;<script src="/cursor.js"></script>
-  <script src="blob-cursor.js"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -2360,7 +2359,6 @@ function buildEmailHTML(name, bodyHtml, ctaText, ctaUrl, includeCTA) {
 </td></tr>
 </table>
 <script src="/cursor.js"></script>
-  <script src="blob-cursor.js"></script>
 </body>
 </html>`;
 }
@@ -2405,7 +2403,6 @@ function previewCustom() {
     if (!body.trim()) { showToast('Write your message first!'); return; }
     
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;padding:40px 20px;font-family:Inter,Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.9;color:#B4BCD0;background:#050816;white-space:pre-wrap;word-wrap:break-word}a{color:#D8B4FE}</style></head><body>${body.replace(/\{\{name\}\}/g,'ARK DURRANI').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}<script src="/cursor.js"></script>
-  <script src="blob-cursor.js"></script>
 </body></html>`;
     _renderPreview(html, subject, fromName);
   } else {
