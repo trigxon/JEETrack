@@ -1,5 +1,10 @@
 // blob-cursor.js
 (function() {
+  // Detect touch screens. If touch is supported, abort to keep default behavior and allow normal touch interaction.
+  if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0) {
+    return;
+  }
+
   const cursor = document.createElement('div');
   cursor.className = 'blob-cursor';
   document.body.appendChild(cursor);
@@ -9,7 +14,6 @@
   let cursorX = mouseX;
   let cursorY = mouseY;
   
-  // No touch device checks - just run it for mouse movement
   document.addEventListener('mousemove', (e) => {
     mouseX = e.clientX;
     mouseY = e.clientY;
@@ -17,9 +21,9 @@
   
   // Custom requestAnimationFrame loop for ultimate smoothness
   function render() {
-    // Interpolation factor
-    cursorX += (mouseX - cursorX) * 0.15;
-    cursorY += (mouseY - cursorY) * 0.15;
+    // Interpolation factor increased to 0.85 for ultra-high sensitivity (nearly instantaneous)
+    cursorX += (mouseX - cursorX) * 0.85;
+    cursorY += (mouseY - cursorY) * 0.85;
     
     // Apply translate3d instead of left/top for GPU acceleration
     cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
@@ -43,8 +47,8 @@
       margin-left: -8px;
       margin-top: -8px;
       border-radius: 50%;
-      background: rgba(25, 25, 25, 0.95);
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+      background: rgba(166,149,255, 0.75);
+      box-shadow: 0 0 10px rgba(166,149,255, 0.8), 0 0 20px rgba(166,149,255, 0.5);
       pointer-events: none;
       z-index: 999999;
       will-change: transform;
