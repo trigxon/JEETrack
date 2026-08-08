@@ -21,9 +21,9 @@
   
   // Custom requestAnimationFrame loop for ultimate smoothness
   function render() {
-    // Interpolation factor increased to 0.85 for ultra-high sensitivity (nearly instantaneous)
-    cursorX += (mouseX - cursorX) * 0.85;
-    cursorY += (mouseY - cursorY) * 0.85;
+    // Interpolation factor set to 0.2 for a buttery smooth trailing effect
+    cursorX += (mouseX - cursorX) * 0.2;
+    cursorY += (mouseY - cursorY) * 0.2;
     
     // Apply translate3d instead of left/top for GPU acceleration
     cursor.style.transform = `translate3d(${cursorX}px, ${cursorY}px, 0)`;
@@ -42,13 +42,13 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 28px;
-      height: 28px;
-      margin-left: -14px;
-      margin-top: -14px;
+      width: 18px;
+      height: 18px;
+      margin-left: -9px;
+      margin-top: -9px;
       border-radius: 50%;
       background: #a855f7;
-      box-shadow: 0 0 20px 10px rgba(168, 85, 247, 0.6), 0 0 40px 20px rgba(168, 85, 247, 0.3), 0 0 60px 30px rgba(168, 85, 247, 0.1);
+      box-shadow: 0 0 15px 5px rgba(168, 85, 247, 0.6), 0 0 30px 10px rgba(168, 85, 247, 0.3), 0 0 45px 15px rgba(168, 85, 247, 0.1);
       pointer-events: none;
       z-index: 999999;
       will-change: transform;
