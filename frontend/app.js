@@ -75,7 +75,7 @@ async function initSupabase(){
     clearTimeout(_splashSafetyTimer);
     if(window.jtSplash) window.jtSplash.setProgress(90, 'Almost ready');
     hideSplash();
-    showApp('Demo User','demo@jee-adv-osint.vercel.app');
+    showApp('Demo User','demo@jeetrack.app');
     return;
   }
 
@@ -992,7 +992,7 @@ async function exportPDF(){
     doc.setPage(i);
     if(i>1) bgPage();
     doc.setTextColor(60,60,80); doc.setFontSize(7.5);
-    doc.text(`JEE ADV OSINT · crafted by Abdul Rehman Khan Durrani · Page ${i}/${pgs}`, W/2, 291, {align:'center'});
+    doc.text(`JEE ADV OSINT · crafted by ARK DURRANI · Page ${i}/${pgs}`, W/2, 291, {align:'center'});
   }
   doc.save(`JEE ADV OSINT-${dateStr.replace(/ /g,'-')}.pdf`);
   toast('PDF downloaded ✓', 'success');
@@ -1390,9 +1390,9 @@ function initHeroDemo() {
 
     (function tick() {
       const s = tiltState.cur, t = tiltState.target;
-      s.rx += (t.rx - s.rx) * 0.08;
-      s.ry += (t.ry - s.ry) * 0.08;
-      s.tz += (0 - s.tz) * 0.08;
+      s.rx += (t.rx - s.rx) * 0.16;
+      s.ry += (t.ry - s.ry) * 0.16;
+      s.tz += (0 - s.tz) * 0.16;
       card.style.transform = `perspective(1400px) rotateX(${s.rx.toFixed(2)}deg) rotateY(${s.ry.toFixed(2)}deg) translateZ(${s.tz.toFixed(2)}px)`;
       requestAnimationFrame(tick);
     })();
@@ -1432,11 +1432,11 @@ function initHeroDemo() {
   
   
   
-  const CURSOR_MS = 1350;
-  const CURSOR_SLOW_MS = 1900;
-  const CINEMATIC_ZOOM_SCALE = 1.45;
-  const CINEMATIC_HOLD_MS = 350;
-  const CINEMATIC_OUT_MS = 1200;
+  const CURSOR_MS = 780;
+  const CURSOR_SLOW_MS = 1180;
+  const CINEMATIC_ZOOM_SCALE = 1.55;
+  const CINEMATIC_HOLD_MS = 170;
+  const CINEMATIC_OUT_MS = 780;
 
   function moveCursorTo(el, onArrive, opts) {
     opts = opts || {};
@@ -1553,7 +1553,7 @@ function initHeroDemo() {
     ring2.className = 'land-dash-click-ring pulse-2';
     cursor.appendChild(ring2);
 
-    setTimeout(() => { dot.remove(); ring1.remove(); ring2.remove(); }, 1100);
+    setTimeout(() => { dot.remove(); ring1.remove(); ring2.remove(); }, 780);
   }
 
   function activateView(name) {
@@ -1623,7 +1623,7 @@ function initHeroDemo() {
       }
     };
     tick();
-    _insLoadTimer = setInterval(tick, 850);
+    _insLoadTimer = setInterval(tick, 480);
   }
 
   function showInsightsResults() {
@@ -1646,7 +1646,7 @@ function initHeroDemo() {
       setTimeout(() => {
         playInsightsLoading(() => {
           showInsightsResults();
-          _heroDemoTimer = setTimeout(loop, 5500);
+          _heroDemoTimer = setTimeout(loop, 3400);
         });
         zoomCinematicOut();
       }, CINEMATIC_HOLD_MS);
@@ -1660,7 +1660,7 @@ function initHeroDemo() {
     idx = order.indexOf('insights');
     moveCursorTo(insightsTab, () => {
       activateView('insights');
-      setTimeout(runInsightsGenerateDemo, 1600);
+      setTimeout(runInsightsGenerateDemo, 900);
     });
   }
 
@@ -1746,7 +1746,7 @@ function initHeroDemo() {
     
     moveCursorTo(partial, () => {
       setFilter('partial', true, { syncZoomOut: true });
-      setTimeout(goToInsightsAndGenerate, 2800);
+      setTimeout(goToInsightsAndGenerate, 1700);
     }, { slow: true, cinematic: true });
   }
 
@@ -1762,13 +1762,13 @@ function initHeroDemo() {
     moveCursorTo(tabEl, () => {
       activateView(name);
       if (name === 'tests') {
-        setTimeout(toggleFilterDemo, 2000);
+        setTimeout(toggleFilterDemo, 1100);
         
         
         
         
       } else {
-        _heroDemoTimer = setTimeout(loop, 4500);
+        _heroDemoTimer = setTimeout(loop, 2600);
       }
     });
   }
@@ -1799,7 +1799,7 @@ function initHeroDemo() {
           
           
         } else {
-          const resumeDelay = name === 'insights' ? 5000 : 4000;
+          const resumeDelay = name === 'insights' ? 3000 : 2200;
           _heroDemoTimer = setTimeout(loop, resumeDelay);
         }
       });
@@ -1820,7 +1820,7 @@ function initHeroDemo() {
         punchZoomAt(x + 3, y + 3);
         setTimeout(() => cursor.classList.remove('clicking'), 460);
         setFilter(f.dataset.filter, true);
-        _heroDemoTimer = setTimeout(loop, 6000);
+        _heroDemoTimer = setTimeout(loop, 4600);
       });
     });
     if (insGenBtn) {
@@ -1842,7 +1842,7 @@ function initHeroDemo() {
         setTimeout(() => cursor.classList.remove('clicking'), 460);
         playInsightsLoading(() => {
           showInsightsResults();
-          _heroDemoTimer = setTimeout(loop, 5500);
+          _heroDemoTimer = setTimeout(loop, 3400);
         });
       });
     }
@@ -1864,7 +1864,7 @@ function initHeroDemo() {
         setTimeout(() => cursor.classList.remove('clicking'), 460);
         playInsightsLoading(() => {
           showInsightsResults();
-          _heroDemoTimer = setTimeout(loop, 5500);
+          _heroDemoTimer = setTimeout(loop, 3400);
         });
       });
     }
@@ -1881,11 +1881,11 @@ function initHeroDemo() {
   });
 
   clearTimeout(_heroDemoTimer);
-  _heroDemoTimer = setTimeout(loop, 4500);
+  _heroDemoTimer = setTimeout(loop, 3000);
 }
 
 let slideIdx = 0, slideTimer = null, slideInterval = null;
-const SLIDE_DURATION = 6500;
+const SLIDE_DURATION = 4500;
 
 function initSlideshow() {
   const wrap = document.getElementById('slides-wrap');
@@ -3312,7 +3312,7 @@ async function sendFeedback() {
 
     
     if (!saved) {
-      const mailtoUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com ADV OSINT.com?subject=${encodeURIComponent('[JEE ADV OSINT Feedback] ' + subj)}&body=${encodeURIComponent(msg + '\n\n— Sent from JEE ADV OSINT\nUser: ' + (currentUser?.email || 'anonymous'))}`;
+      const mailtoUrl = `mailto:support@jee-adv-osint.vercel.app?subject=${encodeURIComponent('[JEE ADV OSINT Feedback] ' + subj)}&body=${encodeURIComponent(msg + '\n\n— Sent from JEE ADV OSINT\nUser: ' + (currentUser?.email || 'anonymous'))}`;
       window.open(mailtoUrl, '_blank');
     }
 
@@ -3321,7 +3321,7 @@ async function sendFeedback() {
     if (document.getElementById('fb-message')) document.getElementById('fb-message').value = '';
     if (btn) { btn.textContent = 'Sent ✓'; setTimeout(() => { if(btn){ btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Feedback'; btn.disabled = false; } }, 2500); }
   } catch(e) {
-    toast('Could not send — please email 5073340abdulrehmankhandurrani@gmail.com directly', 'error');
+    toast('Could not send — please email support@jee-adv-osint.vercel.app directly', 'error');
     if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send Feedback'; }
   }
 }
