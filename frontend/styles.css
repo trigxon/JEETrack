@@ -279,7 +279,8 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
 .mtbl{font-size:12px;width:100%}
 .mtbl td,.mtbl th{padding:.4rem .6rem}
 
-::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:99px}
+::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+* { scrollbar-width: none !important; -ms-overflow-style: none !important; }::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--sf3);border-radius:99px}
 
 .nb-x{background:none;border:none;cursor:pointer;color:var(--mu);font-size:13px;line-height:1;padding:2px 4px;border-radius:4px;margin-left:6px;transition:color .15s,background .15s;flex-shrink:0}
 .nb-x:hover{color:var(--tx);background:rgba(255,255,255,.08)}
@@ -5594,3 +5595,7 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
 }
+
+/* Global Scrollbar Hide to prevent native cursor glitch at screen edges */
+::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+* { scrollbar-width: none !important; -ms-overflow-style: none !important; }
