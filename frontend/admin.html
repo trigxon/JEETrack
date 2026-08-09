@@ -1238,12 +1238,20 @@ function toggleSidebar(open) {
 }
 
 async function api(action, extra = '') {
-  const res = await fetch(`${API_BASE}?action=${action}&days=${_days}${extra}`, {
-    headers: { 'Authorization': `Bearer ${_token}` }
-  });
-  if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
-  if (!res.ok) throw new Error(`API error ${res.status}`);
-  return res.json();
+  try {
+    const res = await fetch(${API_BASE}?action=&days=, {
+      headers: { 'Authorization': Bearer  }
+    });
+    if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
+    if (!res.ok) throw new Error(API error );
+    return await res.json();
+  } catch (e) {
+    const errBox = document.createElement('div');
+    errBox.style = 'position:fixed;top:10px;right:10px;background:red;color:white;padding:15px;z-index:99999;border-radius:8px';
+    errBox.innerHTML = '<b>API Crash:</b> ' + e.message;
+    document.body.appendChild(errBox);
+    throw e;
+  }
 }
 async function apiPost(action, body = {}) {
   const res = await fetch(`${API_BASE}?action=${action}`, {
@@ -2565,3 +2573,4 @@ function replyToFeedback(userId, email, subject) {
   <script src="blob-cursor.js"></script>
 </body>
 </html>
+
