@@ -17,7 +17,7 @@ td{font-family:'Space Grotesk',sans-serif}
 .sb .logo{position:relative;z-index:1}
 .sb .ns{position:relative;z-index:1}
 .sb .wm{position:relative;z-index:1}
-.wm{padding:.8rem .4rem;border-top:1px solid var(--bd);font-size:10px;color:var(--mu2);margin-top:auto;position:sticky;bottom:0;background:var(--sf)}
+.wm{padding:.8rem .4rem;font-size:10px;color:var(--mu2);background:transparent}
 body.sb-open{overflow:hidden!important}
 .main{margin-left:224px;flex:1;padding:1.25rem;min-height:100vh}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.02em;margin-bottom:1.5rem;padding:0 .4rem;color:var(--tx)}
@@ -5571,4 +5571,15 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
   border-color: rgba(168, 85, 247, 0.3);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  background: var(--sf);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 12px;
+  border-top: 1px solid var(--bd);
 }
