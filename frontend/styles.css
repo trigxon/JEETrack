@@ -5583,3 +5583,9 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
   padding-bottom: 12px;
   border-top: 1px solid var(--bd);
 }
+
+.social-links-footer .sf-title {
+  text-align: center !important;
+  line-height: 1.4 !important;
+  font-size: 9.5px !important;
+}
