@@ -19,7 +19,7 @@ td{font-family:'Space Grotesk',sans-serif}
 .sb .wm{position:relative;z-index:1}
 .wm{padding:.8rem .4rem;font-size:10px;color:var(--mu2);background:transparent}
 body.sb-open{overflow:hidden!important}
-.main{margin-left:224px;flex:1;padding:1.25rem;min-height:100vh}
+.main{margin-left:224px;flex:1;padding:1.25rem;min-height:100vh;display:flex;flex-direction:column}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;letter-spacing:-.02em;margin-bottom:1.5rem;padding:0 .4rem;color:var(--tx)}
 .logo span{background:linear-gradient(135deg,#a695ff,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .logo span{color:var(--ac2)}
@@ -5594,6 +5594,7 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
 .social-links-footer {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
+  margin-top: auto !important;
 }
 
 /* Global Scrollbar Hide to prevent native cursor glitch at screen edges */
