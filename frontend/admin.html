@@ -1239,11 +1239,11 @@ function toggleSidebar(open) {
 
 async function api(action, extra = '') {
   try {
-    const res = await fetch(${API_BASE}?action=&days=, {
-      headers: { 'Authorization': Bearer  }
+    const res = await fetch(`${API_BASE}?action=${action}${extra}`, {
+      headers: { 'Authorization': `Bearer ${_token}` }
     });
     if (res.status === 401) { doLogout(); throw new Error('Session expired'); }
-    if (!res.ok) throw new Error(API error );
+    if (!res.ok) throw new Error(`API error ${res.status}`);
     return await res.json();
   } catch (e) {
     const errBox = document.createElement('div');
