@@ -2,18 +2,18 @@
 
 <br/>
 
-<img src="frontend/favicon.svg" alt="JEE ADV OSINT Logo" width="100" />
+<img src="frontend/favicon.svg" alt="JEETrack Logo" width="100" />
 
 <br/>
 <br/>
 
-# JEE ADV OSINT
+# JEETrack
 
 ### The all-in-one preparation tracker for JEE aspirants
 
 <br/>
 
-[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jee-adv-osint.vercel.app-6366f1?style=for-the-badge&logoColor=white)](https://jee-adv-osint.vercel.app)
+[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jeetrack.vercel.app-6366f1?style=for-the-badge&logoColor=white)](https://jee-adv-osint.vercel.app)
 
 <br/>
 
@@ -35,7 +35,7 @@
 <br/>
 
 <div align="center">
-  <img src="screenshots/dashboard.png" alt="JEE ADV OSINT Dashboard" width="90%" />
+  <img src="screenshots/dashboard.png" alt="JEETrack Dashboard" width="90%" />
   <br/><br/>
   <sub><i>Dashboard — daily study tracking, countdowns, score trends and subject progress at a glance</i></sub>
 </div>
@@ -79,6 +79,7 @@
 | 🤖 | **AI Insights** | Personalised coaching analysis powered by **Groq (LLaMA 3.3 70B)** — pinpoints weak areas and suggests a plan |
 | 📧 | **Monthly Reports** | Automated PDF report card delivered via email |
 | 📱 | **PWA** | Installable on Android & iOS, works fully offline |
+| 👑 | **Admin Dashboard** | Real-time platform analytics, user engagement funnels, and retention tracking |
 | 🔔 | **Push Notifications** | Daily study reminders via service worker |
 
 ---
@@ -103,26 +104,26 @@ Cron        pg_cron (Supabase)
 ## 📁 Project Structure
 
 ```
-JEE ADV OSINT/
+JEETrack/
 ├── frontend/                     # Static PWA — deployed to Vercel
-│   ├── api/
-│   │   └── config.js             # Serverless function — serves env vars to frontend
+│   ├── api/                      
+│   │   ├── config.js             # API route: Serves env vars securely
+│   │   └── admin.js              # API route: Powers the admin dashboard
 │   ├── index.html                # App shell & markup
-│   ├── styles.css                # All styles
-│   ├── app.js                    # All application logic
-│   ├── manifest.json             # PWA manifest
-│   ├── sw.js                     # Service worker (offline + push)
-│   └── vercel.json               # SPA rewrite config
+│   ├── styles.css                # Core styling
+│   ├── app.js                    # Core logic
+│   ├── admin.html                # Admin dashboard interface
+│   ├── manifest.json             # PWA configuration
+│   ├── sw.js                     # Service worker (offline support)
+│   └── vercel.json               # SPA routing & API endpoints
 ├── supabase/
 │   └── functions/
-│       ├── ai-insights/          # Edge function — Groq AI analysis
-│       │   └── index.ts
-│       └── monthly-report/       # Edge function — monthly email + PDF
-│           └── index.ts
-├── supabase-schema.sql           # Full database schema
-├── migration.sql                 # DB migrations
-├── onboarding-trigger.sql        # New-user onboarding automation
-└── README.md
+│       ├── ai-insights/          # Edge function: Groq AI analysis
+│       └── monthly-report/       # Edge function: Email + PDF cron jobs
+├── supabase-schema.sql           # Database schema definition
+├── migration.sql                 # Incremental DB migrations
+├── onboarding-trigger.sql        # Automations for new signups
+└── README.md                     # You are here
 ```
 
 ---
@@ -133,7 +134,7 @@ JEE ADV OSINT/
 
 ```bash
 git clone https://github.com/AmanxMishraDev/JEETrack.git
-cd JEE ADV OSINT
+cd JEETrack
 ```
 
 ### 2 · Set up Supabase
@@ -153,6 +154,8 @@ Go to your Vercel project → **Settings → Environment Variables** and add:
 |---|---|
 | `SUPABASE_URL` | `https://your-project.supabase.co` |
 | `SUPABASE_ANON_KEY` | `your-anon-key` |
+| `SUPABASE_SERVICE_ROLE_KEY` | `your-service-role-key` (Used by admin dashboard) |
+| `ADMIN_PASSWORD` | `your-secure-password` (Used by admin dashboard) |
 
 ### 4 · Deploy to Vercel
 
@@ -161,7 +164,7 @@ Go to your Vercel project → **Settings → Environment Variables** and add:
 3. Import your repository and set **Root Directory** to `frontend`
 4. Click **Deploy** ✅
 
-The `frontend/vercel.json` already handles SPA rewrites so all routes work on hard refresh.
+The `frontend/vercel.json` automatically maps `/api/*` endpoints to the serverless functions in `frontend/api/`.
 
 ### 5 · Deploy Edge Functions
 
@@ -196,8 +199,11 @@ supabase functions deploy monthly-report
 |---|---|
 | `SUPABASE_URL` | Your Supabase project URL |
 | `SUPABASE_ANON_KEY` | Your Supabase anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service key (for `admin.js` endpoints) |
+| `ADMIN_PASSWORD` | Password for accessing `/admin.html` |
+| `JWT_SECRET` | Secret string for signing admin session tokens |
 
-These are served to the frontend securely at runtime via the `/api/config` serverless function — credentials are never stored in source code.
+These are served to the frontend securely at runtime via the `/api/config` serverless function.
 
 ### Supabase Secrets (Edge Functions)
 
@@ -214,13 +220,11 @@ These are served to the frontend securely at runtime via the `/api/config` serve
 
 ```bash
 git add .
-git commit -m "feat: describe your change"
+git commit -m "feat: updated admin dashboard and fixed timeout issues"
 git push origin main
 ```
 
 Vercel auto-deploys on every push — no manual steps needed.
-
-> **Note:** GitHub no longer accepts passwords over HTTPS. Use a [Personal Access Token](https://github.com/settings/tokens) with `repo` scope when prompted for credentials.
 
 ---
 
@@ -257,12 +261,12 @@ git checkout -b feature/your-feature-name
 
 <br/>
 
-⭐ &nbsp;Star this repo if JEE ADV OSINT helped your preparation
+⭐ &nbsp;Star this repo if JEETrack helped your preparation
 
 <br/>
 <br/>
 
-[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jee-adv-osint.vercel.app-6366f1?style=for-the-badge&logoColor=white)](https://jee-adv-osint.vercel.app)
+[![Launch App](https://img.shields.io/badge/⚡%20Launch%20App-jeetrack.vercel.app-6366f1?style=for-the-badge&logoColor=white)](https://jee-adv-osint.vercel.app)
 
 <br/>
 
