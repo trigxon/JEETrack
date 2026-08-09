@@ -121,7 +121,7 @@ async function sbCount(table, filter = '') {
     headers: {
       'apikey': SUPABASE_SERVICE_KEY,
       'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Prefer': 'count=exact',
+      'Prefer': 'count=estimated',
       'Range-Unit': 'items',
       'Range': '0-0',
     },
@@ -185,7 +185,7 @@ async function sbRosterQuery({ search, classFilter, coachFilter, sourceFilter, s
       'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
       'Range-Unit': 'items',
       'Range': `${offset}-${offset + limit - 1}`,
-      'Prefer': 'count=exact',
+      'Prefer': 'count=estimated',
     },
   });
   if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
