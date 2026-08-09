@@ -199,27 +199,202 @@ async function sbRosterQuery({ search, classFilter, coachFilter, sourceFilter, s
 
 
 
-async function sbAuthListAllUsers() {
-  const perPage = 1000;
-  let page = 1;
-  let all = [];
-  for (let i = 0; i < 20; i++) { 
-    const url = `${SUPABASE_URL}/auth/v1/admin/users?page=${page}&per_page=${perPage}`;
-    const res = await fetch(url, {
-      headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      },
-    });
-    if (!res.ok) throw new Error(`Supabase auth admin ${res.status}: ${await res.text()}`);
-    const data = await res.json();
-    const users = data.users || [];
-    all = all.concat(users);
-    if (users.length < perPage) break;
-    page++;
-  }
-  return all;
+
+
+
+async function triggerEdgeFunction(fnName, body = {}) {
+  const url = `${SUPABASE_URL}/functions/v1/${fnName}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { return { message: text }; }
 }
+
+
+function dateFrom(days) {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().split('T')[0];
+}
+  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
+  const sig = crypto.createHmac('sha256', ADMIN_TOKEN_SECRET).update(body).digest('base64url');
+  return `${body}.${sig}`;
+}
+
+function verifyToken(token) {
+  if (!token || typeof token !== 'string' || !token.includes('.')) return null;
+  const [body, sig] = token.split('.');
+  if (!body || !sig) return null;
+  const expectedSig = crypto.createHmac('sha256', ADMIN_TOKEN_SECRET).update(body).digest('base64url');
+  const sigBuf = Buffer.from(sig);
+  const expBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+  let payload;
+  try { payload = JSON.parse(Buffer.from(body, 'base64url').toString()); } catch { return null; }
+  if (!payload || !payload.exp || Date.now() > payload.exp) return null;
+  return payload;
+}
+
+
+const _loginAttempts = {};
+function loginRateLimited(ip) {
+  const now = Date.now();
+  const rec = _loginAttempts[ip] || { count: 0, resetAt: now + 15 * 60 * 1000 };
+  if (now > rec.resetAt) { rec.count = 0; rec.resetAt = now + 15 * 60 * 1000; }
+  rec.count++;
+  _loginAttempts[ip] = rec;
+  return rec.count > 5; 
+}
+function clientIp(req) {
+  const fwd = req.headers['x-forwarded-for'];
+  if (fwd) return String(fwd).split(',')[0].trim();
+  return req.socket?.remoteAddress || 'unknown';
+}
+
+
+const COACHING_LABELS = {
+  pw_online: 'PW Online', allen_online: 'Allen Online', unacademy: 'Unacademy',
+  vedantu: 'Vedantu', aakash_online: 'Aakash Digital', motion_online: 'Motion Online',
+  other_online: 'Other (Online)', pw_vidyapeeth: 'PW Vidyapeeth', allen: 'Allen',
+  aakash: 'Aakash', fiitjee: 'FIITJEE', resonance: 'Resonance', vibrant: 'Vibrant Academy',
+  motion: 'Motion', narayana: 'Narayana', sri_chaitanya: 'Sri Chaitanya',
+  other_offline: 'Other (Offline)', self: 'Self Study',
+};
+function coachingLabel(id) {
+  if (!id) return 'Not Set';
+  return COACHING_LABELS[id] || id;
+}
+const CLASS_LABELS = { '11': 'Class 11', '12': 'Class 12', dropper: 'Dropper', other: 'Other' };
+function classLabel(id) {
+  if (!id) return 'Not Set';
+  return CLASS_LABELS[id] || id;
+}
+const SOURCE_LABELS = {
+  reddit: 'Reddit', google: 'Google Search', youtube: 'YouTube',
+  instagram: 'Instagram', friend: 'Friend / Word of Mouth', other: 'Somewhere Else',
+};
+function sourceLabel(id) {
+  if (!id) return 'Not Set';
+  return SOURCE_LABELS[id] || id;
+}
+
+
+function cors(res) {
+  res.setHeader('Access-Control-Allow-Origin', 'https://jee-adv-osint.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+}
+
+
+async function sbQuery(path, method = 'GET', body = null) {
+  const url = `${SUPABASE_URL}/rest/v1/${path}`;
+  const opts = {
+    method,
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+
+async function sbCount(table, filter = '') {
+  const url = `${SUPABASE_URL}/rest/v1/${table}?select=*${filter ? '&' + filter : ''}`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Prefer': 'count=estimated',
+      'Range-Unit': 'items',
+      'Range': '0-0',
+    },
+  });
+  const range = res.headers.get('content-range') || '0/0';
+  return parseInt(range.split('/')[1] || '0', 10);
+}
+
+
+async function sbSum(table, column, filter = '') {
+  const rows = await sbQuery(`${table}?select=${column}${filter ? '&' + filter : ''}`);
+  return rows.reduce((s, r) => s + (r[column] || 0), 0);
+}
+
+
+async function sbAuthGetUser(id) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data?.user || data || null;
+}
+
+
+async function sbRpc(fnName, body = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fnName}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Supabase rpc ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+
+async function sbRosterQuery({ search, classFilter, coachFilter, sourceFilter, sortBy, sortDir, offset, limit }) {
+  const params = ['select=id,email,created_at,name,class_year,coaching,study_mode,referral_source,target_year,email_reports,last_active_at,onboarding_done'];
+  if (classFilter)  params.push(`class_year=eq.${encodeURIComponent(classFilter)}`);
+  if (coachFilter)  params.push(`coaching=eq.${encodeURIComponent(coachFilter)}`);
+  if (sourceFilter) params.push(`referral_source=eq.${encodeURIComponent(sourceFilter)}`);
+  if (search) {
+    
+    const term = search.replace(/[%_,()*]/g, ' ').trim();
+    if (term) params.push(`or=(name.ilike.*${encodeURIComponent(term)}*,email.ilike.*${encodeURIComponent(term)}*)`);
+  }
+  const orderCol = sortBy === 'name' ? 'name' : sortBy === 'last_active' ? 'last_active_at' : 'created_at';
+  params.push(`order=${orderCol}.${sortDir === 1 ? 'asc' : 'desc'}.nullslast`);
+
+  const url = `${SUPABASE_URL}/rest/v1/admin_user_roster?${params.join('&')}`;
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SUPABASE_SERVICE_KEY,
+      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+      'Range-Unit': 'items',
+      'Range': `${offset}-${offset + limit - 1}`,
+      'Prefer': 'count=estimated',
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  const rows = await res.json();
+  const range = res.headers.get('content-range') || '';
+  const total = range.includes('/') ? (parseInt(range.split('/')[1], 10) || 0) : rows.length;
+  return { rows, total };
+}
+
+
+
+
+
+
 
 
 async function triggerEdgeFunction(fnName, body = {}) {
@@ -255,48 +430,6 @@ async function cached(key, ttlMs, fn) {
   const data = await fn();
   _cacheStore[key] = { data, at: now };
   return data;
-}
-
-let _rosterCache = null, _rosterCacheAt = 0;
-async function buildRoster({ fresh = false } = {}) {
-  if (!fresh && _rosterCache && Date.now() - _rosterCacheAt < 30000) return _rosterCache;
-
-  const [authUsers, prefs] = await Promise.all([
-    sbAuthListAllUsers().catch(() => []),
-    sbQuery('user_preferences?select=user_id,username,class_year,coaching,study_mode,referral_source,target_year,email_reports,last_active_at,onboarding_done,created_at').catch(() => []),
-  ]);
-
-  const prefMap = {};
-  prefs.forEach(p => { prefMap[p.user_id] = p; });
-
-  
-  
-  const ids = new Set([...authUsers.map(u => u.id), ...prefs.map(p => p.user_id)]);
-  const authMap = {};
-  authUsers.forEach(u => { authMap[u.id] = u; });
-
-  const roster = [...ids].map(id => {
-    const a = authMap[id] || {};
-    const p = prefMap[id] || {};
-    return {
-      id,
-      email: a.email || '',
-      created_at: a.created_at || p.created_at || null,
-      name: p.username || (a.email ? a.email.split('@')[0] : 'Unknown'),
-      class_year: p.class_year || '',
-      coaching: p.coaching || '',
-      study_mode: p.study_mode || '',
-      referral_source: p.referral_source || '',
-      target_year: p.target_year || '',
-      email_reports: p.email_reports || 'off',
-      last_active_at: p.last_active_at || null,
-      onboarding_done: !!p.onboarding_done,
-    };
-  });
-
-  _rosterCache = roster;
-  _rosterCacheAt = Date.now();
-  return roster;
 }
 
 
@@ -381,12 +514,14 @@ export default async function handler(req, res) {
 
     
     if (action === 'new_users') {
-      const authUsers = await cached('all_auth_users', 300000, () => sbAuthListAllUsers().catch(() => []));
+      const days = parseInt(req.query.days || '30', 10);
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
+      const cutoffStr = cutoff.toISOString();
+      const rawUsers = await cached(`new_users_raw_${days}`, 120000, () => sbQuery(`admin_user_roster?select=created_at&created_at=gte.${cutoffStr}&limit=50000`).catch(() => []));
 
       
       const byDay = {};
-      authUsers.forEach(u => {
+      rawUsers.forEach(u => {
         if (!u.created_at) return;
         const d = new Date(u.created_at);
         if (d < cutoff) return;
@@ -504,7 +639,7 @@ export default async function handler(req, res) {
     
     
     if (action === 'demographics') {
-      const raw = await sbRpc('admin_demographics');
+      const raw = await cached('demographics_raw', 300000, () => sbRpc('admin_demographics').catch(() => []));
       const byDim = { class: {}, coaching: {}, year: {}, source: {} };
       let total = 0;
 
@@ -819,162 +954,7 @@ export default async function handler(req, res) {
       const total = filtered.length;
       const page = filtered.slice(offset, offset + limit);
 
-      
-      const roster = await buildRoster().catch(() => []);
-      const rosterMap = {};
-      roster.forEach(u => { rosterMap[u.id] = u; });
-
-      const enriched = page.map(f => ({
-        ...f,
-        account_name: rosterMap[f.user_id]?.name || f.email?.split('@')[0] || 'Anonymous',
-        email: f.email || rosterMap[f.user_id]?.email || '',
-      }));
-
-      return res.status(200).json({
-        feedbacks: enriched, total,
-        ...(testimonialColumnsMissing ? { warning: 'featured/display_name columns not found on feedback table — run testimonials_supabase_schema.sql' } : {}),
-      });
-    }
-
-    
-    
-    if (action === 'feedback_feature') {
-      if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
-      const { id, featured } = req.body || {};
-      if (!id) return res.status(400).json({ error: 'Missing feedback id' });
-
-      const payload = { featured: !!featured };
-
-      if (featured) {
-        try {
-          const rows = await sbQuery(`feedback?id=eq.${encodeURIComponent(id)}&select=user_id`);
-          const userId = rows?.[0]?.user_id;
-          if (userId) {
-            const roster = await buildRoster().catch(() => []);
-            const user = roster.find(u => u.id === userId);
-            payload.display_name = user?.name || (user?.email ? user.email.split('@')[0] : null) || 'JEE ADV OSINT User';
-          }
-        } catch (e) { }
-      }
-
-      try {
-        const updated = await sbQuery(`feedback?id=eq.${encodeURIComponent(id)}`, 'PATCH', payload);
-        return res.status(200).json({ ok: true, feedback: updated?.[0] || null });
-      } catch (e) {
-        const hint = /column/i.test(e.message)
-          ? ' — run testimonials_supabase_schema.sql to add the featured/display_name columns first'
-          : '';
-        return res.status(500).json({ error: 'Failed to update feedback: ' + e.message + hint });
-      }
-    }
-
-    
-    if (action === 'feedback_stats') {
-      const feedbacks = await cached('feedback_stats_raw', 60000, () => sbQuery(
-        'feedback?select=id,user_id,subject,message,rating,created_at&order=created_at.desc&limit=500'
-      ).catch(() => []));
-
-      
-      const categories = {};
-      const keywords = {
-        'Bug / Error':      ['bug','error','crash','broken','not working','issue','problem','fix'],
-        'Feature Request':  ['feature','add','want','wish','would be nice','request','suggest','improve'],
-        'AI Insights':      ['ai','insight','weekly','analysis','score'],
-        'Mock Tests':       ['mock','test','mains','advanced','score','marks'],
-        'Study Hours':      ['hours','study','time','heatmap'],
-        'Backlog':          ['backlog','pending','clear'],
-        'General Praise':   ['love','great','amazing','awesome','good','nice','excellent','best'],
-        'UI / Design':      ['ui','design','dark','theme','color','font','look'],
-      };
-
-      feedbacks.forEach(f => {
-        const text = ((f.subject||'') + ' ' + (f.message||'')).toLowerCase();
-        let matched = false;
-        for (const [cat, words] of Object.entries(keywords)) {
-          if (words.some(w => text.includes(w))) {
-            categories[cat] = (categories[cat] || 0) + 1;
-            matched = true;
-            break;
-          }
-        }
-        if (!matched) categories['Other'] = (categories['Other'] || 0) + 1;
-      });
-
-      
-      const byMonth = {};
-      feedbacks.forEach(f => {
-        const m = f.created_at?.slice(0, 7) || 'unknown';
-        byMonth[m] = (byMonth[m] || 0) + 1;
-      });
-
-      
-      const ratedItems = feedbacks.filter(f => f.rating != null && !isNaN(f.rating));
-      const ratingDist = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
-      ratedItems.forEach(f => {
-        const r = Math.round(Number(f.rating));
-        if (r >= 1 && r <= 5) ratingDist[r]++;
-      });
-      const avgRating = ratedItems.length
-        ? (ratedItems.reduce((s, f) => s + Number(f.rating), 0) / ratedItems.length).toFixed(1)
-        : null;
-
-      return res.status(200).json({
-        total: feedbacks.length,
-        categories,
-        byMonth,
-        ratingDist,
-        avgRating,
-        ratedCount: ratedItems.length,
-        recent: feedbacks.slice(0, 10),
-      });
-    }
-
-    
-    
-    
-    if (action === 'retention') {
-      const roster = await buildRoster();
-      if (!roster.length) return res.status(200).json({ d1: 0, d7: 0, d30: 0, cohorts: [] });
-
-      const [allTests, allHours] = await cached('retention_raw', 60000, () => Promise.all([
-        sbQuery(`tests?select=user_id,date&date=gte.${dateFrom(45)}`).catch(() => []),
-        sbQuery(`hours?select=user_id,date&date=gte.${dateFrom(45)}`).catch(() => []),
-      ]));
-
-      
-      const userDates = {};
-      [...allTests, ...allHours].forEach(r => {
-        if (!r.date) return;
-        if (!userDates[r.user_id]) userDates[r.user_id] = new Set();
-        userDates[r.user_id].add(r.date);
-      });
-
-      
-      const d1Users = [], d7Users = [], d30Users = [];
-      let d1Eligible = 0, d7Eligible = 0, d30Eligible = 0;
-
-      const now = new Date();
-      roster.forEach(u => {
-        if (!u.created_at) return;
-        const signup = new Date(u.created_at);
-        const daysSinceSignup = Math.floor((now - signup) / 86400000);
-        const dates = userDates[u.id] || new Set();
-
-        const wasActiveOnDay = (n) => {
-          const target = new Date(signup);
-          target.setDate(target.getDate() + n);
-          return dates.has(target.toISOString().split('T')[0]);
-        };
-
-        if (daysSinceSignup >= 1)  { d1Eligible++;  if (wasActiveOnDay(1))  d1Users.push(u.id); }
-        if (daysSinceSignup >= 7)  { d7Eligible++;  if (wasActiveOnDay(7))  d7Users.push(u.id); }
-        if (daysSinceSignup >= 30) { d30Eligible++; if (wasActiveOnDay(30)) d30Users.push(u.id); }
-      });
-
-      return res.status(200).json({
-        d1:  d1Eligible  ? Math.round(d1Users.length  / d1Eligible  * 100) : 0,
-        d7:  d7Eligible  ? Math.round(d7Users.length  / d7Eligible  * 100) : 0,
-        d30: d30Eligible ? Math.round(d30Users.length / d30Eligible * 100) : 0,
+      const userIds = [...new Set(page.map(f => f.user_id).filter(Boolean))];
         d1Eligible, d7Eligible, d30Eligible,
       });
     }
@@ -986,3 +966,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Something went wrong. Check server logs.' });
   }
 }
+
