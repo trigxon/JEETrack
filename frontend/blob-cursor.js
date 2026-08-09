@@ -15,7 +15,7 @@
   let isMoving = false;
   
   const style = document.createElement('style');
-  style.innerHTML = \
+  style.innerHTML = `
     #custom-cursor {
       position: fixed; 
       top: 0; 
@@ -45,7 +45,7 @@
       background: rgba(244, 114, 182, 0.95);
       box-shadow: 0 0 25px rgba(244, 114, 182, 0.9), 0 0 45px rgba(244, 114, 182, 0.7);
     }
-  \;
+  `;
   document.head.appendChild(style);
 
   // Use a global class on hover elements to trigger the cursor expansion reliably
@@ -53,7 +53,7 @@
   const removeHoverClass = () => cursor.classList.remove('cursor-hovering');
   
   // Alternative to CSS combinators which can be flaky: add a class to the cursor when hovering over interactive elements
-  style.innerHTML += \
+  style.innerHTML += `
     #custom-cursor.cursor-hovering {
       width: 26px !important;
       height: 26px !important;
@@ -62,7 +62,7 @@
       margin-left: -6px;
       margin-top: -6px;
     }
-  \;
+  `;
 
   document.addEventListener('mouseover', (e) => {
     const target = e.target;
@@ -110,7 +110,7 @@
     // Smooth trailing effect (lowered from 0.35 to 0.15)
     currentX += (mouseX - currentX) * 0.15; 
     currentY += (mouseY - currentY) * 0.15;
-    cursor.style.transform = \	ranslate3d(\ + (currentX - 7) + \px, \ + (currentY - 7) + \px, 0)\;
+    cursor.style.transform = "translate3d(" + (currentX - 7) + "px, " + (currentY - 7) + "px, 0)";
     
     const dx = mouseX - currentX;
     const dy = mouseY - currentY;
