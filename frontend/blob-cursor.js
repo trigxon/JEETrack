@@ -15,7 +15,7 @@
   let isMoving = false;
   
   const style = document.createElement('style');
-  style.innerHTML = `
+  style.innerHTML = \
     #custom-cursor {
       position: fixed; 
       top: 0; 
@@ -23,14 +23,15 @@
       width: 14px; 
       height: 14px;
       border-radius: 50%; 
-      background: rgba(185, 117, 248, 1);
-      box-shadow: 0 0 15px rgba(168, 85, 247, 1), 0 0 35px rgba(168, 85, 247, 0.9);
+      background: rgba(124, 106, 247, 1);
+      box-shadow: 0 0 15px rgba(124, 106, 247, 0.8), 0 0 35px rgba(124, 106, 247, 0.6);
       pointer-events: none; 
       z-index: 2147483647; 
       transform: translate3d(-100px, -100px, 0);
       opacity: 0;
-      transition: opacity 0.2s ease, width 0.2s, height 0.2s, background 0.2s, box-shadow 0.2s;
+      transition: opacity 0.3s ease, width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease, box-shadow 0.3s ease;
       will-change: transform, width, height;
+      backdrop-filter: blur(1px);
     }
     html.mouse-active, html.mouse-active *, .mouse-active *, .mouse-active body, .mouse-active a, .mouse-active button, .mouse-active input, .mouse-active textarea, .mouse-active select { 
       cursor: none !important; 
@@ -39,12 +40,12 @@
     a:hover ~ #custom-cursor, button:hover ~ #custom-cursor, .ob-opt:hover ~ #custom-cursor,
     a:hover + #custom-cursor, button:hover + #custom-cursor,
     :hover > #custom-cursor {
-      width: 22px !important;
-      height: 22px !important;
-      background: rgba(195, 135, 250, 0.95);
-      box-shadow: 0 0 25px rgba(168, 85, 247, 1), 0 0 45px rgba(168, 85, 247, 0.8);
+      width: 24px !important;
+      height: 24px !important;
+      background: rgba(244, 114, 182, 0.95);
+      box-shadow: 0 0 25px rgba(244, 114, 182, 0.9), 0 0 45px rgba(244, 114, 182, 0.7);
     }
-  `;
+  \;
   document.head.appendChild(style);
 
   // Use a global class on hover elements to trigger the cursor expansion reliably
@@ -52,16 +53,16 @@
   const removeHoverClass = () => cursor.classList.remove('cursor-hovering');
   
   // Alternative to CSS combinators which can be flaky: add a class to the cursor when hovering over interactive elements
-  style.innerHTML += `
+  style.innerHTML += \
     #custom-cursor.cursor-hovering {
-      width: 22px !important;
-      height: 22px !important;
-      background: rgba(195, 135, 250, 0.95) !important;
-      box-shadow: 0 0 25px rgba(168, 85, 247, 1), 0 0 45px rgba(168, 85, 247, 0.8) !important;
-      margin-left: -4px;
-      margin-top: -4px;
+      width: 26px !important;
+      height: 26px !important;
+      background: rgba(244, 114, 182, 0.95) !important;
+      box-shadow: 0 0 25px rgba(244, 114, 182, 0.9), 0 0 45px rgba(244, 114, 182, 0.7) !important;
+      margin-left: -6px;
+      margin-top: -6px;
     }
-  `;
+  \;
 
   document.addEventListener('mouseover', (e) => {
     const target = e.target;
@@ -106,9 +107,10 @@
   });
   
   function render() {
-    currentX += (mouseX - currentX) * 0.35; 
-    currentY += (mouseY - currentY) * 0.35;
-    cursor.style.transform = `translate3d(${currentX - 7}px, ${currentY - 7}px, 0)`;
+    // Smooth trailing effect (lowered from 0.35 to 0.15)
+    currentX += (mouseX - currentX) * 0.15; 
+    currentY += (mouseY - currentY) * 0.15;
+    cursor.style.transform = \	ranslate3d(\ + (currentX - 7) + \px, \ + (currentY - 7) + \px, 0)\;
     
     const dx = mouseX - currentX;
     const dy = mouseY - currentY;
