@@ -23,8 +23,8 @@
       width: 14px; 
       height: 14px;
       border-radius: 50%; 
-      background: rgba(168, 85, 247, 1);
-      box-shadow: 0 0 15px rgba(168, 85, 247, 1), 0 0 30px rgba(168, 85, 247, 1);
+      background: rgba(185, 117, 248, 1);
+      box-shadow: 0 0 15px rgba(168, 85, 247, 1), 0 0 35px rgba(168, 85, 247, 0.9);
       pointer-events: none; 
       z-index: 2147483647; 
       transform: translate3d(-100px, -100px, 0);
@@ -41,8 +41,8 @@
     :hover > #custom-cursor {
       width: 22px !important;
       height: 22px !important;
-      background: rgba(168, 85, 247, 0.5);
-      box-shadow: 0 0 20px rgba(168, 85, 247, 1);
+      background: rgba(195, 135, 250, 0.95);
+      box-shadow: 0 0 25px rgba(168, 85, 247, 1), 0 0 45px rgba(168, 85, 247, 0.8);
     }
   `;
   document.head.appendChild(style);
@@ -56,8 +56,8 @@
     #custom-cursor.cursor-hovering {
       width: 22px !important;
       height: 22px !important;
-      background: rgba(168, 85, 247, 0.5) !important;
-      box-shadow: 0 0 20px rgba(168, 85, 247, 1) !important;
+      background: rgba(195, 135, 250, 0.95) !important;
+      box-shadow: 0 0 25px rgba(168, 85, 247, 1), 0 0 45px rgba(168, 85, 247, 0.8) !important;
       margin-left: -4px;
       margin-top: -4px;
     }
