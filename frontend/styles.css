@@ -5526,3 +5526,48 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
 
 
 
+.social-links-footer {
+  margin: 12px 10px;
+  padding: 14px 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.sf-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--mu2);
+  font-weight: 600;
+}
+.sf-icons {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.sf-icons a {
+  color: var(--mu);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.sf-icons a svg {
+  width: 16px;
+  height: 16px;
+}
+.sf-icons a:hover {
+  color: var(--ac);
+  background: rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
