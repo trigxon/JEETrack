@@ -24,7 +24,7 @@
   --ac:#7c6af7;--ac2:#a695ff;--pk:#f472b6;--gn:#34d399;--am:#fbbf24;--bl:#60a5fa;
 }
 body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden}
-.nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;height:60px;background:rgba(10,10,15,.8);border-bottom:1px solid var(--bd);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;height:60px;background:rgba(10,10,15,.8);border-bottom:1px solid var(--bd);-webkit-}
 .nav-logo{font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;text-decoration:none;color:var(--tx);letter-spacing:-.02em}
 .nav-logo span{background:linear-gradient(135deg,#a695ff,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .nav-links{display:flex;gap:2px}
@@ -309,7 +309,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
   </div>
   <a class="nav-cta" href="/">Get Started Free →</a>
 </nav>
-
 <section class="hero">
   <div class="hero-orb o1"></div>
   <div class="hero-orb o2"></div>
@@ -420,7 +419,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
           <!-- AI -->
           <div class="dview" data-v="ai">
             <div class="av-stage" id="avStage">
-
               <div class="av-empty" id="avEmpty">
                 <div class="av-orb">
                   <div class="av-orb-ring"></div>
@@ -439,7 +437,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
                   Generate Insights
                 </button>
               </div>
-
               <div class="av-loading" id="avLoading" style="display:none">
                 <div class="av-ls-spinner">
                   <div class="av-ls-ring"></div><div class="av-ls-ring2"></div><div class="av-ls-ring3"></div><div class="av-ls-dot"></div>
@@ -453,7 +450,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
                 </div>
                 <div class="av-prog-track"><div class="av-prog-fill" id="avProgFill"></div></div>
               </div>
-
               <div class="av-results" id="avResults" style="display:none">
                 <div class="av-hd">
                   <div class="av-ico">
@@ -483,7 +479,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
                   <div class="av-chip av-rd"><div class="av-chip-top"><span class="av-chip-ttl">Backlogs</span><span class="av-chip-tag">Urgent</span></div><div class="av-chip-met">4 pending</div></div>
                 </div>
               </div>
-
             </div>
           </div>
           <!-- SYLLABUS -->
@@ -522,14 +517,12 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
     </div>
   </div>
 </section>
-
 <div class="wrap">
   <div style="padding-top:1.5rem">
     <div class="sec-lbl"><span class="sec-line"></span>What's inside</div>
     <h2 class="sec-h">Built for JEE.<br><em>Nothing generic.</em></h2>
     <p class="sec-sub">Every module designed around the JEE syllabus, scoring pattern, and preparation strategy — not a generic study app.</p>
   </div>
-
   <div class="feats">
     <!-- Mock Tests — wide -->
     <div class="fc fw" style="--fg:linear-gradient(135deg,rgba(124,106,247,.07),transparent)">
@@ -555,7 +548,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
         Score Intelligence
       </span>
     </div>
-
     <!-- AI Insights -->
     <div class="fc" style="--fg:linear-gradient(135deg,rgba(244,114,182,.07),transparent)">
       <div class="ficon" style="background:rgba(244,114,182,.13);box-shadow:0 0 0 1px rgba(244,114,182,.22)">
@@ -568,7 +560,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
         AI Powered
       </span>
     </div>
-
     <!-- Study Hours — wide with analytics -->
     <div class="fc fw" style="--fg:linear-gradient(135deg,rgba(52,211,153,.06),transparent)">
       <div class="ficon" style="background:rgba(52,211,153,.12);box-shadow:0 0 0 1px rgba(52,211,153,.2)">
@@ -643,7 +634,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
         Time Intelligence
       </span>
     </div>
-
     <!-- Syllabus -->
     <div class="fc" style="--fg:linear-gradient(135deg,rgba(251,191,36,.06),transparent)">
       <div class="ficon" style="background:rgba(251,191,36,.11);box-shadow:0 0 0 1px rgba(251,191,36,.2)">
@@ -656,7 +646,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
         Syllabus Command
       </span>
     </div>
-
     <!-- Backlog -->
     <div class="fc" style="--fg:linear-gradient(135deg,rgba(248,113,113,.06),transparent)">
       <div class="ficon" style="background:rgba(248,113,113,.11);box-shadow:0 0 0 1px rgba(248,113,113,.2)">
@@ -669,7 +658,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
         Zero Tolerance
       </span>
     </div>
-
     <!-- Streak + Monthly Reports — wide bottom -->
     <div class="fc fw" style="--fg:linear-gradient(135deg,rgba(96,165,250,.06),transparent)">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem" class="fc-split">
@@ -698,7 +686,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
       </div>
     </div>
   </div>
-
   <!-- HOW IT WORKS -->
   <div style="padding-top:3rem;margin-bottom:2rem">
     <div class="sec-lbl"><span class="sec-line"></span>Getting started</div>
@@ -726,7 +713,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
       <div class="hdesc">AI insights weekly, streaks daily. Log hours, clear backlogs, watch scores climb.</div>
     </div>
   </div>
-
   <!-- FREE BAND -->
   <div class="fband">
     <h2>All of this. Completely free.</h2>
@@ -740,7 +726,6 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
     </div>
   </div>
 </div>
-
 <footer class="foot">
   <div style="margin-bottom:1rem">
     <a href="/" style="font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;text-decoration:none;color:var(--tx);letter-spacing:-.02em">JEE<span style="background:linear-gradient(135deg,#a695ff,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Track</span></a>
@@ -750,17 +735,14 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
   </div>
   © 2026 JEE ADV OSINT · Built for JEE Aspirants across India
 </footer>
-
 <script>
 // ── Manual tab switching ─────────────────────────────────────
 const allTabs  = document.querySelectorAll('.dtab');
 const allViews = document.querySelectorAll('.dview');
-
 function switchToView(v) {
   allTabs.forEach(x  => x.classList.toggle('active',  x.dataset.v === v));
   allViews.forEach(x => x.classList.toggle('active', x.dataset.v === v));
 }
-
 allTabs.forEach(t => t.addEventListener('click', () => {
   stopAuto();
   const v = t.dataset.v;
@@ -772,13 +754,11 @@ allTabs.forEach(t => t.addEventListener('click', () => {
   // resume auto after 6s idle
   resumeTimer = setTimeout(startAuto, 6000);
 }));
-
 // ── Auto cursor demo ─────────────────────────────────────────
 const ORDER    = ['dash','tests','ai','syl'];
 const HOLD_MS  = 2600;   // how long each view is shown
 const TRAVEL_MS = 780;   // cursor travel time — mirrors the hero demo's CURSOR_MS
 const PAUSE_MS = 420;    // pause before the cursor starts moving
-
 // Timing for the cinematic legs (Partial Filter, Generate Insights, the
 // Syllabus chapter checkmark) — the cursor travels slower and the camera
 // push-in gets real scale, exactly mirroring the landing-page hero demo.
@@ -786,25 +766,20 @@ const CURSOR_SLOW_MS     = 1180;
 const CINEMATIC_ZOOM_SCALE = 1.55;
 const CINEMATIC_HOLD_MS  = 170;
 const CINEMATIC_OUT_MS   = 780;
-
 const card    = document.getElementById('demoCard');
 const zoomStage = document.getElementById('demoZoomStage');
 const tabsBar = document.getElementById('demoTabsBar');
 const cursor  = document.getElementById('demoCursor');
-
 let autoIdx = 0;
 let autoTimer = null;
 let resumeTimer = null;
 let running = false;
-
 function getTabEl(v) {
   return tabsBar.querySelector(`[data-v="${v}"]`);
 }
-
 function scheduleNext(delay) {
   autoTimer = setTimeout(autoStep, delay);
 }
-
 // Multi-layer click burst (two colored rings + a bright core dot) — same
 // visual as the landing-page hero demo. Appended to .demo-card so it shares
 // the exact coordinate frame the cursor itself is positioned in.
@@ -813,20 +788,16 @@ function spawnBurst(x, y) {
   dot.className = 'demo-click-ring pulse-dot';
   dot.style.left = x + 'px'; dot.style.top = y + 'px';
   card.appendChild(dot);
-
   const ring1 = document.createElement('div');
   ring1.className = 'demo-click-ring pulse';
   ring1.style.left = x + 'px'; ring1.style.top = y + 'px';
   card.appendChild(ring1);
-
   const ring2 = document.createElement('div');
   ring2.className = 'demo-click-ring pulse-2';
   ring2.style.left = x + 'px'; ring2.style.top = y + 'px';
   card.appendChild(ring2);
-
   setTimeout(() => { dot.remove(); ring1.remove(); ring2.remove(); }, 780);
 }
-
 // Premium "camera punch" — the whole tabs+viewport area zooms in a touch
 // toward the exact click point, then eases back out. Used for ordinary
 // (non-cinematic) tab arrivals — same effect/timing as the hero.
@@ -840,7 +811,6 @@ function punchZoomAt(x, y) {
   zoomStage.classList.remove('zoom-punch');
   void zoomStage.offsetWidth; // force reflow so the animation restarts every click
   zoomStage.classList.add('zoom-punch');
-
   const flash = document.createElement('div');
   flash.className = 'demo-zoom-flash';
   flash.style.left = x + 'px';
@@ -849,7 +819,6 @@ function punchZoomAt(x, y) {
   requestAnimationFrame(() => flash.classList.add('flash-go'));
   setTimeout(() => flash.remove(), 600);
 }
-
 // Bigger, held cinematic push-in — used for the Partial Filter button, the
 // Generate Insights button, and the Syllabus chapter checkmark. Mirrors the
 // hero demo's zoomCinematicIn/zoomCinematicOut exactly.
@@ -874,7 +843,6 @@ function zoomCinematicOut() {
     zoomStage.style.transform  = '';
   }, CINEMATIC_OUT_MS + 40);
 }
-
 // Cursor lives directly on .demo-card, so its position is computed relative
 // to the whole card (not .demo-vp) — it can travel freely over the tabs row
 // instead of being clipped by the viewport's overflow:hidden. Pass
@@ -883,23 +851,17 @@ function zoomCinematicOut() {
 function moveCursorTo(el, onArrive, opts) {
   opts = opts || {};
   if (!el || !card) { onArrive && onArrive(); return; }
-
   const cardRect = card.getBoundingClientRect();
   const elRect   = el.getBoundingClientRect();
-
   const x = elRect.left - cardRect.left + elRect.width / 2 - 10;
   const y = elRect.top  - cardRect.top  + elRect.height / 2 - 6;
-
   const slow = !!opts.slow;
   const travelMs = slow ? CURSOR_SLOW_MS : TRAVEL_MS;
-
   cursor.classList.add('visible');
   cursor.classList.toggle('slow-travel', slow);
   cursor.classList.add('traveling');
   cursor.style.transform = `translate(${x}px,${y}px)`;
-
   if (opts.cinematic) zoomCinematicIn(x + 3, y + 3, travelMs);
-
   setTimeout(() => {
     cursor.classList.remove('traveling');
     cursor.classList.remove('slow-travel');
@@ -910,25 +872,21 @@ function moveCursorTo(el, onArrive, opts) {
     onArrive && onArrive();
   }, travelMs);
 }
-
 // ── Mock Tests: Partial Filter cinematic ─────────────────────
 const TV_DATA = {
   all:     { tests:'7', latest:'65.3%', best:'65.3%', avg:'56.2%', bars:[34,50,43,65,57,80,95], subj:{phy:58,chem:72,math:61} },
   full:    { tests:'3', latest:'61.1%', best:'65.3%', avg:'58.7%', bars:[52,64,80],             subj:{phy:55,chem:69,math:58} },
   partial: { tests:'4', latest:'70.0%', best:'74.5%', avg:'62.8%', bars:[45,58,66,74],          subj:{phy:61,chem:75,math:64} }
 };
-
 function applyFilter(filter) {
   document.querySelectorAll('.tv-f').forEach(b => b.classList.toggle('active', b.dataset.filter === filter));
   const data = TV_DATA[filter] || TV_DATA.all;
-
   const numEls = ['tvNumTests','tvNumLatest','tvNumBest','tvNumAvg'].map(id => document.getElementById(id));
   numEls.forEach(el => el && el.classList.remove('tv-pop'));
   if (numEls[0]) numEls[0].textContent = data.tests;
   if (numEls[1]) numEls[1].textContent = data.latest;
   if (numEls[2]) numEls[2].textContent = data.best;
   if (numEls[3]) numEls[3].textContent = data.avg;
-
   const barsWrap = document.getElementById('tvBars');
   if (barsWrap) {
     barsWrap.innerHTML = data.bars.map((h, i) => {
@@ -936,17 +894,14 @@ function applyFilter(filter) {
       return `<div class="tv-bar${hi}" style="height:${h}%"></div>`;
     }).join('');
   }
-
   const phy  = document.getElementById('tvSubjPhy');
   const chem = document.getElementById('tvSubjChem');
   const math = document.getElementById('tvSubjMath');
   if (phy)  phy.textContent  = data.subj.phy + '%';
   if (chem) chem.textContent = data.subj.chem + '%';
   if (math) math.textContent = data.subj.math + '%';
-
   requestAnimationFrame(() => numEls.forEach(el => el && el.classList.add('tv-pop')));
 }
-
 function runFilterDemo() {
   const partialBtn = document.querySelector('.tv-f[data-filter="partial"]');
   if (!partialBtn) { scheduleNext(HOLD_MS); return; }
@@ -958,7 +913,6 @@ function runFilterDemo() {
     }, CINEMATIC_HOLD_MS);
   }, { slow: true, cinematic: true });
 }
-
 document.querySelectorAll('.tv-f').forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -967,12 +921,10 @@ document.querySelectorAll('.tv-f').forEach(btn => {
     resumeTimer = setTimeout(startAuto, 6000);
   });
 });
-
 // ── AI Insights: Generate Insights cinematic ─────────────────
 const AV_LOAD_MSGS = ['Reading your test scores...', 'Scanning study hours...', 'Checking syllabus gaps...', 'Generating insights...'];
 const AV_LOAD_STEPS = 4;
 let avLoadTimer = null;
-
 function resetInsightsDemo() {
   const avEmpty   = document.getElementById('avEmpty');
   const avLoading = document.getElementById('avLoading');
@@ -991,7 +943,6 @@ function resetInsightsDemo() {
   if (fill) fill.style.width = '0%';
   if (avGenBtn) avGenBtn.disabled = false;
 }
-
 function playInsightsLoading(onDone) {
   const avEmpty   = document.getElementById('avEmpty');
   const avLoading = document.getElementById('avLoading');
@@ -1001,7 +952,6 @@ function playInsightsLoading(onDone) {
   avEmpty.style.display   = 'none';
   avLoading.style.display = 'flex';
   avResults.style.display = 'none';
-
   let mi = 0;
   clearInterval(avLoadTimer);
   const tick = () => {
@@ -1018,7 +968,6 @@ function playInsightsLoading(onDone) {
   tick();
   avLoadTimer = setInterval(tick, 480);
 }
-
 function showInsightsResults() {
   const avLoading = document.getElementById('avLoading');
   const avResults = document.getElementById('avResults');
@@ -1028,7 +977,6 @@ function showInsightsResults() {
   void avResults.offsetWidth;
   avResults.classList.add('av-in');
 }
-
 function runInsightsDemo() {
   const genBtn = document.getElementById('avGenBtn');
   if (!genBtn) { scheduleNext(HOLD_MS); return; }
@@ -1043,7 +991,6 @@ function runInsightsDemo() {
     }, CINEMATIC_HOLD_MS);
   }, { slow: true, cinematic: true });
 }
-
 document.getElementById('avGenBtn')?.addEventListener('click', (e) => {
   e.stopPropagation();
   stopAuto();
@@ -1051,7 +998,6 @@ document.getElementById('avGenBtn')?.addEventListener('click', (e) => {
   playInsightsLoading(showInsightsResults);
   resumeTimer = setTimeout(startAuto, 6000);
 });
-
 // ── Syllabus: chapter checkmark → progress fill ──────────────
 function resetSyllabusDemo() {
   const chip = document.getElementById('sylWavesChip');
@@ -1069,7 +1015,6 @@ function resetSyllabusDemo() {
   }
   if (pct)  pct.textContent  = '54%';
 }
-
 function markWavesDone() {
   const chip = document.getElementById('sylWavesChip');
   const fill = document.getElementById('sylPhyFill');
@@ -1078,7 +1023,6 @@ function markWavesDone() {
   if (fill) fill.style.width = '63%';
   if (pct)  pct.textContent  = '63%';
 }
-
 function runSyllabusDemo() {
   const chip = document.getElementById('sylWavesChip');
   if (!chip) { scheduleNext(HOLD_MS); return; }
@@ -1090,14 +1034,12 @@ function runSyllabusDemo() {
     }, CINEMATIC_HOLD_MS);
   }, { slow: true, cinematic: true });
 }
-
 document.getElementById('sylWavesChip')?.addEventListener('click', (e) => {
   e.stopPropagation();
   stopAuto();
   markWavesDone();
   resumeTimer = setTimeout(startAuto, 6000);
 });
-
 // ── Cycle orchestration ───────────────────────────────────────
 // ── Dashboard: replay the score-trend line draw-in ───────────
 // .ln's draw animation is fill-mode:forwards, so left alone it only ever
@@ -1111,7 +1053,6 @@ function playDashChart() {
   void ln.offsetWidth;
   ln.style.animation = '';
 }
-
 function runViewDemo(v) {
   if (v === 'dash') {
     playDashChart();
@@ -1129,13 +1070,11 @@ function runViewDemo(v) {
     scheduleNext(HOLD_MS);
   }
 }
-
 function autoStep() {
   if (!running) return;
   autoIdx = (autoIdx + 1) % ORDER.length;
   const v     = ORDER[autoIdx];
   const tabEl = getTabEl(v);
-
   setTimeout(() => {
     moveCursorTo(tabEl, () => {
       switchToView(v);
@@ -1143,7 +1082,6 @@ function autoStep() {
     });
   }, PAUSE_MS);
 }
-
 function startAuto() {
   if (running) return;
   running   = true;
@@ -1156,7 +1094,6 @@ function startAuto() {
   // kick off first step after initial hold
   autoTimer = setTimeout(autoStep, HOLD_MS);
 }
-
 function stopAuto() {
   running = false;
   clearTimeout(autoTimer);
@@ -1164,7 +1101,6 @@ function stopAuto() {
   clearInterval(avLoadTimer);
   cursor.classList.remove('visible');
 }
-
 // Start when card is visible (IntersectionObserver)
 if ('IntersectionObserver' in window) {
   const obs = new IntersectionObserver(entries => {
@@ -1177,6 +1113,6 @@ if ('IntersectionObserver' in window) {
   startAuto();
 }
 </script>
-<script src="/cursor.js"></script>
+  <script src="blob-cursor.js"></script>
 </body>
 </html>

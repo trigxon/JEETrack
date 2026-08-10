@@ -121,13 +121,19 @@ async function sbCount(table, filter = '') {
     headers: {
       'apikey': SUPABASE_SERVICE_KEY,
       'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Prefer': 'count=exact',
+      'Prefer': 'count=estimated',
       'Range-Unit': 'items',
       'Range': '0-0',
     },
   });
   const range = res.headers.get('content-range') || '0/0';
   return parseInt(range.split('/')[1] || '0', 10);
+}
+
+
+async function sbSum(table, column, filter = '') {
+  const rows = await sbQuery(`${table}?select=${column}${filter ? '&' + filter : ''}`);
+  return rows.reduce((s, r) => s + (r[column] || 0), 0);
 }
 
 
@@ -159,35 +165,7 @@ async function sbRpc(fnName, body = {}) {
 }
 
 
-async function sbRosterQuery({ search, classFilter, coachFilter, sourceFilter, sortBy, sortDir, offset, limit }) {
-  const params = ['select=id,email,created_at,name,class_year,coaching,study_mode,referral_source,target_year,email_reports,last_active_at,onboarding_done'];
-  if (classFilter)  params.push(`class_year=eq.${encodeURIComponent(classFilter)}`);
-  if (coachFilter)  params.push(`coaching=eq.${encodeURIComponent(coachFilter)}`);
-  if (sourceFilter) params.push(`referral_source=eq.${encodeURIComponent(sourceFilter)}`);
-  if (search) {
-    
-    const term = search.replace(/[%_,()*]/g, ' ').trim();
-    if (term) params.push(`or=(name.ilike.*${encodeURIComponent(term)}*,email.ilike.*${encodeURIComponent(term)}*)`);
-  }
-  const orderCol = sortBy === 'name' ? 'name' : sortBy === 'last_active' ? 'last_active_at' : 'created_at';
-  params.push(`order=${orderCol}.${sortDir === 1 ? 'asc' : 'desc'}.nullslast`);
 
-  const url = `${SUPABASE_URL}/rest/v1/admin_user_roster?${params.join('&')}`;
-  const res = await fetch(url, {
-    headers: {
-      'apikey': SUPABASE_SERVICE_KEY,
-      'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
-      'Range-Unit': 'items',
-      'Range': `${offset}-${offset + limit - 1}`,
-      'Prefer': 'count=exact',
-    },
-  });
-  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
-  const rows = await res.json();
-  const range = res.headers.get('content-range') || '';
-  const total = range.includes('/') ? (parseInt(range.split('/')[1], 10) || 0) : rows.length;
-  return { rows, total };
-}
 
 
 
@@ -337,23 +315,20 @@ export default async function handler(req, res) {
       const cutoff = dateFrom(days);
 
       const data = await cached(`stats_${days}`, 60000, async () => {
-        const activePrefs = await sbQuery(
-          `user_preferences?select=user_id,last_active_at&last_active_at=gte.${cutoff}T00:00:00Z`
-        ).catch(() => []);
-
         const [
-          totalUsers, totalTests, totalHours, totalBacklogs,
-          totalTodos, totalFeedbacks,
-          aiInsightsUsers,
+          activePrefs, totalUsers, totalTests, totalHours,
+          totalBacklogs, totalTodos, totalFeedbacks, totalQuestionsPracticed,
+          aiInsightsUsers
         ] = await Promise.all([
+          sbQuery(`user_preferences?select=user_id,last_active_at&last_active_at=gte.${cutoff}T00:00:00Z`).catch(() => []),
           sbCount('user_preferences').catch(() => 0),
           sbCount('tests').catch(() => 0),
           sbCount('hours').catch(() => 0),
           sbCount('backlogs').catch(() => 0),
           sbCount('todos').catch(() => 0),
           sbCount('feedback').catch(() => 0),
-          
-          sbQuery(`user_preferences?select=user_id&ai_insights_count=gt.0`).catch(() => []),
+          sbSum('practice_logs', 'questions').catch(() => 0),
+          sbQuery(`user_preferences?select=user_id&ai_insights_count=gt.0`).catch(() => [])
         ]);
 
         
@@ -367,6 +342,7 @@ export default async function handler(req, res) {
           backlogs:         totalBacklogs,
           todos:            totalTodos,
           feedbacks:        totalFeedbacks,
+          questionsPracticed: totalQuestionsPracticed,
           aiInsights:       aiInsightsCount,
           pageViews:        activePrefs.length,
         };
@@ -383,12 +359,13 @@ export default async function handler(req, res) {
 
     
     if (action === 'new_users') {
-      const authUsers = await cached('all_auth_users', 300000, () => sbAuthListAllUsers().catch(() => []));
+      const days = parseInt(req.query.days || '30', 10);
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
-
+      const cutoffStr = cutoff.toISOString();
+      const rawUsers = await cached(`new_users_raw_${days}`, 120000, () => sbQuery(`user_preferences?select=created_at&created_at=gte.${cutoffStr}&limit=50000`).catch(() => []));
       
       const byDay = {};
-      authUsers.forEach(u => {
+      rawUsers.forEach(u => {
         if (!u.created_at) return;
         const d = new Date(u.created_at);
         if (d < cutoff) return;
@@ -470,16 +447,39 @@ export default async function handler(req, res) {
       const sortBy       = req.query.sort || 'created_at'; 
       const sortDir      = req.query.dir === 'asc' ? 1 : -1;
 
-      const offset = page * pageSize;
-      const { rows, total } = await sbRosterQuery({
-        search, classFilter, coachFilter, sourceFilter, sortBy, sortDir,
-        offset, limit: pageSize,
-      });
+      const params = ['select=user_id,created_at,username,class_year,coaching,study_mode,referral_source,target_year,email_reports,last_active_at,onboarding_done'];
+      if (classFilter)  params.push(`class_year=eq.${encodeURIComponent(classFilter)}`);
+      if (coachFilter)  params.push(`coaching=eq.${encodeURIComponent(coachFilter)}`);
+      if (sourceFilter) params.push(`referral_source=eq.${encodeURIComponent(sourceFilter)}`);
+      if (search) {
+        const term = search.replace(/[%_,()*]/g, ' ').trim();
+        if (term) params.push(`username=ilike.*${encodeURIComponent(term)}*`);
+      }
+      const orderCol = sortBy === 'name' ? 'username' : sortBy === 'last_active' ? 'last_active_at' : 'created_at';
+      params.push(`order=${orderCol}.${sortDir === 1 ? 'asc' : 'desc'}.nullslast`);
 
-      const users = rows.map(u => ({
-        id:            u.id,
-        name:          u.name,
-        email:         u.email,
+      const offset = page * pageSize;
+      const url = `${SUPABASE_URL}/rest/v1/user_preferences?${params.join('&')}`;
+      const resData = await fetch(url, {
+        headers: {
+          'apikey': SUPABASE_SERVICE_KEY,
+          'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+          'Range-Unit': 'items',
+          'Range': `${offset}-${offset + pageSize - 1}`,
+          'Prefer': 'count=estimated',
+        },
+      });
+      if (!resData.ok) throw new Error(`Supabase ${resData.status}: ${await resData.text()}`);
+      const rows = await resData.json();
+      const range = resData.headers.get('content-range') || '';
+      const total = range.includes('/') ? (parseInt(range.split('/')[1], 10) || 0) : rows.length;
+
+      const emails = await Promise.all(rows.map(r => sbAuthGetUser(r.user_id).catch(() => null)));
+
+      const users = rows.map((u, i) => ({
+        id:            u.user_id,
+        name:          u.username || 'Unknown',
+        email:         emails[i]?.email || '',
         class:         classLabel(u.class_year),
         class_year:    u.class_year,
         target_year:   u.target_year,
@@ -506,19 +506,15 @@ export default async function handler(req, res) {
     
     
     if (action === 'demographics') {
-      const raw = await sbRpc('admin_demographics');
+      const raw = await cached('demographics_raw', 300000, () => sbQuery('user_preferences?select=class_year,coaching,target_year,referral_source').catch(() => []));
       const byDim = { class: {}, coaching: {}, year: {}, source: {} };
-      let total = 0;
+      let total = raw.length;
 
       raw.forEach(r => {
-        const dim = r.dimension;
-        if (!byDim[dim]) return;
-        const label = dim === 'class'    ? classLabel(r.label)
-                    : dim === 'coaching' ? coachingLabel(r.label)
-                    : dim === 'source'   ? sourceLabel(r.label)
-                    : (r.label || 'Not Set');
-        byDim[dim][label] = (byDim[dim][label] || 0) + Number(r.cnt);
-        if (dim === 'class') total += Number(r.cnt); 
+        byDim.class[classLabel(r.class_year)] = (byDim.class[classLabel(r.class_year)] || 0) + 1;
+        byDim.coaching[coachingLabel(r.coaching)] = (byDim.coaching[coachingLabel(r.coaching)] || 0) + 1;
+        byDim.year[r.target_year || 'Not Set'] = (byDim.year[r.target_year || 'Not Set'] || 0) + 1;
+        byDim.source[sourceLabel(r.referral_source)] = (byDim.source[sourceLabel(r.referral_source)] || 0) + 1;
       });
 
       const toArr = (obj) => Object.entries(obj)
@@ -541,17 +537,17 @@ export default async function handler(req, res) {
 
       
       const [
-        testsData, hoursData, syllabusData, backlogs, todos, feedbacks, streaks, prefs, authUser
+        testsData, hoursData, backlogs, todos, feedbacks, streaks, prefs, authUser, practiceLogsData
       ] = await Promise.all([
         sbQuery(`tests?select=*&user_id=eq.${distinct_id}&order=created_at.desc`).catch(() => []),
         sbQuery(`hours?select=*&user_id=eq.${distinct_id}&order=date.desc`).catch(() => []),
-        sbQuery(`syllabus?select=*&user_id=eq.${distinct_id}`).catch(() => []),
         sbCount('backlogs', `user_id=eq.${distinct_id}`).catch(() => 0),
         sbCount('todos', `user_id=eq.${distinct_id}`).catch(() => 0),
         sbQuery(`feedback?select=*&user_id=eq.${distinct_id}&order=created_at.desc`).catch(() => []),
         sbQuery(`streaks?select=*&user_id=eq.${distinct_id}`).catch(() => []),
         sbQuery(`user_preferences?select=*&user_id=eq.${distinct_id}`).catch(() => []),
         sbAuthGetUser(distinct_id).catch(() => null),
+        sbQuery(`practice_logs?select=subject,questions&user_id=eq.${distinct_id}`).catch(() => []),
       ]);
 
       
@@ -575,21 +571,12 @@ export default async function handler(req, res) {
       const mathHours = hoursData.filter(h => h.subject === 'maths').reduce((s, h) => s + (h.total || 0), 0);
 
       
-      const subjects = ['physics', 'chemistry', 'maths'];
-      const syllabusBySubject = subjects.map(s => {
-        const rows = syllabusData.filter(r => r.subject === s);
-        const done = rows.filter(r => r.theory && r.practice).length;
-        return {
-          subject: s,
-          total: rows.length,
-          done,
-          pct: rows.length ? Math.round((done / rows.length) * 100) : 0,
-        };
-      });
-      const syllabusTotalRows = syllabusData.length;
-      const syllabusDoneRows  = syllabusData.filter(r => r.theory && r.practice).length;
-      const syllabusOverallPct = syllabusTotalRows ? Math.round((syllabusDoneRows / syllabusTotalRows) * 100) : 0;
+      const totalQuestionsPracticed = practiceLogsData.reduce((s, p) => s + (p.questions || 0), 0);
+      const physQuestions = practiceLogsData.filter(p => p.subject === 'physics').reduce((s, p) => s + (p.questions || 0), 0);
+      const chemQuestions = practiceLogsData.filter(p => p.subject === 'chemistry').reduce((s, p) => s + (p.questions || 0), 0);
+      const mathQuestions = practiceLogsData.filter(p => p.subject === 'maths').reduce((s, p) => s + (p.questions || 0), 0);
 
+      
       
       const last30 = new Date(); last30.setDate(last30.getDate() - 30);
       const activityDates = new Set([
@@ -651,11 +638,11 @@ export default async function handler(req, res) {
           chemistry: Math.round(chemHours * 10) / 10,
           maths: Math.round(mathHours * 10) / 10,
         },
-        syllabus: {
-          bySubject: syllabusBySubject,
-          totalRows: syllabusTotalRows,
-          doneRows: syllabusDoneRows,
-          overallPct: syllabusOverallPct,
+        practiceLog: {
+          totalQuestions: totalQuestionsPracticed,
+          physics: physQuestions,
+          chemistry: chemQuestions,
+          maths: mathQuestions,
         },
         backlogs, todos,
         aiInsights: pref?.ai_insights_count || 0,
@@ -698,6 +685,7 @@ export default async function handler(req, res) {
         mock_tests_count: 3000,
         study_hours_count: 15000,
         backlogs_count: 4000,
+        questions_practiced_count: 50000,
         reviews_count: 1000,
         avg_rating: 4.8,
         app_version: 'v2.0',
@@ -716,7 +704,7 @@ export default async function handler(req, res) {
     
     if (action === 'save_site_config') {
       const body = req.body || {};
-      const allowedInts = ['mock_tests_count', 'study_hours_count', 'backlogs_count', 'reviews_count'];
+      const allowedInts = ['mock_tests_count', 'study_hours_count', 'backlogs_count', 'questions_practiced_count', 'reviews_count'];
       const payload = {};
 
       allowedInts.forEach((k) => {
@@ -758,12 +746,11 @@ export default async function handler(req, res) {
     
     if (action === 'db_stats') {
       const data = await cached('db_stats', 60000, async () => {
-        const [tests, hours, backlogs, todos, syllabus, feedbackCount, prefs] = await Promise.all([
+        const [tests, hours, backlogs, todos, feedbackCount, prefs] = await Promise.all([
           sbCount('tests').catch(() => 0),
           sbCount('hours').catch(() => 0),
           sbCount('backlogs').catch(() => 0),
           sbCount('todos').catch(() => 0),
-          sbCount('syllabus').catch(() => 0),
           sbCount('feedback').catch(() => 0),
           sbQuery('user_preferences?select=user_id,email_reports,last_active_at').catch(() => []),
         ]);
@@ -777,7 +764,6 @@ export default async function handler(req, res) {
           totalHours:     hours,
           totalBacklogs:  backlogs,
           totalTodos:     todos,
-          totalSyllabus:  syllabus,
           totalFeedbacks: feedbackCount,
           emailReportsOn: emailOn,
           activeUsers7d:  active7d,
@@ -832,14 +818,21 @@ export default async function handler(req, res) {
       const page = filtered.slice(offset, offset + limit);
 
       
-      const roster = await buildRoster().catch(() => []);
+      const userIds = [...new Set(page.map(f => f.user_id).filter(Boolean))];
+      const roster = userIds.length > 0 
+          ? await sbQuery(`user_preferences?select=user_id,username&user_id=in.(${userIds.join(',')})`).catch(() => []) 
+          : [];
       const rosterMap = {};
-      roster.forEach(u => { rosterMap[u.id] = u; });
+      roster.forEach(u => { rosterMap[u.user_id] = u; });
+
+      const emails = await Promise.all(userIds.map(id => sbAuthGetUser(id).catch(() => null)));
+      const emailMap = {};
+      userIds.forEach((id, i) => { emailMap[id] = emails[i]?.email; });
 
       const enriched = page.map(f => ({
         ...f,
-        account_name: rosterMap[f.user_id]?.name || f.email?.split('@')[0] || 'Anonymous',
-        email: f.email || rosterMap[f.user_id]?.email || '',
+        account_name: rosterMap[f.user_id]?.username || emailMap[f.user_id]?.split('@')[0] || f.email?.split('@')[0] || 'Anonymous',
+        email: f.email || emailMap[f.user_id] || '',
       }));
 
       return res.status(200).json({
@@ -862,9 +855,10 @@ export default async function handler(req, res) {
           const rows = await sbQuery(`feedback?id=eq.${encodeURIComponent(id)}&select=user_id`);
           const userId = rows?.[0]?.user_id;
           if (userId) {
-            const roster = await buildRoster().catch(() => []);
-            const user = roster.find(u => u.id === userId);
-            payload.display_name = user?.name || (user?.email ? user.email.split('@')[0] : null) || 'JEE ADV OSINT User';
+            const roster = await sbQuery(`user_preferences?select=user_id,username&user_id=eq.${userId}`).catch(() => []);
+            const user = roster?.[0];
+            const authUser = await sbAuthGetUser(userId).catch(() => null);
+            payload.display_name = user?.username || (authUser?.email ? authUser.email.split('@')[0] : null) || 'JEE ADV OSINT User';
           }
         } catch (e) { }
       }
@@ -894,7 +888,6 @@ export default async function handler(req, res) {
         'AI Insights':      ['ai','insight','weekly','analysis','score'],
         'Mock Tests':       ['mock','test','mains','advanced','score','marks'],
         'Study Hours':      ['hours','study','time','heatmap'],
-        'Syllabus':         ['syllabus','chapter','topic','subject'],
         'Backlog':          ['backlog','pending','clear'],
         'General Praise':   ['love','great','amazing','awesome','good','nice','excellent','best'],
         'UI / Design':      ['ui','design','dark','theme','color','font','look'],
@@ -946,13 +939,12 @@ export default async function handler(req, res) {
     
     
     if (action === 'retention') {
-      const roster = await buildRoster();
-      if (!roster.length) return res.status(200).json({ d1: 0, d7: 0, d30: 0, cohorts: [] });
-
-      const [allTests, allHours] = await cached('retention_raw', 60000, () => Promise.all([
-        sbQuery(`tests?select=user_id,date&date=gte.${dateFrom(45)}`).catch(() => []),
-        sbQuery(`hours?select=user_id,date&date=gte.${dateFrom(45)}`).catch(() => []),
+      const [rawUsers, allTests, allHours] = await cached('retention_raw', 120000, () => Promise.all([
+        sbQuery(`user_preferences?select=user_id,created_at&created_at=gte.${dateFrom(45)}&limit=50000`).catch(() => []),
+        sbQuery(`tests?select=user_id,date&date=gte.${dateFrom(45)}&limit=50000`).catch(() => []),
+        sbQuery(`hours?select=user_id,date&date=gte.${dateFrom(45)}&limit=50000`).catch(() => []),
       ]));
+      if (!rawUsers.length) return res.status(200).json({ d1: 0, d7: 0, d30: 0, cohorts: [] });
 
       
       const userDates = {};
@@ -967,11 +959,11 @@ export default async function handler(req, res) {
       let d1Eligible = 0, d7Eligible = 0, d30Eligible = 0;
 
       const now = new Date();
-      roster.forEach(u => {
+      rawUsers.forEach(u => {
         if (!u.created_at) return;
         const signup = new Date(u.created_at);
         const daysSinceSignup = Math.floor((now - signup) / 86400000);
-        const dates = userDates[u.id] || new Set();
+        const dates = userDates[u.user_id] || new Set();
 
         const wasActiveOnDay = (n) => {
           const target = new Date(signup);
@@ -979,9 +971,9 @@ export default async function handler(req, res) {
           return dates.has(target.toISOString().split('T')[0]);
         };
 
-        if (daysSinceSignup >= 1)  { d1Eligible++;  if (wasActiveOnDay(1))  d1Users.push(u.id); }
-        if (daysSinceSignup >= 7)  { d7Eligible++;  if (wasActiveOnDay(7))  d7Users.push(u.id); }
-        if (daysSinceSignup >= 30) { d30Eligible++; if (wasActiveOnDay(30)) d30Users.push(u.id); }
+        if (daysSinceSignup >= 1)  { d1Eligible++;  if (wasActiveOnDay(1))  d1Users.push(u.user_id); }
+        if (daysSinceSignup >= 7)  { d7Eligible++;  if (wasActiveOnDay(7))  d7Users.push(u.user_id); }
+        if (daysSinceSignup >= 30) { d30Eligible++; if (wasActiveOnDay(30)) d30Users.push(u.user_id); }
       });
 
       return res.status(200).json({
@@ -999,3 +991,4 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Something went wrong. Check server logs.' });
   }
 }
+

@@ -1,6 +1,6 @@
 
 
-const CACHE_VERSION = 'JEE ADV OSINT-v6';
+const CACHE_VERSION = 'jeetrack-v7';
 const CACHE_NAME = CACHE_VERSION;
 
 const STATIC_ASSETS = [
@@ -13,6 +13,13 @@ const NEVER_CACHE = [
   '/api/',
   '/api/config',
 ];
+
+// Supabase's REST API responses are dynamic, per-user data (tests, hours,
+// syllabus, etc.) — caching them in the SW's Cache Storage serves no real
+// purpose (only read back on a network failure, which is rare) and just lets
+// personal data accumulate indefinitely in browser storage. Route these
+// straight through to the network, no caching, same as NEVER_CACHE above.
+const SUPABASE_HOST_PATTERN = /\.supabase\.co$/;
 
 
 
@@ -52,7 +59,22 @@ self.addEventListener('fetch', e => {
 
   const url = new URL(e.request.url);
 
-  if (NEVER_CACHE.some(p => url.pathname.startsWith(p)) || url.hostname.includes('supabase.co')) {
+  // Only ever intercept/cache plain http(s) requests. Browser extensions
+  // (password managers, Grammarly, etc.) sometimes route their own requests
+  // through chrome-extension:// / moz-extension:// schemes that happen to
+  // pass through this handler — Cache.put() throws on those, which was
+  // showing up as an uncaught rejection in the console. Let the browser
+  // handle anything that isn't http(s) natively.
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
+  
+  if (NEVER_CACHE.some(p => url.pathname.startsWith(p))) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
+
+  
+  if (SUPABASE_HOST_PATTERN.test(url.hostname)) {
     e.respondWith(fetch(e.request));
     return;
   }
@@ -77,7 +99,14 @@ self.addEventListener('fetch', e => {
           }
           return res;
         })
-        .catch(() => caches.match(e.request))
+        .catch(async () => {
+          // If the network fails AND we have nothing cached for this
+          // request, caches.match() resolves to undefined — and
+          // respondWith(undefined) throws "Failed to convert value to
+          // 'Response'". Always resolve to a real Response.
+          const cached = await caches.match(e.request);
+          return cached || new Response('Offline and no cached version available', { status: 503, statusText: 'Service Unavailable' });
+        })
     );
     return;
   }
@@ -92,7 +121,10 @@ self.addEventListener('fetch', e => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(async () => {
+        const cached = await caches.match(e.request);
+        return cached || new Response('Offline and no cached version available', { status: 503, statusText: 'Service Unavailable' });
+      })
   );
 });
 
@@ -121,4 +153,3 @@ self.addEventListener('notificationclick', e => {
     })
   );
 });
-

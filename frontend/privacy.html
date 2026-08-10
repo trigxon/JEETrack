@@ -22,7 +22,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --bg: #0a0a0f;
     --surface: #13131a;
@@ -40,7 +39,6 @@
     --font-head: 'Syne', sans-serif;
     --font-body: 'DM Sans', sans-serif;
   }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -48,7 +46,6 @@
     min-height: 100vh;
     line-height: 1.6;
   }
-
   
   nav {
     position: sticky;
@@ -60,7 +57,7 @@
     padding: 0 2rem;
     height: 60px;
     background: rgba(10,10,15,0.85);
-    backdrop-filter: blur(12px);
+    
     border-bottom: 1px solid var(--border);
   }
   .nav-logo {
@@ -91,7 +88,6 @@
     cursor: pointer;
     text-decoration: none;
   }
-
   
   .hero {
     text-align: center;
@@ -151,7 +147,6 @@
     font-size: 0.78rem;
     color: var(--muted2);
   }
-
   
   .doc-wrap {
     max-width: 920px;
@@ -167,7 +162,6 @@
     .doc-wrap { grid-template-columns: 1fr; }
     .toc { display: none; }
   }
-
   
   .toc {
     position: sticky;
@@ -198,7 +192,6 @@
     transition: color 0.15s, border-color 0.15s;
   }
   .toc a:hover { color: var(--text); border-color: var(--purple-light); }
-
   
   .doc {
     background: var(--surface);
@@ -220,7 +213,6 @@
   .doc-summary strong { color: var(--purple-light); font-family: var(--font-head); }
   .doc-summary ul { margin: 0.5rem 0 0 1.1rem; color: var(--muted); }
   .doc-summary li { margin-bottom: 0.25rem; }
-
   .doc section { margin-bottom: 2.1rem; }
   .doc section:last-child { margin-bottom: 0; }
   .doc h2 {
@@ -266,7 +258,6 @@
   .doc li { margin-bottom: 0.4rem; }
   .doc a { color: var(--purple-light); text-decoration: none; }
   .doc a:hover { text-decoration: underline; }
-
   .table-wrap { overflow-x: auto; margin: 0.8rem 0 1rem; max-width: 100%; }
   table.dtable {
     width: 100%;
@@ -296,7 +287,6 @@
   }
   table.dtable td { color: var(--muted); }
   table.dtable td strong { color: var(--text); }
-
   .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 0.6rem 0 0.9rem; }
   .tag {
     display: inline-flex; align-items: center; gap: 5px;
@@ -310,7 +300,6 @@
   .tag.amber { color: var(--amber); border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.08); }
   .tag.purple { color: var(--purple-light); border-color: rgba(124,106,247,.3); background: rgba(124,106,247,.08); }
   .tag.rose { color: var(--rose); border-color: rgba(244,114,182,.3); background: rgba(244,114,182,.08); }
-
   .callout {
     border-left: 3px solid var(--purple);
     background: rgba(124,106,247,0.06);
@@ -321,13 +310,11 @@
   }
   .callout.amber { border-left-color: var(--amber); background: rgba(251,191,36,0.06); }
   .callout p { margin-bottom: 0; color: var(--text); }
-
   .doc hr {
     border: none;
     border-top: 1px solid var(--border);
     margin: 2rem 0;
   }
-
   .contact-box {
     background: var(--surface2);
     border: 1px solid var(--border2);
@@ -336,7 +323,6 @@
     margin-top: 0.8rem;
   }
   .contact-box a { font-weight: 600; }
-
   
   .cta-section {
     text-align: center;
@@ -366,7 +352,6 @@
     transition: opacity 0.2s, transform 0.2s;
   }
   .cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
   footer {
     text-align: center;
     padding: 1.5rem;
@@ -379,23 +364,19 @@
 </style>
 </head>
 <body>
-
 <nav>
   <a href="https://jee-adv-osint.vercel.app" class="nav-logo">
     <span class="nav-logo-text">JEE<span class="nav-logo-track">Track</span></span>
   </a>
   <a href="https://jee-adv-osint.vercel.app" class="nav-cta nav-cta-desktop">Get Started Free →</a>
 </nav>
-
 <section class="hero">
   <div class="hero-badge"><span class="hero-badge-dot"></span>Legal</div>
   <h1>Privacy <em>Policy</em></h1>
   <p>What we collect, why we collect it, who we share it with, and how you can control or delete it.</p>
   <div class="updated">Last updated: June 30, 2026</div>
 </section>
-
 <div class="doc-wrap">
-
   <div class="toc">
     <div class="toc-title">On this page</div>
     <a href="#overview">Overview</a>
@@ -413,9 +394,7 @@
     <a href="#changes">Changes to this policy</a>
     <a href="#contact">Contact us</a>
   </div>
-
   <article class="doc">
-
     <div class="doc-summary">
       <strong>The short version:</strong>
       <ul>
@@ -425,25 +404,21 @@
         <li>Many JEE ADV OSINT users are under 18. If you're under 18, please use JEE ADV OSINT with a parent or guardian's knowledge — see <a href="#children">Children &amp; Minors</a>.</li>
       </ul>
     </div>
-
     <section id="overview">
       <h2><span class="num">1</span>Overview</h2>
       <p>JEE ADV OSINT ("JEE ADV OSINT", "we", "us", "our") is a study-tracking web app built for JEE (Joint Entrance Examination) aspirants in India, accessible at <a href="https://jee-adv-osint.vercel.app">jee-adv-osint.vercel.app</a>. JEE ADV OSINT is built and operated by an individual developer, not a registered company.</p>
       <p>This Privacy Policy explains what information JEE ADV OSINT collects when you use the app, how that information is used, who it's shared with, and what choices you have. It applies to the JEE ADV OSINT website, the JEE ADV OSINT Progressive Web App (PWA) when installed on your device, and any related services described below.</p>
       <p>By creating an account or using JEE ADV OSINT, you agree to the collection and use of information as described in this policy. If you don't agree, please don't use the app.</p>
     </section>
-
     <section id="what-we-collect">
       <h2><span class="num">2</span>What we collect</h2>
       <p>We try to collect only what's needed to make JEE ADV OSINT work and to improve it. Here's exactly what that includes:</p>
-
       <h3>Account information</h3>
       <p>When you sign up, you create an account through <strong>Supabase Authentication</strong>, using either:</p>
       <ul>
         <li><strong>Email and password</strong> — we (via Supabase) store your email address and a securely hashed password. We never see or store your password in plain text.</li>
         <li><strong>Google Sign-In (OAuth)</strong> — Google shares your name, email address, and profile picture (if available) with us, so we can create your account without you typing a password.</li>
       </ul>
-
       <h3>Profile & onboarding information</h3>
       <p>During onboarding, you may provide:</p>
       <ul>
@@ -451,7 +426,6 @@
         <li>Academic year (Class 11, Class 12, or Dropper) and target JEE year</li>
         <li>Study mode (online, offline, hybrid, self-study) and coaching institute name, if any</li>
       </ul>
-
       <h3>Study data you create</h3>
       <p>This is the core of the app — the data you log to track your preparation:</p>
       <ul>
@@ -462,14 +436,11 @@
         <li>Score goals you set for yourself</li>
         <li>Feedback or messages you send us through the in-app feedback form</li>
       </ul>
-
       <h3>Technical & usage information</h3>
       <p>We automatically derive some usage information from the study data you create and from your account activity — for example, which features you use (mock tests, study hours, syllabus tracker, AI Insights, backlog), how often you open the app, and your signup date. This is calculated directly from your existing Supabase records, not from a separate tracking script, and is used only for our own internal analytics dashboard to understand product usage at an aggregate level.</p>
-
       <h3>Information we do <em>not</em> intentionally collect</h3>
       <p>We don't ask for or knowingly collect your government ID numbers, financial/payment details (JEE ADV OSINT is free — we don't process payments), or precise GPS location.</p>
     </section>
-
     <section id="how-we-use">
       <h2><span class="num">3</span>How we use your information</h2>
       <p>We use the information described above to:</p>
@@ -485,7 +456,6 @@
       </ul>
       <p>We do <strong>not</strong> sell your personal data to advertisers or other third parties, and JEE ADV OSINT does not run third-party advertising.</p>
     </section>
-
     <section id="ai-insights">
       <h2><span class="num">4</span>AI Insights & Groq</h2>
       <p>JEE ADV OSINT's "AI Insights" feature analyzes your test scores, study hours, syllabus progress, and backlog data to generate a personalized weekly breakdown. To do this, when you tap <strong>Generate Insights</strong>, JEE ADV OSINT sends a summary of that data — built from what you've logged in the app — to <strong><a href="https://groq.com" target="_blank" rel="noopener">Groq</a></strong>, a third-party AI inference provider, which runs a large language model (Llama 3.3 70B) to produce the analysis text.</p>
@@ -494,30 +464,23 @@
       </div>
       <p>This request happens through our own backend (a Supabase Edge Function), which requires you to be signed in — it isn't called automatically or in the background. Groq processes this data to return a response and does not use it to train their models for the purposes of this integration, per their API terms; we encourage you to review <a href="https://groq.com/privacy-policy" target="_blank" rel="noopener">Groq's own privacy policy</a> for how they handle API data.</p>
     </section>
-
     <section id="analytics">
       <h2><span class="num">5</span>Analytics</h2>
       <p>We run our own internal analytics dashboard to understand how people use JEE ADV OSINT so we can fix what's broken and improve what isn't. Unlike many apps, we don't use a third-party analytics or tracking service — our analytics are built entirely from the same <strong>Supabase</strong> database that stores your study data. There's no separate tracking script running in your browser, no session recording, and no third-party company receiving your usage events.</p>
-
       <div class="tag-row">
         <span class="tag purple">Derived from existing data</span>
         <span class="tag green">No session recording</span>
         <span class="tag amber">No third-party tracker</span>
       </div>
-
       <h3>What this means in practice</h3>
       <p>When you log a mock test, study session, backlog item, or generate an AI Insight, that record already exists in your account's Supabase tables. Our admin dashboard queries those same tables in aggregate — for example, counting how many users logged a test this week, or what percentage of users have tried AI Insights — without adding any new tracking of your individual behavior beyond what's needed for the app to function.</p>
-
       <h3>Identification</h3>
       <p>Because this analytics data comes from your account records rather than a separate tracking pixel, it's inherently tied to your user ID, email, and profile fields (class, target year, coaching institute) the same way your regular app data is — there's no additional identifier or fingerprinting involved.</p>
-
       <p>This approach means one less third-party company has access to your usage patterns, and there's no separate analytics privacy policy to review — your data stays within the same Supabase infrastructure described throughout this policy.</p>
     </section>
-
     <section id="sharing">
       <h2><span class="num">6</span>Who we share data with</h2>
       <p>We don't sell or rent your personal information. We do share data with the service providers who help us run JEE ADV OSINT — each only gets the data it needs to do its job:</p>
-
       <div class="table-wrap">
         <table class="dtable">
           <tr><th>Provider</th><th>What they're used for</th><th>What they receive</th></tr>
@@ -548,18 +511,15 @@
           </tr>
         </table>
       </div>
-
       <p>We may also disclose information if required to by law, legal process, or government request, or if necessary to protect the rights, property, or safety of JEE ADV OSINT, our users, or others.</p>
       <p>If JEE ADV OSINT is ever acquired, merged, or its assets transferred, your information may be transferred as part of that transaction — we'll notify you if that happens.</p>
     </section>
-
     <section id="storage">
       <h2><span class="num">7</span>Storage & security</h2>
       <p>Your account and study data are stored in a <strong>Supabase</strong> PostgreSQL database with Row Level Security enabled, meaning the database itself enforces that you can only ever read or write your own data — not other users' data. Communication between your browser and our backend uses HTTPS encryption.</p>
       <p>JEE ADV OSINT also keeps a local copy of your data in your browser's local storage so the app stays fast and usable on flaky connections, syncing it back to Supabase when you're online.</p>
       <p>No method of transmission or storage is 100% secure, and we can't guarantee absolute security — but we use industry-standard practices (encrypted connections, access-controlled databases, hashed passwords) to protect your information.</p>
     </section>
-
     <section id="retention">
       <h2><span class="num">8</span>Retention & deletion</h2>
       <p>We keep your account and study data for as long as your account is active, so your tracker keeps working and your history stays intact for streaks, trends, and comparisons.</p>
@@ -571,7 +531,6 @@
       </ul>
       <p>Some information may persist for a short period in backups or logs even after deletion, but it will no longer be linked to active use of the product and will age out per our providers' standard retention schedules.</p>
     </section>
-
     <section id="your-rights">
       <h2><span class="num">9</span>Your rights & choices</h2>
       <p>Regardless of where you live, you can:</p>
@@ -585,7 +544,6 @@
       </ul>
       <p>If you're an Indian resident, these rights are consistent with the Digital Personal Data Protection Act, 2023 (DPDP Act). If you're located outside India and a different privacy law applies to you (such as the GDPR), we'll honor equivalent rights on request — contact us and we'll do our best to accommodate it.</p>
     </section>
-
     <section id="children">
       <h2><span class="num">10</span>Children & minors</h2>
       <div class="callout amber">
@@ -594,46 +552,39 @@
       <p>If you are under 18, you should use JEE ADV OSINT with the involvement, awareness, or consent of a parent or legal guardian, consistent with applicable law in your jurisdiction. JEE ADV OSINT does not knowingly collect more information from a minor than is needed to provide the study-tracking features described in this policy, and we don't use minors' data for advertising.</p>
       <p>If you are a parent or guardian and believe your child has provided personal information to JEE ADV OSINT and you'd like it reviewed, exported, or deleted, contact us at <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com">5073340abdulrehmankhandurrani@gmail.com</a> and we will act on that request.</p>
     </section>
-
     <section id="cookies">
       <h2><span class="num">11</span>Cookies & local storage</h2>
       <p>JEE ADV OSINT uses your browser's local storage to keep you signed in and to cache your study data for offline-friendly performance. Supabase Authentication may also use cookies or similar tokens to manage your login session securely. We don't use cookies for third-party advertising, cross-site ad tracking, or third-party analytics — our internal analytics dashboard reads directly from your existing account data rather than setting any tracking cookies of its own.</p>
       <p>JEE ADV OSINT also registers a <strong>service worker</strong> in your browser (if you enable notifications) to support offline caching and push notifications. This service worker can store cached copies of app files on your device — it does not collect personal data on its own.</p>
     </section>
-
     <section id="notifications">
       <h2><span class="num">12</span>Push notifications & emails</h2>
       <p>If you opt in, JEE ADV OSINT can send browser push notifications for test reminders, daily study nudges, and backlog reminders. You can disable these anytime from Settings or your browser's notification permissions — this is entirely optional and off by default.</p>
       <p>If you opt in to monthly reports, we'll send a curated progress email (via Resend) on the 1st of each month, including a PDF performance summary built from your data. You can unsubscribe anytime from Settings.</p>
     </section>
-
     <section id="changes">
       <h2><span class="num">13</span>Changes to this policy</h2>
       <p>We may update this Privacy Policy as JEE ADV OSINT evolves — for example, if we add a new feature or change a service provider. If we make material changes, we'll update the "Last updated" date at the top of this page, and where appropriate, notify you in-app. Continuing to use JEE ADV OSINT after changes take effect means you accept the revised policy.</p>
     </section>
-
     <section id="contact">
       <h2><span class="num">14</span>Contact us</h2>
       <p>If you have questions about this Privacy Policy, want to exercise any of your rights, or want to report a concern, reach out:</p>
       <div class="contact-box">
         <p style="margin-bottom:0.4rem"><strong>Email:</strong> <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com">5073340abdulrehmankhandurrani@gmail.com</a></p>
-        <p style="margin-bottom:0"><strong>GitHub:</strong> <a href="https://github.com/AmanxMishraDev/JEETrack" target="_blank" rel="noopener">github.com/AmanxMishraDev/JEETrack</a></p>
+        <p style="margin-bottom:0"><strong>GitHub:</strong> <a href="https://github.com/trigxon/JEETrack" target="_blank" rel="noopener">github.com/trigxon/JEETrack</a></p>
       </div>
     </section>
-
   </article>
 </div>
-
 <section class="cta-section">
   <h2>Questions about your data?</h2>
   <p>We're a small team building this for JEE aspirants — reach out anytime.</p>
   <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com" class="cta-btn">Email 5073340abdulrehmankhandurrani@gmail.com →</a>
 </section>
-
 <footer>
   <p>© 2026 JEE ADV OSINT · <a href="https://jee-adv-osint.vercel.app">Home</a> · <a href="/faq">FAQ</a> · <a href="/terms">Terms</a> · Built for JEE aspirants across India</p>
 </footer>
-
-<script src="/cursor.js"></script>
+  <script src="blob-cursor.js"></script>
 </body>
 </html>
+

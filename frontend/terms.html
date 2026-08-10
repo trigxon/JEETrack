@@ -22,7 +22,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --bg: #0a0a0f;
     --surface: #13131a;
@@ -41,7 +40,6 @@
     --font-head: 'Syne', sans-serif;
     --font-body: 'DM Sans', sans-serif;
   }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -49,7 +47,6 @@
     min-height: 100vh;
     line-height: 1.6;
   }
-
   
   nav {
     position: sticky;
@@ -61,7 +58,7 @@
     padding: 0 2rem;
     height: 60px;
     background: rgba(10,10,15,0.85);
-    backdrop-filter: blur(12px);
+    
     border-bottom: 1px solid var(--border);
   }
   .nav-logo {
@@ -92,7 +89,6 @@
     cursor: pointer;
     text-decoration: none;
   }
-
   
   .hero {
     text-align: center;
@@ -152,7 +148,6 @@
     font-size: 0.78rem;
     color: var(--muted2);
   }
-
   
   .doc-wrap {
     max-width: 920px;
@@ -168,7 +163,6 @@
     .doc-wrap { grid-template-columns: 1fr; }
     .toc { display: none; }
   }
-
   
   .toc {
     position: sticky;
@@ -199,7 +193,6 @@
     transition: color 0.15s, border-color 0.15s;
   }
   .toc a:hover { color: var(--text); border-color: var(--purple-light); }
-
   
   .doc {
     background: var(--surface);
@@ -221,7 +214,6 @@
   .doc-summary strong { color: var(--purple-light); font-family: var(--font-head); }
   .doc-summary ul { margin: 0.5rem 0 0 1.1rem; color: var(--muted); }
   .doc-summary li { margin-bottom: 0.25rem; }
-
   .doc section { margin-bottom: 2.1rem; }
   .doc section:last-child { margin-bottom: 0; }
   .doc h2 {
@@ -267,7 +259,6 @@
   .doc li { margin-bottom: 0.4rem; }
   .doc a { color: var(--purple-light); text-decoration: none; }
   .doc a:hover { text-decoration: underline; }
-
   .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 0.6rem 0 0.9rem; }
   .tag {
     display: inline-flex; align-items: center; gap: 5px;
@@ -281,7 +272,6 @@
   .tag.amber { color: var(--amber); border-color: rgba(251,191,36,.3); background: rgba(251,191,36,.08); }
   .tag.purple { color: var(--purple-light); border-color: rgba(124,106,247,.3); background: rgba(124,106,247,.08); }
   .tag.red { color: var(--red); border-color: rgba(248,113,113,.3); background: rgba(248,113,113,.08); }
-
   .callout {
     border-left: 3px solid var(--purple);
     background: rgba(124,106,247,0.06);
@@ -293,7 +283,6 @@
   .callout.amber { border-left-color: var(--amber); background: rgba(251,191,36,0.06); }
   .callout.red { border-left-color: var(--red); background: rgba(248,113,113,0.06); }
   .callout p { margin-bottom: 0; color: var(--text); }
-
   .contact-box {
     background: var(--surface2);
     border: 1px solid var(--border2);
@@ -302,7 +291,6 @@
     margin-top: 0.8rem;
   }
   .contact-box a { font-weight: 600; }
-
   
   .cta-section {
     text-align: center;
@@ -332,7 +320,6 @@
     transition: opacity 0.2s, transform 0.2s;
   }
   .cta-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-
   footer {
     text-align: center;
     padding: 1.5rem;
@@ -344,23 +331,19 @@
 </style>
 </head>
 <body>
-
 <nav>
   <a href="https://jee-adv-osint.vercel.app" class="nav-logo">
     <span class="nav-logo-text">JEE<span class="nav-logo-track">Track</span></span>
   </a>
   <a href="https://jee-adv-osint.vercel.app" class="nav-cta nav-cta-desktop">Get Started Free →</a>
 </nav>
-
 <section class="hero">
   <div class="hero-badge"><span class="hero-badge-dot"></span>Legal</div>
   <h1>Terms & <em>Conditions</em></h1>
   <p>The ground rules for using JEE ADV OSINT — please read before you create an account.</p>
   <div class="updated">Last updated: June 30, 2026</div>
 </section>
-
 <div class="doc-wrap">
-
   <div class="toc">
     <div class="toc-title">On this page</div>
     <a href="#acceptance">Acceptance of terms</a>
@@ -381,9 +364,7 @@
     <a href="#changes">Changes to these terms</a>
     <a href="#contact">Contact us</a>
   </div>
-
   <article class="doc">
-
     <div class="doc-summary">
       <strong>The short version:</strong>
       <ul>
@@ -394,19 +375,16 @@
         <li>You can delete your account and data anytime; we can suspend accounts that abuse the service.</li>
       </ul>
     </div>
-
     <section id="acceptance">
       <h2><span class="num">1</span>Acceptance of terms</h2>
       <p>These Terms & Conditions ("Terms") govern your access to and use of JEE ADV OSINT, available at <a href="https://jee-adv-osint.vercel.app">jee-adv-osint.vercel.app</a>, including the website and the installable Progressive Web App (collectively, the "Service"). JEE ADV OSINT is built and operated by an individual developer ("we", "us", "our").</p>
       <p>By creating an account or otherwise using the Service, you agree to be bound by these Terms and our <a href="/privacy">Privacy Policy</a>. If you don't agree, please don't use the Service.</p>
     </section>
-
     <section id="eligibility">
       <h2><span class="num">2</span>Eligibility & minors</h2>
       <p>JEE ADV OSINT is built for JEE (Joint Entrance Examination) aspirants, many of whom are between 15 and 18 years old. We don't impose a strict minimum age, but if you are under 18, you should use JEE ADV OSINT with the awareness and, where required by applicable law, the consent of a parent or legal guardian.</p>
       <p>By using JEE ADV OSINT, you confirm that any information you provide is accurate, and if you're a minor, that you have the necessary permission from a parent or guardian to use the Service.</p>
     </section>
-
     <section id="account">
       <h2><span class="num">3</span>Your account</h2>
       <p>To use most features of JEE ADV OSINT, you need to create an account using email/password or Google Sign-In. You're responsible for:</p>
@@ -417,7 +395,6 @@
       </ul>
       <p>If you believe your account has been compromised, contact us immediately at <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com">5073340abdulrehmankhandurrani@gmail.com</a>.</p>
     </section>
-
     <section id="free">
       <h2><span class="num">4</span>Free service</h2>
       <div class="tag-row">
@@ -428,7 +405,6 @@
       <p>JEE ADV OSINT is currently free to use, with no paid plans, subscriptions, or in-app purchases. We don't collect any payment or billing information.</p>
       <p>We reserve the right to introduce paid features in the future. If we do, this would apply only to new optional features — we'll communicate any such change clearly in advance, and it won't retroactively charge you for features you're already using for free.</p>
     </section>
-
     <section id="acceptable-use">
       <h2><span class="num">5</span>Acceptable use</h2>
       <p>When using JEE ADV OSINT, you agree not to:</p>
@@ -443,13 +419,11 @@
       </ul>
       <p>We may suspend or terminate accounts that violate these rules, at our discretion.</p>
     </section>
-
     <section id="your-content">
       <h2><span class="num">6</span>Your content & data</h2>
       <p>You retain ownership of the data you enter into JEE ADV OSINT — your test scores, study hours, notes, and other study data ("Your Content"). By using the Service, you grant us a limited license to store, process, and display Your Content back to you, and to use it as described in our <a href="/privacy">Privacy Policy</a> (for example, to generate AI Insights or send report emails).</p>
       <p>You're responsible for the accuracy of the data you enter. JEE ADV OSINT displays and analyzes whatever you log — if you enter incorrect test scores, the charts, streaks, and AI Insights built from that data will reflect those inaccuracies.</p>
     </section>
-
     <section id="ai-disclaimer">
       <h2><span class="num">7</span>AI Insights disclaimer</h2>
       <div class="callout amber">
@@ -458,36 +432,30 @@
       <p>AI-generated content can be inaccurate, oversimplified, or just plain wrong — language models sometimes get things wrong with confidence ("hallucination"). Treat AI Insights as one input among many, not a verdict on your preparation. Use your own judgment, and consult a teacher, mentor, or counselor for decisions that matter, like changing your study strategy significantly or your choice of coaching.</p>
       <p>We are not responsible for decisions you make based solely on AI-generated insights.</p>
     </section>
-
     <section id="no-guarantee">
       <h2><span class="num">8</span>No guarantee of exam results</h2>
       <p>JEE ADV OSINT is a <strong>tracking and organization tool</strong> — it helps you log, visualize, and stay consistent with your JEE preparation. It is not a coaching institute, test-prep curriculum, or guarantee of any kind.</p>
       <p>We make no promises, representations, or guarantees about your JEE Mains or JEE Advanced results, rank, admission outcomes, or any other academic or career outcome, regardless of how consistently you use the app or what your streaks, charts, or AI Insights show.</p>
     </section>
-
     <section id="availability">
       <h2><span class="num">9</span>Availability & changes to the Service</h2>
       <p>We try to keep JEE ADV OSINT available and reliable, but we don't guarantee uninterrupted access. The Service may be unavailable due to maintenance, updates, or issues with third-party providers (like Supabase, Vercel, or Groq) that are outside our control.</p>
       <p>We may add, change, or remove features at any time. We'll try to avoid breaking changes that affect your existing data, but we can't promise every feature will exist forever in its current form.</p>
     </section>
-
     <section id="ip">
       <h2><span class="num">10</span>Intellectual property</h2>
-      <p>The JEE ADV OSINT name, logo, and the app's design are owned by us. The JEE ADV OSINT source code is published on <a href="https://github.com/AmanxMishraDev/JEETrack" target="_blank" rel="noopener">GitHub</a> under the license specified in that repository — if you intend to reuse, fork, or build on the code, please check the repository's license terms.</p>
+      <p>The JEE ADV OSINT name, logo, and the app's design are owned by us. The JEE ADV OSINT source code is published on <a href="https://github.com/trigxon/JEETrack" target="_blank" rel="noopener">GitHub</a> under the license specified in that repository — if you intend to reuse, fork, or build on the code, please check the repository's license terms.</p>
       <p>You may not use the JEE ADV OSINT name, logo, or branding to represent your own product or service without our written permission.</p>
     </section>
-
     <section id="third-party">
       <h2><span class="num">11</span>Third-party services</h2>
       <p>JEE ADV OSINT relies on third-party services to operate — including Supabase (database, auth, and our internal analytics), Vercel (hosting), Groq (AI Insights), Resend (email), and Google (sign-in). Your use of JEE ADV OSINT may be subject to those providers' own terms, in addition to ours. We're not responsible for outages, errors, or policy changes on the part of these third-party providers, though we'll do our best to adapt or find alternatives if something breaks.</p>
     </section>
-
     <section id="termination">
       <h2><span class="num">12</span>Termination</h2>
       <p>You can stop using JEE ADV OSINT and delete your account at any time — go to <em>Settings → Data &amp; Backup → Reset All Data</em> to erase your data, or email <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com">5073340abdulrehmankhandurrani@gmail.com</a> to have your account fully deleted.</p>
       <p>We may suspend or terminate your access to the Service if you violate these Terms, engage in abusive behavior, or if we discontinue the Service. Where reasonably possible, we'll try to give you notice and a chance to export your data first.</p>
     </section>
-
     <section id="disclaimer">
       <h2><span class="num">13</span>Disclaimer of warranties</h2>
       <div class="callout red">
@@ -495,45 +463,38 @@
       </div>
       <p>We do not warrant that the Service will be uninterrupted, error-free, or completely secure, or that any data loss will never occur. While we take reasonable steps to protect your data (see our <a href="/privacy">Privacy Policy</a>), you're encouraged to periodically export your data as a backup.</p>
     </section>
-
     <section id="liability">
       <h2><span class="num">14</span>Limitation of liability</h2>
       <p>To the fullest extent permitted by applicable law, JEE ADV OSINT and its developer shall not be liable for any indirect, incidental, special, consequential, or punitive damages, or any loss of data, exam performance, or opportunity, arising from your use of (or inability to use) the Service — including reliance on AI Insights, charts, or any other content generated by the app.</p>
       <p>Since JEE ADV OSINT is provided free of charge, our total liability to you for any claim arising from these Terms or the Service is limited to the greatest extent permitted by law.</p>
     </section>
-
     <section id="governing-law">
       <h2><span class="num">15</span>Governing law</h2>
       <p>These Terms are governed by and construed in accordance with the laws of India, without regard to conflict-of-law principles. Any disputes arising from these Terms or your use of the Service will be subject to the exclusive jurisdiction of the competent courts in India.</p>
     </section>
-
     <section id="changes">
       <h2><span class="num">16</span>Changes to these terms</h2>
       <p>We may revise these Terms from time to time as JEE ADV OSINT evolves. If we make material changes, we'll update the "Last updated" date above and, where appropriate, notify you in-app. Continuing to use JEE ADV OSINT after changes take effect means you accept the revised Terms — if you don't agree with a change, please stop using the Service and you may delete your account.</p>
     </section>
-
     <section id="contact">
       <h2><span class="num">17</span>Contact us</h2>
       <p>Questions about these Terms? Reach out:</p>
       <div class="contact-box">
         <p style="margin-bottom:0.4rem"><strong>Email:</strong> <a href="https://mail.google.com/mail/?view=cm&fs=1&to=5073340abdulrehmankhandurrani@gmail.com">5073340abdulrehmankhandurrani@gmail.com</a></p>
-        <p style="margin-bottom:0"><strong>GitHub:</strong> <a href="https://github.com/AmanxMishraDev/JEETrack" target="_blank" rel="noopener">github.com/AmanxMishraDev/JEETrack</a></p>
+        <p style="margin-bottom:0"><strong>GitHub:</strong> <a href="https://github.com/trigxon/JEETrack" target="_blank" rel="noopener">github.com/trigxon/JEETrack</a></p>
       </div>
     </section>
-
   </article>
 </div>
-
 <section class="cta-section">
   <h2>Ready to get serious about JEE?</h2>
   <p>Free, forever — no fine print on that part.</p>
   <a href="https://jee-adv-osint.vercel.app" class="cta-btn">Start Tracking for Free →</a>
 </section>
-
 <footer>
   <p>© 2026 JEE ADV OSINT · <a href="https://jee-adv-osint.vercel.app">Home</a> · <a href="/faq">FAQ</a> · <a href="/privacy">Privacy</a> · Built for JEE aspirants across India</p>
 </footer>
-
-<script src="/cursor.js"></script>
+  <script src="blob-cursor.js"></script>
 </body>
 </html>
+
