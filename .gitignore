@@ -1,18 +1,5 @@
-# Supabase local CLI state
-supabase/.temp/
-
-# Environment files - never commit these
-.env
-.env.local
-.env.*.local
-*.env
-
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-Desktop.ini
-
-# Editor
-.vscode/
-.idea/
+﻿node_modules/
+package-lock.json
+package.json
+test_jsdom.js
+temp_script*.js
