@@ -1406,9 +1406,9 @@ function loadCurrentPage() {
   if (!loader) return;
   const btn = document.querySelector('.icon-btn[title="Refresh"] svg');
   if (btn) btn.style.animation = 'avOrbRing 1s linear infinite';
-  document.getElementById('page-loading-overlay').style.display = 'flex';
+  
   Promise.resolve(loader()).finally(() => {
-    document.getElementById('page-loading-overlay').style.display = 'none';
+    
     if (btn) btn.style.animation = 'none';
   });
 }
@@ -2811,3 +2811,4 @@ function replyToFeedback(userId, email, subject) {
 <script src="/cursor.js"></script>
 </body>
 </html>
+
