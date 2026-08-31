@@ -29,8 +29,7 @@ let currentUser = null;
 let isSaving = false;
 let saveQueue = false;
 let _appInitialized = false; 
-let _pendingGoogleToken = null;
-let _pendingGoogleNonce = null;
+
 
 function _shouldShowOnboarding(userId, profileStatus) {
   if (profileStatus === 'error' || profileStatus === 'no_client') return false; 
@@ -129,30 +128,7 @@ async function initSupabase(){
     }
   });
 
-  // Process any pending Google OAuth id_token captured before sb was ready.
-  // Must be awaited BEFORE getSession() so the session is established
-  // and getSession() picks it up — otherwise they race.
-  if (_pendingGoogleToken) {
-    const _pgt = _pendingGoogleToken;
-    _pendingGoogleToken = null;
-    try {
-      const signInOpts = { provider: 'google', token: _pgt };
-      if (_pendingGoogleNonce) { signInOpts.nonce = _pendingGoogleNonce; _pendingGoogleNonce = null; }
-      const { data: _pgtData, error: _pgtErr } = await sb.auth.signInWithIdToken(signInOpts);
-      if (_pgtErr) {
-        console.error('Google Auth Error:', _pgtErr.message);
-        toast('Google sign-in failed: ' + _pgtErr.message, 'error');
-      } else if (_pgtData?.session?.user) {
-        // signInWithIdToken succeeded — skip the getSession() path below
-        // by letting onAuthStateChange / getSession handle the now-active session
-      }
-    } catch(_pgtCatch) {
-      console.error('Google Auth Error:', _pgtCatch);
-      toast('Google sign-in failed. Please try again.', 'error');
-    }
-  }
 
-  
   const _recoveryParams = new URLSearchParams(window.location.search);
   const _recoveryTokenHash = _recoveryParams.get('token_hash');
   const _isRecoveryLink = _recoveryParams.get('type') === 'recovery' && !!_recoveryTokenHash;
@@ -393,29 +369,19 @@ async function doAuthPro(mode){
 
 function doAuth(){ return doAuthPro(authTab); }
 
-function doGoogleAuth() {
-  const clientId = '804150722605-jg9au33aor3sdmgeg1276p3o77rqueo5.apps.googleusercontent.com';
-  const redirectUri = window.location.origin;
-  const nonce = 'jeetrack_' + Date.now();
-  sessionStorage.setItem('_gn', nonce);
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=email%20profile&nonce=${nonce}`;
-  window.location.href = url;
+async function doGoogleAuth() {
+  if (!sb) { toast('Still loading… please try again.', 'error'); return; }
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) {
+    console.error('Google OAuth init error:', error.message);
+    toast('Google sign-in failed: ' + error.message, 'error');
+  }
 }
 
-// Handle Google OAuth callback on load — store token for initSupabase() to consume
-(function _captureGoogleToken() {
-  const hash = window.location.hash;
-  if (hash && hash.includes('id_token=')) {
-    const params = new URLSearchParams(hash.substring(1));
-    const idToken = params.get('id_token');
-    if (idToken) {
-      _pendingGoogleToken = idToken;
-      _pendingGoogleNonce = sessionStorage.getItem('_gn');
-      sessionStorage.removeItem('_gn');
-      window.location.hash = '';
-    }
-  }
-})();
+
 
 async function signOut(){
   if(sb){
