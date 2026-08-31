@@ -99,6 +99,7 @@ async function initSupabase(){
 
   
   sb.auth.onAuthStateChange((event, session) => {
+    console.log('[Auth] Event:', event, 'Session:', !!session?.user);
     if(event === 'PASSWORD_RECOVERY'){
       
       return;
@@ -108,9 +109,11 @@ async function initSupabase(){
       S = getDefaultState();
       showAuthScreen(true);
       setTimeout(initSlideshow, 100);
-    } else if(event === 'SIGNED_IN' && session?.user){
+    } else if((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user){
       if(_appInitialized) return; 
       _appInitialized = true;
+      _authResolved = true;
+      clearTimeout(_splashSafetyTimer);
       currentUser = session.user;
       loadUserData().then(async () => {
         const profileStatus = await loadUserProfile();
@@ -181,6 +184,8 @@ async function initSupabase(){
         }
       });
     } else {
+      
+      if(_appInitialized) return;
       showAuthScreen();
       setTimeout(initSlideshow, 100);
     }
@@ -371,13 +376,16 @@ function doAuth(){ return doAuthPro(authTab); }
 
 async function doGoogleAuth() {
   if (!sb) { toast('Still loading… please try again.', 'error'); return; }
-  const { error } = await sb.auth.signInWithOAuth({
+  console.log('[GoogleAuth] Starting signInWithOAuth, sb URL:', SUPABASE_URL);
+  const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo: window.location.origin }
   });
   if (error) {
-    console.error('Google OAuth init error:', error.message);
-    toast('Google sign-in failed: ' + error.message, 'error');
+    console.error('[GoogleAuth] signInWithOAuth error:', error);
+    toast('Google sign-in failed: ' + error.message + '. Check Supabase → Auth → Providers → Google is enabled.', 'error');
+  } else {
+    console.log('[GoogleAuth] signInWithOAuth success, redirecting...');
   }
 }
 
