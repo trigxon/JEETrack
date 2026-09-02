@@ -76,7 +76,7 @@ async function initSupabase(){
     clearTimeout(_splashSafetyTimer);
     if(window.jtSplash) window.jtSplash.setProgress(90, 'Almost ready');
     hideSplash();
-    showApp('Demo User','demo@jeetrack.app');
+    showApp('Demo User','demo@jee-adv-osint.vercel.app');
     return;
   }
 
@@ -2921,7 +2921,7 @@ async function doReset(){
   if(sb && currentUser){
     const uid = currentUser.id;
     toast('Deleting data…', 'saving');
-    try{ await Promise.all([sb.from('tests').delete().eq('user_id',uid),sb.from('hours').delete().eq('user_id',uid),sb.from('backlogs').delete().eq('user_id',uid),sb.from('todos').delete().eq('user_id',uid),sb.from('upcoming').delete().eq('user_id',uid),sb.from('user_preferences').update({syllabus_state:null}).eq('user_id',uid),sb.from('streaks').delete().eq('user_id',uid)]); }catch(e){}
+    try{ await Promise.all([sb.from('tests').delete().eq('user_id',uid),sb.from('hours').delete().eq('user_id',uid),sb.from('backlogs').delete().eq('user_id',uid),sb.from('todos').delete().eq('user_id',uid),sb.from('upcoming').delete().eq('user_id',uid),sb.from('practice_logs').delete().eq('user_id',uid),sb.from('user_preferences').update({syllabus_state:null}).eq('user_id',uid),sb.from('streaks').delete().eq('user_id',uid)]); }catch(e){}
   }
   localStorage.removeItem('jt3');
   localStorage.removeItem('jt3_known_updated_at');
@@ -3329,7 +3329,7 @@ async function sendFeedback() {
 
     
     if (!saved) {
-      const mailtoUrl = `mailto:support@jee-adv-osint.vercel.app?subject=${encodeURIComponent('[JEE ADV OSINT Feedback] ' + subj)}&body=${encodeURIComponent(msg + '\n\n— Sent from JEE ADV OSINT\nUser: ' + (currentUser?.email || 'anonymous'))}`;
+      const mailtoUrl = `mailto:5073340abdulrehmankhandurrani@gmail.com?subject=${encodeURIComponent('[JEE ADV OSINT Feedback] ' + subj)}&body=${encodeURIComponent(msg + '\n\n— Sent from JEE ADV OSINT\nUser: ' + (currentUser?.email || 'anonymous'))}`;
       window.open(mailtoUrl, '_blank');
     }
 
