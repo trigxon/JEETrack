@@ -1,6 +1,6 @@
 
 
-const CACHE_VERSION = 'jeetrack-v7';
+const CACHE_VERSION = 'jee-adv-osint-v7';
 const CACHE_NAME = CACHE_VERSION;
 
 const STATIC_ASSETS = [
