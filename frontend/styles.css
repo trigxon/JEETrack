@@ -5576,8 +5576,6 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
 
 .sidebar-bottom {
   margin-top: auto;
-  position: sticky;
-  bottom: 0;
   background: var(--sf);
   display: flex;
   flex-direction: column;
@@ -5593,7 +5591,6 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
 
 .social-links-footer {
   margin-bottom: 0 !important;
-  padding-bottom: 40px !important;
   margin-top: auto !important;
 }
 
