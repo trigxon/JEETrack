@@ -1,8 +1,9 @@
-// blob-cursor.js — small solid pink cursor with dynamic, lag-free motion.
-// Delta-time exponential smoothing keeps the follow constant and jitter-free
-// at any refresh rate; a middle "stretch" layer elongates the dot slightly in
-// the direction of fast movement for a lively feel; the inner dot springs on
-// interactive elements via its own composited transform.
+// blob-cursor.js — small solid pink cursor with dynamic, smooth, lag-free motion.
+// Visuals and dynamics are unchanged: same 14px pink dot, same 1.6x hover
+// spring, same directional stretch. The motion engine runs a *continuous*
+// rAF loop while the cursor is visible so it never restarts mid-move (no
+// micro-hitches when you pause and resume), and delta-time exponential
+// smoothing keeps the follow constant at any refresh rate or on heavy pages.
 (function(){
   // Detect touch screens. If touch is supported, abort to keep default behavior and allow normal touch interaction.
   if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0) {
@@ -10,9 +11,10 @@
   }
 
   const FOLLOW_RATE = 40;          // exponential smoothing rate (1/s) — near-instant, lag-free
-  const STRETCH_RATE = 22;         // how quickly the dynamic stretch catches up (1/s)
+  const STRETCH_RATE = 16;         // how quickly the dynamic stretch eases (1/s) — slower = silkier
   const MAX_DT = 0.05;             // clamp delta time (50ms) so tab switches don't cause jumps
-  const MAX_STRETCH = 1.4;         // max elongation when flicking fast
+  const MAX_STRETCH = 1.35;        // max elongation when flicking fast
+  const SETTLE_EPS = 0.05;         // px threshold below which the dot is considered settled
 
   const cursor = document.createElement('div');
   cursor.id = 'custom-cursor';
@@ -28,9 +30,9 @@
   let currentX = -100, currentY = -100;
   let stretchX = 1, stretchY = 1;
   let isVisible = false;
-  let isMoving = false;
+  let rafId = 0;
   let lastTime = 0;
-  let started = false;
+  let dirty = true;
 
   const style = document.createElement('style');
   style.textContent = `
@@ -96,25 +98,17 @@
     mouseX = e.clientX;
     mouseY = e.clientY;
 
-    if (!started) {
+    if (!isVisible) {
       // Snap to the pointer on the very first move so the dot never streaks
       // across the screen from its off-screen starting position.
       currentX = mouseX;
       currentY = mouseY;
-      cursor.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
-      started = true;
-    }
-
-    if (!isVisible) {
+      dirty = true;
       document.documentElement.classList.add('mouse-active');
       cursor.style.opacity = '1';
       isVisible = true;
-    }
-
-    if (!isMoving) {
-      isMoving = true;
       lastTime = 0;
-      requestAnimationFrame(render);
+      startLoop();
     }
   }, { passive: true });
 
@@ -122,46 +116,79 @@
     cursor.style.opacity = '0';
     isVisible = false;
     document.documentElement.classList.remove('mouse-active');
+    stopLoop();
   });
 
   document.addEventListener('mouseenter', () => {
     cursor.style.opacity = '1';
     isVisible = true;
-    document.documentElement.classList.add('mouse-active');
+    lastTime = 0;
+    startLoop();
   });
 
+  function startLoop() {
+    if (!rafId) {
+      lastTime = 0;
+      rafId = requestAnimationFrame(render);
+    }
+  }
+
+  function stopLoop() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+  }
+
+  function commit() {
+    if (!dirty) return;
+    dirty = false;
+    cursor.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+    stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
+  }
+
+  // Continuous render loop: stays alive while the cursor is on screen so a
+  // resumed move glides from a fully settled position without restart jank.
   function render(now) {
+    rafId = 0;
+    if (!isVisible) return;
+
     if (!lastTime) lastTime = now;
     let dt = (now - lastTime) / 1000;
     lastTime = now;
     if (dt > MAX_DT) dt = MAX_DT;
 
-    // Lag-free, frame-rate independent follow.
-    const t = 1 - Math.exp(-FOLLOW_RATE * dt);
-    currentX += (mouseX - currentX) * t;
-    currentY += (mouseY - currentY) * t;
+    if (dt > 0) {
+      // Lag-free, frame-rate independent follow.
+      const t = 1 - Math.exp(-FOLLOW_RATE * dt);
+      currentX += (mouseX - currentX) * t;
+      currentY += (mouseY - currentY) * t;
 
-    // Dynamic stretch: the dot elongates slightly along the direction of
-    // movement when flicking fast, then relaxes back to a perfect circle.
-    const dx = mouseX - currentX;
-    const dy = mouseY - currentY;
-    const speed = Math.sqrt(dx * dx + dy * dy);
-    const target = speed > 0.5 ? Math.min(1 + speed * 0.0045, MAX_STRETCH) : 1;
-    const st = 1 - Math.exp(-STRETCH_RATE * dt);
-    stretchX += ((dx / speed) * (target - 1) + 1 - stretchX) * st;
-    stretchY += ((dy / speed) * (target - 1) + 1 - stretchY) * st;
+      // Dynamic stretch: the dot elongates slightly along the direction of
+      // movement when flicking fast, then relaxes back to a perfect circle.
+      const dx = mouseX - currentX;
+      const dy = mouseY - currentY;
+      const speed = Math.sqrt(dx * dx + dy * dy);
+      const st = 1 - Math.exp(-STRETCH_RATE * dt);
 
-    cursor.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-    stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
+      if (speed > 0.5) {
+        const target = Math.min(1 + speed * 0.0045, MAX_STRETCH);
+        stretchX += (1 + (target - 1) * (dx / speed) - stretchX) * st;
+        stretchY += (1 + (target - 1) * (dy / speed) - stretchY) * st;
+      } else {
+        stretchX += (1 - stretchX) * st;
+        stretchY += (1 - stretchY) * st;
+      }
 
-    if (speed < 0.1 && Math.abs(stretchX - 1) < 0.01 && Math.abs(stretchY - 1) < 0.01) {
-      currentX = mouseX;
-      currentY = mouseY;
-      stretchX = 1;
-      stretchY = 1;
-      isMoving = false;
-    } else {
-      requestAnimationFrame(render);
+      // Snap exactly when fully settled so there's never residual drift.
+      if (speed < SETTLE_EPS && Math.abs(stretchX - 1) < 0.002 && Math.abs(stretchY - 1) < 0.002) {
+        currentX = mouseX;
+        currentY = mouseY;
+        stretchX = 1;
+        stretchY = 1;
+      }
+
+      dirty = true;
     }
+
+    commit();
+    startLoop();
   }
 })();
