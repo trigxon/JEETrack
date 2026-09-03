@@ -1,4 +1,4 @@
-// blob-cursor.js — buttery-smooth trailing blob for every page.
+// blob-cursor.js — the classic pink cursor, made buttery smooth.
 // Uses delta-time exponential smoothing (frame-rate independent) so the
 // follow feels identical on 60Hz / 120Hz / 144Hz displays, and a nested
 // dot that scales via its own composited transform so hover growth never
@@ -42,20 +42,20 @@
       will-change: transform;
     }
     #custom-cursor .cursor-dot {
-      width: 14px;
-      height: 14px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: rgba(124, 106, 247, 1);
-      box-shadow: 0 0 15px rgba(124, 106, 247, 0.8), 0 0 35px rgba(124, 106, 247, 0.6);
+      background: rgba(168, 85, 247, 1);
+      box-shadow: 0 0 15px rgba(168, 85, 247, 1), 0 0 30px rgba(168, 85, 247, 1);
       transform: translate3d(-50%, -50%, 0) scale(1);
       transform-origin: center;
       transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.25s ease, box-shadow 0.25s ease;
       will-change: transform;
     }
     #custom-cursor.cursor-hovering .cursor-dot {
-      transform: translate3d(-50%, -50%, 0) scale(1.85);
-      background: rgba(244, 114, 182, 0.95);
-      box-shadow: 0 0 25px rgba(244, 114, 182, 0.9), 0 0 45px rgba(244, 114, 182, 0.7);
+      transform: translate3d(-50%, -50%, 0) scale(1.5);
+      background: rgba(168, 85, 247, 0.5);
+      box-shadow: 0 0 20px rgba(168, 85, 247, 1);
     }
     html.mouse-active, html.mouse-active * {
       cursor: none !important;
