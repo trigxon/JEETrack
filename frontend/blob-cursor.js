@@ -5,10 +5,11 @@
     return;
   }
 
-  // Same trailing feel as the original 0.15/frame lerp at 60Hz, but computed
-  // from delta time so the follow speed stays constant no matter the refresh
-  // rate or how busy the page makes the main thread.
-  const FOLLOW_RATE = 11;          // exponential smoothing rate (1/s) — higher = tighter follow
+  // Near-instant (lag-free) but still silky: a high exponential smoothing
+  // rate computed from delta time, so the pink dot tracks the pointer almost
+  // 1:1 with a whisper of easing and no per-frame jitter, at any refresh
+  // rate or on heavy pages where frames get dropped.
+  const FOLLOW_RATE = 40;          // exponential smoothing rate (1/s) — higher = tighter follow
   const MAX_DT = 0.05;             // clamp delta time (50ms) so tab switches don't cause jumps
 
   const cursor = document.createElement('div');
@@ -41,20 +42,20 @@
       will-change: transform;
     }
     #custom-cursor .cursor-dot {
-      width: 14px;
-      height: 14px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: rgba(124, 106, 247, 1);
-      box-shadow: 0 0 15px rgba(124, 106, 247, 0.8), 0 0 35px rgba(124, 106, 247, 0.6);
+      background: rgba(168, 85, 247, 1);
+      box-shadow: 0 0 12px rgba(168, 85, 247, 0.9), 0 0 28px rgba(168, 85, 247, 0.45);
       transform: translate3d(-50%, -50%, 0) scale(1);
       transform-origin: center;
-      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.25s ease, box-shadow 0.25s ease;
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease, box-shadow 0.2s ease;
       will-change: transform;
     }
     #custom-cursor.cursor-hovering .cursor-dot {
-      transform: translate3d(-50%, -50%, 0) scale(1.85);
-      background: rgba(244, 114, 182, 0.95);
-      box-shadow: 0 0 25px rgba(244, 114, 182, 0.9), 0 0 45px rgba(244, 114, 182, 0.7);
+      transform: translate3d(-50%, -50%, 0) scale(1.5);
+      background: rgba(168, 85, 247, 0.85);
+      box-shadow: 0 0 18px rgba(168, 85, 247, 0.9), 0 0 40px rgba(168, 85, 247, 0.55);
     }
     html.mouse-active, html.mouse-active * {
       cursor: none !important;
