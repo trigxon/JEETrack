@@ -128,7 +128,6 @@
 
   function startLoop() {
     if (!rafId) {
-      lastTime = 0;
       rafId = requestAnimationFrame(render);
     }
   }
