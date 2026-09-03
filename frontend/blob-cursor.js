@@ -1,26 +1,32 @@
-// blob-cursor.js
+// blob-cursor.js — small solid pink cursor with dynamic, lag-free motion.
+// Delta-time exponential smoothing keeps the follow constant and jitter-free
+// at any refresh rate; a middle "stretch" layer elongates the dot slightly in
+// the direction of fast movement for a lively feel; the inner dot springs on
+// interactive elements via its own composited transform.
 (function(){
   // Detect touch screens. If touch is supported, abort to keep default behavior and allow normal touch interaction.
   if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0) {
     return;
   }
 
-  // Near-instant (lag-free) but still silky: a high exponential smoothing
-  // rate computed from delta time, so the pink dot tracks the pointer almost
-  // 1:1 with a whisper of easing and no per-frame jitter, at any refresh
-  // rate or on heavy pages where frames get dropped.
-  const FOLLOW_RATE = 40;          // exponential smoothing rate (1/s) — higher = tighter follow
+  const FOLLOW_RATE = 40;          // exponential smoothing rate (1/s) — near-instant, lag-free
+  const STRETCH_RATE = 22;         // how quickly the dynamic stretch catches up (1/s)
   const MAX_DT = 0.05;             // clamp delta time (50ms) so tab switches don't cause jumps
+  const MAX_STRETCH = 1.4;         // max elongation when flicking fast
 
   const cursor = document.createElement('div');
   cursor.id = 'custom-cursor';
+  const stretch = document.createElement('div');
+  stretch.className = 'cursor-stretch';
   const dot = document.createElement('div');
   dot.className = 'cursor-dot';
-  cursor.appendChild(dot);
+  stretch.appendChild(dot);
+  cursor.appendChild(stretch);
   document.body.appendChild(cursor);
 
   let mouseX = -100, mouseY = -100;
   let currentX = -100, currentY = -100;
+  let stretchX = 1, stretchY = 1;
   let isVisible = false;
   let isMoving = false;
   let lastTime = 0;
@@ -38,24 +44,30 @@
       z-index: 2147483647;
       transform: translate3d(-100px, -100px, 0);
       opacity: 0;
-      transition: opacity 0.3s ease;
+      transition: opacity 0.25s ease;
+      will-change: transform;
+    }
+    #custom-cursor .cursor-stretch {
+      width: 0;
+      height: 0;
+      transform: scale(1, 1);
       will-change: transform;
     }
     #custom-cursor .cursor-dot {
-      width: 20px;
-      height: 20px;
+      width: 14px;
+      height: 14px;
       border-radius: 50%;
-      background: rgba(168, 85, 247, 1);
-      box-shadow: 0 0 12px rgba(168, 85, 247, 0.9), 0 0 28px rgba(168, 85, 247, 0.45);
+      background: rgba(244, 114, 182, 1);
+      box-shadow: 0 0 12px rgba(244, 114, 182, 0.9), 0 0 26px rgba(244, 114, 182, 0.5);
       transform: translate3d(-50%, -50%, 0) scale(1);
       transform-origin: center;
-      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease, box-shadow 0.22s ease;
       will-change: transform;
     }
     #custom-cursor.cursor-hovering .cursor-dot {
-      transform: translate3d(-50%, -50%, 0) scale(1.5);
-      background: rgba(168, 85, 247, 0.85);
-      box-shadow: 0 0 18px rgba(168, 85, 247, 0.9), 0 0 40px rgba(168, 85, 247, 0.55);
+      transform: translate3d(-50%, -50%, 0) scale(1.6);
+      background: rgba(251, 113, 133, 1);
+      box-shadow: 0 0 16px rgba(244, 114, 182, 0.95), 0 0 34px rgba(244, 114, 182, 0.6);
     }
     html.mouse-active, html.mouse-active * {
       cursor: none !important;
@@ -85,7 +97,7 @@
     mouseY = e.clientY;
 
     if (!started) {
-      // Snap to the pointer on the very first move so the blob never streaks
+      // Snap to the pointer on the very first move so the dot never streaks
       // across the screen from its off-screen starting position.
       currentX = mouseX;
       currentY = mouseY;
@@ -124,21 +136,29 @@
     lastTime = now;
     if (dt > MAX_DT) dt = MAX_DT;
 
-    // Frame-rate independent exponential smoothing: the blob moves the same
-    // distance per unit of time, so it never speeds up or stutters when the
-    // page is heavy (tables, charts, animations) and frames get dropped.
+    // Lag-free, frame-rate independent follow.
     const t = 1 - Math.exp(-FOLLOW_RATE * dt);
     currentX += (mouseX - currentX) * t;
     currentY += (mouseY - currentY) * t;
 
-    cursor.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-
+    // Dynamic stretch: the dot elongates slightly along the direction of
+    // movement when flicking fast, then relaxes back to a perfect circle.
     const dx = mouseX - currentX;
     const dy = mouseY - currentY;
+    const speed = Math.sqrt(dx * dx + dy * dy);
+    const target = speed > 0.5 ? Math.min(1 + speed * 0.0045, MAX_STRETCH) : 1;
+    const st = 1 - Math.exp(-STRETCH_RATE * dt);
+    stretchX += ((dx / speed) * (target - 1) + 1 - stretchX) * st;
+    stretchY += ((dy / speed) * (target - 1) + 1 - stretchY) * st;
 
-    if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) {
+    cursor.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+    stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
+
+    if (speed < 0.1 && Math.abs(stretchX - 1) < 0.01 && Math.abs(stretchY - 1) < 0.01) {
       currentX = mouseX;
       currentY = mouseY;
+      stretchX = 1;
+      stretchY = 1;
       isMoving = false;
     } else {
       requestAnimationFrame(render);
