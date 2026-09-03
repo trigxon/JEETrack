@@ -5,89 +5,102 @@
     return;
   }
 
+  // Same trailing feel as the original 0.15/frame lerp at 60Hz, but computed
+  // from delta time so the follow speed stays constant no matter the refresh
+  // rate or how busy the page makes the main thread.
+  const FOLLOW_RATE = 11;          // exponential smoothing rate (1/s) — higher = tighter follow
+  const MAX_DT = 0.05;             // clamp delta time (50ms) so tab switches don't cause jumps
+
   const cursor = document.createElement('div');
   cursor.id = 'custom-cursor';
+  const dot = document.createElement('div');
+  dot.className = 'cursor-dot';
+  cursor.appendChild(dot);
   document.body.appendChild(cursor);
-  
+
   let mouseX = -100, mouseY = -100;
   let currentX = -100, currentY = -100;
   let isVisible = false;
   let isMoving = false;
-  
+  let lastTime = 0;
+  let started = false;
+
   const style = document.createElement('style');
-  style.innerHTML = `
+  style.textContent = `
     #custom-cursor {
-      position: fixed; 
-      top: 0; 
-      left: 0; 
-      width: 14px; 
-      height: 14px;
-      border-radius: 50%; 
-      background: rgba(124, 106, 247, 1);
-      box-shadow: 0 0 15px rgba(124, 106, 247, 0.8), 0 0 35px rgba(124, 106, 247, 0.6);
-      pointer-events: none; 
-      z-index: 2147483647; 
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+      z-index: 2147483647;
       transform: translate3d(-100px, -100px, 0);
       opacity: 0;
-      transition: opacity 0.3s ease, width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.3s ease, box-shadow 0.3s ease;
-      will-change: transform, width, height;
-      backdrop-filter: blur(1px);
+      transition: opacity 0.3s ease;
+      will-change: transform;
     }
-    html.mouse-active, html.mouse-active *, .mouse-active *, .mouse-active body, .mouse-active a, .mouse-active button, .mouse-active input, .mouse-active textarea, .mouse-active select { 
-      cursor: none !important; 
+    #custom-cursor .cursor-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: rgba(124, 106, 247, 1);
+      box-shadow: 0 0 15px rgba(124, 106, 247, 0.8), 0 0 35px rgba(124, 106, 247, 0.6);
+      transform: translate3d(-50%, -50%, 0) scale(1);
+      transform-origin: center;
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.25s ease, box-shadow 0.25s ease;
+      will-change: transform;
     }
-    
-    a:hover ~ #custom-cursor, button:hover ~ #custom-cursor, .ob-opt:hover ~ #custom-cursor,
-    a:hover + #custom-cursor, button:hover + #custom-cursor,
-    :hover > #custom-cursor {
-      width: 24px !important;
-      height: 24px !important;
+    #custom-cursor.cursor-hovering .cursor-dot {
+      transform: translate3d(-50%, -50%, 0) scale(1.85);
       background: rgba(244, 114, 182, 0.95);
       box-shadow: 0 0 25px rgba(244, 114, 182, 0.9), 0 0 45px rgba(244, 114, 182, 0.7);
+    }
+    html.mouse-active, html.mouse-active * {
+      cursor: none !important;
     }
   `;
   document.head.appendChild(style);
 
-  // Use a global class on hover elements to trigger the cursor expansion reliably
-  const addHoverClass = () => cursor.classList.add('cursor-hovering');
-  const removeHoverClass = () => cursor.classList.remove('cursor-hovering');
-  
-  // Alternative to CSS combinators which can be flaky: add a class to the cursor when hovering over interactive elements
-  style.innerHTML += `
-    #custom-cursor.cursor-hovering {
-      width: 26px !important;
-      height: 26px !important;
-      background: rgba(244, 114, 182, 0.95) !important;
-      box-shadow: 0 0 25px rgba(244, 114, 182, 0.9), 0 0 45px rgba(244, 114, 182, 0.7) !important;
-      margin-left: -6px;
-      margin-top: -6px;
-    }
-  `;
+  const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], .ob-opt, .btn';
+
+  function isInteractive(target) {
+    return target && (target instanceof Element) && target.closest(INTERACTIVE);
+  }
+
+  function addHoverClass() { cursor.classList.add('cursor-hovering'); }
+  function removeHoverClass() { cursor.classList.remove('cursor-hovering'); }
 
   document.addEventListener('mouseover', (e) => {
-    const target = e.target;
-    if (target.tagName === 'A' || target.tagName === 'BUTTON' || target.closest('a') || target.closest('button') || target.classList.contains('ob-opt') || target.tagName === 'INPUT' || target.tagName === 'SELECT') {
-      addHoverClass();
-    }
+    if (isInteractive(e.target)) addHoverClass();
   });
-  
+
   document.addEventListener('mouseout', (e) => {
-    const target = e.target;
-    if (target.tagName === 'A' || target.tagName === 'BUTTON' || target.closest('a') || target.closest('button') || target.classList.contains('ob-opt') || target.tagName === 'INPUT' || target.tagName === 'SELECT') {
-      removeHoverClass();
-    }
+    if (isInteractive(e.target)) removeHoverClass();
   });
 
   window.addEventListener('mousemove', (e) => {
-    mouseX = e.clientX; mouseY = e.clientY;
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+
+    if (!started) {
+      // Snap to the pointer on the very first move so the blob never streaks
+      // across the screen from its off-screen starting position.
+      currentX = mouseX;
+      currentY = mouseY;
+      cursor.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+      started = true;
+    }
+
     if (!isVisible) {
       document.documentElement.classList.add('mouse-active');
-      document.body.classList.add('mouse-active');
       cursor.style.opacity = '1';
       isVisible = true;
     }
+
     if (!isMoving) {
       isMoving = true;
+      lastTime = 0;
       requestAnimationFrame(render);
     }
   }, { passive: true });
@@ -96,26 +109,35 @@
     cursor.style.opacity = '0';
     isVisible = false;
     document.documentElement.classList.remove('mouse-active');
-    document.body.classList.remove('mouse-active');
   });
-  
+
   document.addEventListener('mouseenter', () => {
     cursor.style.opacity = '1';
     isVisible = true;
     document.documentElement.classList.add('mouse-active');
-    document.body.classList.add('mouse-active');
   });
-  
-  function render() {
-    // Smooth trailing effect (lowered from 0.35 to 0.15)
-    currentX += (mouseX - currentX) * 0.15; 
-    currentY += (mouseY - currentY) * 0.15;
-    cursor.style.transform = "translate3d(" + (currentX - 7) + "px, " + (currentY - 7) + "px, 0)";
-    
+
+  function render(now) {
+    if (!lastTime) lastTime = now;
+    let dt = (now - lastTime) / 1000;
+    lastTime = now;
+    if (dt > MAX_DT) dt = MAX_DT;
+
+    // Frame-rate independent exponential smoothing: the blob moves the same
+    // distance per unit of time, so it never speeds up or stutters when the
+    // page is heavy (tables, charts, animations) and frames get dropped.
+    const t = 1 - Math.exp(-FOLLOW_RATE * dt);
+    currentX += (mouseX - currentX) * t;
+    currentY += (mouseY - currentY) * t;
+
+    cursor.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+
     const dx = mouseX - currentX;
     const dy = mouseY - currentY;
-    
+
     if (Math.abs(dx) < 0.1 && Math.abs(dy) < 0.1) {
+      currentX = mouseX;
+      currentY = mouseY;
       isMoving = false;
     } else {
       requestAnimationFrame(render);
