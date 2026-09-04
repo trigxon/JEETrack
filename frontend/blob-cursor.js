@@ -5,10 +5,12 @@
 // micro-hitches when you pause and resume), and delta-time exponential
 // smoothing keeps the follow constant at any refresh rate or on heavy pages.
 (function(){
-  // Detect touch screens. If touch is supported, abort to keep default behavior and allow normal touch interaction.
-  if ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0) {
-    return;
-  }
+  // NOTE: no touch-screen bail-out here on purpose. Many laptops report
+  // touch support (maxTouchPoints > 0) while still using a mouse, and on
+  // those the native cursor must be hidden too. The blob only becomes
+  // visible after a real mouse move, so pure touch devices are unaffected:
+  // no mousemove ever fires, the dot stays invisible, and there is no
+  // cursor to hide in the first place.
 
   const FOLLOW_RATE = 40;          // exponential smoothing rate (1/s) — near-instant, lag-free
   const STRETCH_RATE = 16;         // how quickly the dynamic stretch eases (1/s) — slower = silkier
@@ -71,7 +73,10 @@
       background: rgba(251, 113, 133, 1);
       box-shadow: 0 0 16px rgba(244, 114, 182, 0.95), 0 0 34px rgba(244, 114, 182, 0.6);
     }
-    html.mouse-active, html.mouse-active * {
+    /* The pink blob replaces the native cursor entirely on devices with a
+       mouse. The script aborts on touch screens, so touch devices keep the
+       default behavior. */
+    html, html * {
       cursor: none !important;
     }
   `;
@@ -104,7 +109,6 @@
       currentX = mouseX;
       currentY = mouseY;
       dirty = true;
-      document.documentElement.classList.add('mouse-active');
       cursor.style.opacity = '1';
       isVisible = true;
       lastTime = 0;
@@ -115,7 +119,6 @@
   document.addEventListener('mouseleave', () => {
     cursor.style.opacity = '0';
     isVisible = false;
-    document.documentElement.classList.remove('mouse-active');
     stopLoop();
   });
 
