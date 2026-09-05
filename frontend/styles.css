@@ -5597,3 +5597,18 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
 /* Global Scrollbar Hide to prevent native cursor glitch at screen edges */
 ::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
 * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+
+/* ── Dashboard overview card alignment (desktop + mobile) ── */
+.ch { gap: 6px; flex-wrap: wrap; }
+.ch .mt { height: 26px; box-sizing: border-box; }
+.ch .mt .mb {
+  flex: 1; min-width: 40px; text-align: center;
+  display: inline-flex; align-items: center; justify-content: center;
+  white-space: nowrap; line-height: 1;
+}
+.ch .fc {
+  height: 26px; box-sizing: border-box;
+  display: inline-flex; align-items: center; white-space: nowrap;
+}
+.ql-btn { flex: 1 1 0; min-width: 0; justify-content: center; white-space: nowrap; }
+#ov-syl > div:last-child { margin-bottom: 0 !important; }
