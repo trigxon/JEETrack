@@ -5,12 +5,14 @@
 // micro-hitches when you pause and resume), and delta-time exponential
 // smoothing keeps the follow constant at any refresh rate or on heavy pages.
 (function(){
-  // NOTE: no touch-screen bail-out here on purpose. Many laptops report
-  // touch support (maxTouchPoints > 0) while still using a mouse, and on
-  // those the native cursor must be hidden too. The blob only becomes
-  // visible after a real mouse move, so pure touch devices are unaffected:
-  // no mousemove ever fires, the dot stays invisible, and there is no
-  // cursor to hide in the first place.
+  // Touch-only devices (phones/tablets): the primary pointer is a finger,
+  // so there is nothing for the blob to follow — skip everything and leave
+  // native behavior untouched. We deliberately do NOT bail on
+  // `maxTouchPoints > 0`: many laptops report touch support while being
+  // driven by a mouse, and the blob must still work there. Hybrids are
+  // handled at runtime below: touching the screen hides the blob and
+  // mouse events synthesized from a tap are ignored.
+  if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
 
   const FOLLOW_RATE = 40;          // exponential smoothing rate (1/s) — near-instant, lag-free
   const STRETCH_RATE = 16;         // how quickly the dynamic stretch eases (1/s) — slower = silkier
@@ -74,7 +76,7 @@
       box-shadow: 0 0 16px rgba(244, 114, 182, 0.95), 0 0 34px rgba(244, 114, 182, 0.6);
     }
     /* The pink blob replaces the native cursor entirely on devices with a
-       mouse. The script aborts on touch screens, so touch devices keep the
+       mouse. Touch-only devices never run this script, so they keep the
        default behavior. */
     html, html * {
       cursor: none !important;
@@ -100,6 +102,7 @@
   });
 
   window.addEventListener('mousemove', (e) => {
+    if (recentTouch()) return; // mousemove synthesized from a finger tap
     mouseX = e.clientX;
     mouseY = e.clientY;
 
@@ -123,11 +126,26 @@
   });
 
   document.addEventListener('mouseenter', () => {
+    if (recentTouch()) return; // synthesized by a tap, not a real mouse
     cursor.style.opacity = '1';
     isVisible = true;
     lastTime = 0;
     startLoop();
   });
+
+  // Hybrid touch screens: a finger tap makes the browser synthesize mouse
+  // events right after; ignore those so the blob never pops up from touch,
+  // and hide the blob if it was visible (mouse user switched to finger).
+  let lastTouchAt = 0;
+  function recentTouch() { return Date.now() - lastTouchAt < 1000; }
+  window.addEventListener('touchstart', () => {
+    lastTouchAt = Date.now();
+    if (isVisible) {
+      cursor.style.opacity = '0';
+      isVisible = false;
+      stopLoop();
+    }
+  }, { passive: true, capture: true });
 
   function startLoop() {
     if (!rafId) {
