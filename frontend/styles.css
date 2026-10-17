@@ -5720,3 +5720,13 @@ select.pmo-input option{background-color:var(--sf2);color:var(--tx)}
 }
 .ql-btn { flex: 1 1 0; min-width: 0; justify-content: center; white-space: nowrap; }
 #ov-syl > div:last-child { margin-bottom: 0 !important; }
+
+/* ── In-app social footer: mobile/touchscreen-only ─────────────────────
+   The "CONNECT WITH ARK DURRANI" footer inside app pages is a
+   mobile/touch element. Devices with a fine, hovering pointer (desktops
+   and mouse-driven laptops) never render it; phones, tablets and touch
+   devices keep it at the bottom of each page. The sidebar copy is
+   unaffected (it lives outside .page containers). */
+@media (hover: hover) and (pointer: fine) {
+  .page .social-links-footer { display: none !important; }
+}

@@ -37,6 +37,7 @@
   let rafId = 0;
   let lastTime = 0;
   let dirty = true;
+  let perfMode = false;
 
   const style = document.createElement('style');
   style.textContent = `
@@ -74,6 +75,16 @@
       transform: translate3d(-50%, -50%, 0) scale(1.6);
       background: rgba(251, 113, 133, 1);
       box-shadow: 0 0 16px rgba(244, 114, 182, 0.95), 0 0 34px rgba(244, 114, 182, 0.6);
+    }
+    /* Perf mode (engaged while a full-screen modal is open): the modal
+       backdrop is a backdrop-filter blur, and repainting the dot's layered
+       glow on top of that blur every frame is expensive on weaker GPUs —
+       it reads as the cursor "hanging" while e.g. the support prompt is
+       up. Drop the glow and the hover transition while a modal is open;
+       the dot itself keeps tracking the pointer exactly the same. */
+    #custom-cursor.cursor-perf .cursor-dot {
+      box-shadow: none;
+      transition: none;
     }
     /* The pink blob replaces the native cursor entirely on devices with a
        mouse. Touch-only devices never run this script, so they keep the
@@ -174,6 +185,15 @@
     let dt = (now - lastTime) / 1000;
     lastTime = now;
     if (dt > MAX_DT) dt = MAX_DT;
+
+    // Engage/disengage perf mode as full-screen modals open and close.
+    // One class-selector scan per frame is negligible; reacting inside the
+    // loop means the toggle also happens while the pointer is idle.
+    const pm = !!document.querySelector('.mo.open');
+    if (pm !== perfMode) {
+      perfMode = pm;
+      cursor.classList.toggle('cursor-perf', pm);
+    }
 
     if (dt > 0) {
       // Lag-free, frame-rate independent follow.
