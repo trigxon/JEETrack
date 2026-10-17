@@ -1,0 +1,7 @@
+# Supabase CLI config for JEETrack edge function deploys.
+project_id = "jeetrack"
+
+# The Razorpay webhook is called by Razorpay's servers (no Supabase JWT),
+# authenticated instead by the x-razorpay-signature HMAC inside the function.
+[functions.razorpay-webhook]
+verify_jwt = false
