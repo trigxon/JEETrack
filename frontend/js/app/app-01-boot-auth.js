@@ -283,13 +283,24 @@ let _authSlideAnimating = false;
 let _turnstileWidgetIds = { login: null, signup: null };
 let _turnstileTokens = { login: null, signup: null };
 let _turnstileRenderAttempts = 0;
+let _turnstileApiInjected = false;
 
 function _renderTurnstileWidgets(){
   if(!TURNSTILE_SITE_KEY) return;
   if(typeof window.turnstile === 'undefined'){
-    // The script tag is async — on a slow connection it may not have
-    // finished loading yet by the time the modal first opens.
-    if(_turnstileRenderAttempts++ < 20) setTimeout(_renderTurnstileWidgets, 250);
+    // The api.js used to be a head <script> on every page load — 24KB plus
+    // a third-party DNS/TLS hit even for visitors who never open the login
+    // modal (it was one of the mobile-Perf audit's flagged costs). It is
+    // now injected once, on demand, the first time a modal actually needs
+    // it; keep polling until it lands (10s covers slow connections).
+    if(!_turnstileApiInjected){
+      _turnstileApiInjected = true;
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+      s.async = true;
+      document.head.appendChild(s);
+    }
+    if(_turnstileRenderAttempts++ < 40) setTimeout(_renderTurnstileWidgets, 250);
     return;
   }
   ['login','signup'].forEach(mode => {
