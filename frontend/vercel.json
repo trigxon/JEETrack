@@ -22,14 +22,6 @@
       ]
     }
   ],
-  "redirects": [
-    {
-      "source": "/",
-      "destination": "/admin",
-      "permanent": false,
-      "has": [{ "type": "host", "value": "jee-adv-osint.vercel.app" }]
-    }
-  ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
 
