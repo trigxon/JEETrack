@@ -194,7 +194,12 @@ export async function handleRequest(req: Request): Promise<Response> {
                       "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                      from: "JEE ADV OSINT <5073340abdulrehmankhandurrani@gmail.com>",
+                      // Resend only accepts senders on a domain verified in the
+                      // Resend account (or the onboarding@resend.dev sandbox,
+                      // which can deliver to the account owner's own inbox).
+                      // Override via the RESEND_FROM secret once a domain is
+                      // verified, e.g. "JEE ADV OSINT <support@yourdomain.in>".
+                      from: `JEE ADV OSINT <${Deno.env.get("RESEND_FROM") || "onboarding@resend.dev"}>`,
                       to: [email],
                       subject: `Your JEE ADV OSINT support receipt — ₹${amount}`,
                       html: receiptHtml({ name, amount, paymentId: payment.id, date, tier }),
