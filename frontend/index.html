@@ -1213,6 +1213,7 @@ window.ensureJsPdf=function(){return loadScript(window._jsPdfUrl);};
   </div>
   <div class="ns"><div class="nl">Intelligence</div>
     <button class="ni ni-ai" onclick="nav('insights');closeSidebar();syncMobNav('insights')"><span class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.46 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.14z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.46 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-1.14z"/></svg></span>AI Insights</button>
+    <button class="ni ni-support" onclick="window.open('/support','_blank');closeSidebar()" title="Support Us — buy the team a chai"><span class="ico">☕</span>Support Us<span class="ni-cat">🐱</span></button>
   </div>
 
   <div class="wm">
@@ -3253,6 +3254,10 @@ function settingsMobileReset(){
     <button class="mob-drawer-item" onclick="drawerNav('settings')">
       <span class="mob-drawer-icon" style="background:rgba(255,255,255,.06);color:var(--mu)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
       <span class="mob-drawer-item-label">Settings</span>
+    </button>
+    <button class="mob-drawer-item" onclick="window.open('/support','_blank');closeMobDrawer()">
+      <span class="mob-drawer-icon" style="background:rgba(255,107,129,.12);color:#ff8fa3;font-size:20px;line-height:1">☕</span>
+      <span class="mob-drawer-item-label">Support Us</span>
     </button>
   </div>
 </div>
