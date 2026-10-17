@@ -186,6 +186,10 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
   .faq-a{padding:0 1.1rem}
   .faq-item.open .faq-a{padding:0 1.1rem 1.1rem}
 }
+
+  /* narrow-screen safety: long tokens (emails/URLs) wrap instead of clipping */
+  body { overflow-wrap: break-word; }
+  p a, li a { overflow-wrap: anywhere; }
 </style>
 </head>
 <body>

@@ -298,6 +298,10 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;min-h
   .hero h1{font-size:1.55rem}
   .dtab span{display:none}
 }
+
+  /* narrow-screen safety: long tokens (emails/URLs) wrap instead of clipping */
+  body { overflow-wrap: break-word; }
+  p a, li a { overflow-wrap: anywhere; }
 </style>
 </head>
 <body>

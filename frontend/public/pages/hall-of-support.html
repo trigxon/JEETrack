@@ -126,6 +126,10 @@ main{max-width:980px;margin:0 auto;padding:3.4rem clamp(1rem,5vw,2.5rem) 5rem;po
 @media(min-width:801px) and (max-width:1080px){
   .supporter-grid{grid-template-columns:repeat(2,1fr)}
 }
+
+  /* narrow-screen safety: long tokens (emails/URLs) wrap instead of clipping */
+  body { overflow-wrap: break-word; }
+  p a, li a { overflow-wrap: anywhere; }
 </style>
 </head>
 <body>

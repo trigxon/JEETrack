@@ -579,7 +579,7 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
 .ni-ai::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent);animation:niAiShimmer 2.2s ease-in-out infinite;pointer-events:none}
 @keyframes niAiShimmer{0%{left:-100%}100%{left:200%}}
 .ni-ai:hover{background:rgba(124,106,247,.15)!important}
-.ni-support{background:rgba(255,107,129,.08)!important;border:1px solid rgba(255,107,129,.28)!important;color:#ff8fa3!important}
+.ni-support{margin-top:8px;background:rgba(255,107,129,.08)!important;border:1px solid rgba(255,107,129,.28)!important;color:#ff8fa3!important}
 .ni-support:hover{background:rgba(255,107,129,.16)!important;color:#ffb3c1!important}
 .ni-support .ni-cat{margin-left:auto;font-size:11px;line-height:1;opacity:.9}
 

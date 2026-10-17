@@ -375,6 +375,10 @@
   }
   footer a { color: var(--purple-light); text-decoration: none; }
   footer .footer-links a { margin: 0 0.3rem; }
+
+  /* narrow-screen safety: long tokens (emails/URLs) wrap instead of clipping */
+  body { overflow-wrap: break-word; }
+  p a, li a { overflow-wrap: anywhere; }
 </style>
 </head>
 <body>

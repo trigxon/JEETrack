@@ -340,6 +340,10 @@
     border-top: 1px solid var(--border);
   }
   footer a { color: var(--purple-light); text-decoration: none; }
+
+  /* narrow-screen safety: long tokens (emails/URLs) wrap instead of clipping */
+  body { overflow-wrap: break-word; }
+  p a, li a { overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
