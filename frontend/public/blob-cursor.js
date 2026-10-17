@@ -1,9 +1,13 @@
 // blob-cursor.js — small solid pink cursor with dynamic, smooth, lag-free motion.
-// Visuals and dynamics are unchanged: same 14px pink dot, same 1.6x hover
-// spring, same directional stretch. The motion engine runs a *continuous*
-// rAF loop while the cursor is visible so it never restarts mid-move (no
-// micro-hitches when you pause and resume), and delta-time exponential
-// smoothing keeps the follow constant at any refresh rate or on heavy pages.
+// Same 14px pink dot, same 1.6x hover spring, same directional stretch.
+// The glow is a pre-rendered radial-gradient layer that only ever moves and
+// scales via transforms, so cursor motion never triggers a repaint — critical
+// on weak GPUs where a repaint above a backdrop-filter layer re-filters the
+// whole blur and reads as the cursor "hanging" (modals, glass inputs, …).
+// Additional guards: while any full-screen modal (.mo.open) is up, its
+// backdrop-filter blur is switched off (html.blob-perf) and the glow hides;
+// if the device still sustains slow frames while moving, lite mode drops the
+// glow + stretch for the session so the dot stays silky everywhere.
 (function(){
   // Touch-only devices (phones/tablets): the primary pointer is a finger,
   // so there is nothing for the blob to follow — skip everything and leave
@@ -24,8 +28,11 @@
   cursor.id = 'custom-cursor';
   const stretch = document.createElement('div');
   stretch.className = 'cursor-stretch';
+  const glow = document.createElement('div');
+  glow.className = 'cursor-glow';
   const dot = document.createElement('div');
   dot.className = 'cursor-dot';
+  stretch.appendChild(glow);
   stretch.appendChild(dot);
   cursor.appendChild(stretch);
   document.body.appendChild(cursor);
@@ -38,6 +45,17 @@
   let lastTime = 0;
   let dirty = true;
   let perfMode = false;
+
+  // Adaptive lite mode: forceable via ?blob-lite for testing, otherwise
+  // engaged automatically when sustained movement runs below ~42fps.
+  let liteMode = false;
+  let liteAcc = 0, liteN = 0;
+  function enableLite() {
+    liteMode = true;
+    cursor.classList.add('cursor-lite');
+    stretchX = 1; stretchY = 1;
+    stretch.style.transform = 'scale(1, 1)';
+  }
 
   const style = document.createElement('style');
   style.textContent = `
@@ -60,31 +78,62 @@
       transform: scale(1, 1);
       will-change: transform;
     }
+    #custom-cursor .cursor-glow {
+      position: absolute;
+      width: 46px;
+      height: 46px;
+      left: 0;
+      top: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(244, 114, 182, 0.55) 0%,
+        rgba(244, 114, 182, 0.28) 34%,
+        rgba(244, 114, 182, 0.10) 55%,
+        rgba(244, 114, 182, 0) 72%);
+      transform: translate3d(-50%, -50%, 0) scale(1);
+      transform-origin: center;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
+      will-change: transform;
+      pointer-events: none;
+    }
     #custom-cursor .cursor-dot {
+      position: relative;
       width: 14px;
       height: 14px;
       border-radius: 50%;
       background: rgba(244, 114, 182, 1);
-      box-shadow: 0 0 12px rgba(244, 114, 182, 0.9), 0 0 26px rgba(244, 114, 182, 0.5);
       transform: translate3d(-50%, -50%, 0) scale(1);
       transform-origin: center;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease, box-shadow 0.22s ease;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease;
       will-change: transform;
+    }
+    #custom-cursor.cursor-hovering .cursor-glow {
+      transform: translate3d(-50%, -50%, 0) scale(1.5);
     }
     #custom-cursor.cursor-hovering .cursor-dot {
       transform: translate3d(-50%, -50%, 0) scale(1.6);
       background: rgba(251, 113, 133, 1);
-      box-shadow: 0 0 16px rgba(244, 114, 182, 0.95), 0 0 34px rgba(244, 114, 182, 0.6);
     }
-    /* Perf mode (engaged while a full-screen modal is open): the modal
-       backdrop is a backdrop-filter blur, and repainting the dot's layered
-       glow on top of that blur every frame is expensive on weaker GPUs —
-       it reads as the cursor "hanging" while e.g. the support prompt is
-       up. Drop the glow and the hover transition while a modal is open;
-       the dot itself keeps tracking the pointer exactly the same. */
+    /* Perf mode (engaged while a full-screen modal is open): kill the
+       modal's backdrop-filter blur — recompositing a full-screen blur
+       every frame is what makes the cursor (and everything else) hang on
+       weaker GPUs — and hide the glow. The 80%-black backdrop keeps the
+       modal looking essentially identical. */
+    html.blob-perf .mo,
+    html.blob-perf .mo.open {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    #custom-cursor.cursor-perf .cursor-glow {
+      opacity: 0;
+    }
     #custom-cursor.cursor-perf .cursor-dot {
-      box-shadow: none;
       transition: none;
+    }
+    /* Lite mode (weak devices, or ?blob-lite): dot only — nearly free to
+       composite on any machine, so the cursor never hangs anywhere. */
+    #custom-cursor.cursor-lite .cursor-glow {
+      display: none;
     }
     /* The pink blob replaces the native cursor entirely on devices with a
        mouse. Touch-only devices never run this script, so they keep the
@@ -94,6 +143,8 @@
     }
   `;
   document.head.appendChild(style);
+
+  if (new URLSearchParams(location.search).has('blob-lite')) enableLite();
 
   const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], .ob-opt, .btn';
 
@@ -172,7 +223,9 @@
     if (!dirty) return;
     dirty = false;
     cursor.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-    stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
+    if (!liteMode) {
+      stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
+    }
   }
 
   // Continuous render loop: stays alive while the cursor is on screen so a
@@ -193,6 +246,7 @@
     if (pm !== perfMode) {
       perfMode = pm;
       cursor.classList.toggle('cursor-perf', pm);
+      document.documentElement.classList.toggle('blob-perf', pm);
     }
 
     if (dt > 0) {
@@ -203,18 +257,31 @@
 
       // Dynamic stretch: the dot elongates slightly along the direction of
       // movement when flicking fast, then relaxes back to a perfect circle.
+      // (Skipped in lite mode — pure dot, zero extra layers to composite.)
       const dx = mouseX - currentX;
       const dy = mouseY - currentY;
       const speed = Math.sqrt(dx * dx + dy * dy);
-      const st = 1 - Math.exp(-STRETCH_RATE * dt);
 
-      if (speed > 0.5) {
-        const target = Math.min(1 + speed * 0.0045, MAX_STRETCH);
-        stretchX += (1 + (target - 1) * (dx / speed) - stretchX) * st;
-        stretchY += (1 + (target - 1) * (dy / speed) - stretchY) * st;
-      } else {
-        stretchX += (1 - stretchX) * st;
-        stretchY += (1 - stretchY) * st;
+      // Adaptive lite trigger: sampled only while actually moving, so a
+      // stalled tab or a paused frame never causes a false positive.
+      if (!liteMode && speed > 0.5) {
+        liteAcc += dt; liteN++;
+        if (liteN >= 50) {
+          if (liteAcc / liteN > 0.024) enableLite();   // sustained < ~42fps
+          liteAcc = 0; liteN = 0;
+        }
+      }
+
+      if (!liteMode) {
+        const st = 1 - Math.exp(-STRETCH_RATE * dt);
+        if (speed > 0.5) {
+          const target = Math.min(1 + speed * 0.0045, MAX_STRETCH);
+          stretchX += (1 + (target - 1) * (dx / speed) - stretchX) * st;
+          stretchY += (1 + (target - 1) * (dy / speed) - stretchY) * st;
+        } else {
+          stretchX += (1 - stretchX) * st;
+          stretchY += (1 - stretchY) * st;
+        }
       }
 
       // Snap exactly when fully settled so there's never residual drift.
