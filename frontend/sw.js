@@ -1,6 +1,6 @@
 
 
-const CACHE_VERSION = 'jee-adv-osint-v7';
+const CACHE_VERSION = 'JEE ADV OSINT-v12';
 const CACHE_NAME = CACHE_VERSION;
 
 const STATIC_ASSETS = [
@@ -27,14 +27,32 @@ const SUPABASE_HOST_PATTERN = /\.supabase\.co$/;
 
 const APP_SHELL = [
   '/index.html',
-  '/app.js',
+  '/js/app/app-01-boot-auth.js',
+  '/js/app/app-02-auth-forms.js',
+  '/js/app/app-03-shell-data.js',
+  '/js/app/app-04-badges.js',
+  '/js/app/app-05-sync-engagement.js',
+  '/js/app/app-06-landing.js',
+  '/js/app/app-07-landing-interactions.js',
+  '/js/app/app-08-onboarding.js',
+  '/js/app/app-09-settings.js',
+  '/js/app/app-10-feedback.js',
   '/styles.css',
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS).catch(() => {}))
+    caches.open(CACHE_NAME).then(cache => {
+      // Cache each file individually — if one fails (e.g. a CDN hiccup for
+      // a font URL), it shouldn't take the whole install down with it, which
+      // is what addAll() does (all-or-nothing). Previously APP_SHELL was
+      // defined but never actually passed to addAll(), so index.html/app.js/
+      // styles.css were never precached — meaning ANY offline navigation had
+      // nothing to fall back to and hit the raw "Offline and no cached
+      // version available" text.
+      const all = [...STATIC_ASSETS, ...APP_SHELL];
+      return Promise.all(all.map(url => cache.add(url).catch(() => {})));
+    })
   );
   self.skipWaiting();
 });
@@ -75,7 +93,12 @@ self.addEventListener('fetch', e => {
 
   
   if (SUPABASE_HOST_PATTERN.test(url.hostname)) {
-    e.respondWith(fetch(e.request));
+    // fetch(e.request) alone still lets the BROWSER's native HTTP cache
+    // (separate from this SW's Cache Storage) validate against ETag/
+    // Cache-Control headers and serve a 304 — which then gets treated as
+    // "nothing changed" even when the underlying data genuinely has.
+    // { cache: 'no-store' } forces a real network round-trip every time.
+    e.respondWith(fetch(e.request, { cache: 'no-store' }));
     return;
   }
 
@@ -83,7 +106,23 @@ self.addEventListener('fetch', e => {
   
   
   if (APP_SHELL.some(p => url.pathname === p) || url.pathname === '/') {
-    e.respondWith(fetch(e.request));
+    e.respondWith(
+      // Same issue as the Supabase case above: a plain fetch() lets the
+      // BROWSER's own HTTP cache (not this SW's Cache Storage) silently
+      // serve a stale app.js/index.html on Cache-Control/ETag grounds, even
+      // right after a fresh deploy and a fresh SW activate. { cache:
+      // 'no-store' } forces a real round-trip so app.js updates land for
+      // every user as soon as they're online, not just on a hard-refresh.
+      fetch(e.request, { cache: 'no-store' }).catch(async () => {
+        // Previously this had no .catch() at all — offline, the rejected
+        // fetch promise reached respondWith() unhandled and the browser
+        // showed its own generic network-error page instead of anything
+        // from this app. Fall back to whichever of these three files we
+        // do have cached from install.
+        const cached = await caches.match(e.request) || await caches.match('/index.html');
+        return cached || new Response('Offline and no cached version available', { status: 503, statusText: 'Service Unavailable' });
+      })
+    );
     return;
   }
 
@@ -91,7 +130,7 @@ self.addEventListener('fetch', e => {
   
   if (e.request.headers.get('accept')?.includes('text/html')) {
     e.respondWith(
-      fetch(e.request)
+      fetch(e.request, { cache: 'no-store' })
         .then(res => {
           if (res && res.status === 200) {
             const clone = res.clone();
@@ -104,7 +143,12 @@ self.addEventListener('fetch', e => {
           // request, caches.match() resolves to undefined — and
           // respondWith(undefined) throws "Failed to convert value to
           // 'Response'". Always resolve to a real Response.
-          const cached = await caches.match(e.request);
+          //
+          // A route like '/dashboard' will never itself be in the cache
+          // (this is a client-side-routed SPA — only index.html/app.js/
+          // styles.css get precached) so fall back to the cached shell
+          // page rather than only trying an exact-URL match.
+          const cached = await caches.match(e.request) || await caches.match('/index.html');
           return cached || new Response('Offline and no cached version available', { status: 503, statusText: 'Service Unavailable' });
         })
     );
@@ -122,7 +166,7 @@ self.addEventListener('fetch', e => {
         return res;
       })
       .catch(async () => {
-        const cached = await caches.match(e.request);
+        const cached = await caches.match(e.request) || await caches.match('/index.html');
         return cached || new Response('Offline and no cached version available', { status: 503, statusText: 'Service Unavailable' });
       })
   );

@@ -2,14 +2,14 @@
 
 <br/>
 
-<img src="frontend/favicon.svg" alt="JEE ADV OSINT Logo" width="100" />
+<img src="frontend/public/assets/icons/favicon.svg" alt="JEE ADV OSINT Logo" width="100" />
 
 <br/>
 <br/>
 
 # JEE ADV OSINT
 
-### The all-in-one preparation tracker for JEE aspirants
+### The all-in-one preparation tracker for JEE aspirants.
 
 <br/>
 
@@ -20,7 +20,6 @@
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
 [![PWA](https://img.shields.io/badge/PWA-Installable-5A0FC8?style=flat-square&logo=pwa&logoColor=white)](https://web.dev/progressive-web-apps/)
 [![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
 
 <br/>
 
@@ -89,6 +88,7 @@
 Frontend    Vanilla HTML · CSS · JavaScript 
 Database    Supabase (PostgreSQL + Row Level Security)
 Auth        Supabase Auth
+Payments    Razorpay (checkout, webhooks, verification)
 AI Engine   Groq API  (LLaMA 3.3 70B Versatile, ~0.5s latency)
 Functions   Supabase Edge Functions  (Deno / TypeScript)
 Email       Resend API
@@ -104,26 +104,63 @@ Cron        pg_cron (Supabase)
 
 ```
 JEE ADV OSINT/
-├── frontend/                     # Static PWA — deployed to Vercel
-│   ├── api/
-│   │   └── config.js             # Serverless function — serves env vars to frontend
-│   ├── index.html                # App shell & markup
-│   ├── styles.css                # All styles
-│   ├── app.js                    # All application logic
-│   ├── manifest.json             # PWA manifest
-│   ├── sw.js                     # Service worker (offline + push)
-│   └── vercel.json               # SPA rewrite config
+├── .github/
+│   ├── ISSUE_TEMPLATE/
+│   │   ├── bug_report.md
+│   │   └── feature_request.md
+│   └── PULL_REQUEST_TEMPLATE.md
+├── docs/
+│   ├── ARCHITECTURE.md                # System design & data flow
+│   └── PERFORMANCE.md                 # Database IO investigation & fixes
+├── frontend/                          # Static PWA — deployed to Vercel (Root Directory = frontend)
+│   ├── index.html                     # Main app shell & markup
+│   ├── app.js                         # All application logic
+│   ├── styles.css                     # All styles
+│   ├── analytics.js                   # Lightweight usage analytics
+│   ├── sw.js                          # Service worker — MUST stay at this root
+│   │                                  # (its scope is tied to its own path)
+│   ├── manifest.json                  # PWA manifest
+│   ├── robots.txt, sitemap.xml        # SEO — must be served at exact root path
+│   ├── google*.html                   # Google Search Console verification
+│   ├── vercel.json                    # Rewrites (clean URLs, SPA fallback, admin subdomain)
+│   ├── api/                           # Serverless functions
+│   │   ├── config.js                  #   → serves env vars to the frontend
+│   │   └── admin.js                   #   → powers the admin dashboard API
+│   ├── admin/
+│   │   └── admin.html                 # Admin dashboard UI (served at /admin)
+│   ├── pages/                         # Marketing / legal static pages
+│   │   ├── about.html, faq.html, features.html,
+│   │   ├── privacy.html, terms.html,
+│   │   └── support.html, hall-of-support.html
+│   └── assets/
+│       └── icons/                     # Favicons, PWA icons, email logo
+│           ├── favicon.svg, favicon.png
+│           ├── icon-152.png, icon-192.png
+│           └── jeetrack-logo-email.png
 ├── supabase/
-│   └── functions/
-│       ├── ai-insights/          # Edge function — Groq AI analysis
-│       │   └── index.ts
-│       └── monthly-report/       # Edge function — monthly email + PDF
-│           └── index.ts
-├── supabase-schema.sql           # Full database schema
-├── migration.sql                 # DB migrations
-├── onboarding-trigger.sql        # New-user onboarding automation
+│   └── functions/                     # Edge Functions (Deno / TypeScript)
+│       ├── ai-insights/               # Groq AI analysis
+│       ├── monthly-report/            # Monthly email + PDF report
+│       ├── create-razorpay-order/     # Razorpay checkout
+│       ├── verify-razorpay-payment/   # Razorpay payment verification
+│       ├── razorpay-webhook/          # Razorpay webhook handler
+│       ├── check-payment-status/      # Payment status polling
+│       └── custom-email/              # Transactional email templates
+├── database/
+│   └── sql/                           # Reference SQL — schema + historical migrations
+│       ├── supabase-schema.sql        # Full database schema
+│       ├── migration.sql              # Core DB migration
+│       ├── onboarding-trigger.sql     # New-user onboarding automation
+│       ├── practice_log_supabase_schema.sql
+│       ├── razorpay-and-fixes-migration.sql
+│       ├── razorpay-security-hardening-migration.sql
+│       └── review-migration.sql
+├── screenshots/                       # README assets
+├── CONTRIBUTING.md
 └── README.md
 ```
+
+> **Note on `database/sql/`:** these are kept as reference/history, not an auto-applied migrations folder — they were run manually via the Supabase SQL Editor in the order listed in Quick Start below. If you manage schema changes with the Supabase CLI going forward, put new ones in `supabase/migrations/` instead so `supabase db push` picks them up automatically.
 
 ---
 
@@ -132,16 +169,23 @@ JEE ADV OSINT/
 ### 1 · Clone the repository
 
 ```bash
-git clone https://github.com/AmanxMishraDev/JEETrack.git
+git clone https://github.com/trigxon/JEETrack.git
 cd JEE ADV OSINT
 ```
 
 ### 2 · Set up Supabase
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Open **SQL Editor** and run `supabase-schema.sql`
-3. Run `migration.sql` then `onboarding-trigger.sql`
-4. Copy your **Project URL** and **anon key** from **Settings → API**
+2. Open **SQL Editor** and run, in this order:
+   1. `database/sql/supabase-schema.sql`
+   2. `database/sql/migration.sql`
+   3. `database/sql/onboarding-trigger.sql`
+   4. `database/sql/practice_log_supabase_schema.sql`
+   5. `database/sql/razorpay-and-fixes-migration.sql`
+   6. `database/sql/razorpay-security-hardening-migration.sql`
+   7. `database/sql/review-migration.sql`
+   8. `database/sql/existing-indexes-snapshot.sql`, `database/sql/live-rpc-functions-snapshot.sql`, `database/sql/student-count-sync-trigger.sql` (any order between these three; all idempotent)
+3. Copy your **Project URL** and **anon key** from **Settings → API**
 
 ### 3 · Configure the frontend
 
@@ -207,6 +251,9 @@ These are served to the frontend securely at runtime via the `/api/config` serve
 | `RESEND_API_KEY` | Resend key for email reports |
 | `FROM_EMAIL` | Sender address for reports |
 | `APP_URL` | Your Vercel deployment URL (for CORS) |
+| `RAZORPAY_KEY_ID` | Razorpay key ID (order creation, verification) |
+| `RAZORPAY_KEY_SECRET` | Razorpay key secret |
+| `RAZORPAY_WEBHOOK_SECRET` | Verifies incoming Razorpay webhook signatures |
 
 ---
 
@@ -233,19 +280,25 @@ Vercel auto-deploys on every push — no manual steps needed.
 
 ---
 
+## 📚 Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the pieces fit together
+- [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) — Database IO investigation: what was consuming budget on the free tier and what was fixed
+- [`docs/SECURITY.md`](docs/SECURITY.md) — responsible disclosure / how to report a vulnerability
+
 ## 🤝 Contributing
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
-
-```bash
-git checkout -b feature/your-feature-name
-```
+Issues and pull requests are welcome — for major changes, please open an issue first to discuss what you would like to change.
 
 ---
 
 ## 👨‍💻 Author
 
-**Abdul Rehman Khan Durrani** · [@AmanxMishraDev](https://github.com/AmanxMishraDev)
+**Abdul Rehman Khan Durrani** · [@trigxon](https://github.com/trigxon)
+
+## 📄 License & Attribution
+
+JEE ADV OSINT is a whitelabelled deployment of [**JEETrack**](https://github.com/AmanxMishraDev/JEETrack) by Aman Mishra. Upstream licensing applies to the original source; all branding, customisation and deployment in this repository belong to [**@trigxon**](https://github.com/trigxon).
 
 ---
 

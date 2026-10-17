@@ -12,7 +12,7 @@ const ALLOWED_ORIGINS = [
   "https://jee-adv-osint.vercel.app",
   "https://jee-adv-osint.vercel.app",
   "https://JEE ADV OSINT.vercel.app",
-  "https://development.jee-adv-osint.vercel.app",
+  "https://jee-adv-osint.vercel.app",
 ];
 
 function getCorsHeaders(req: Request) {

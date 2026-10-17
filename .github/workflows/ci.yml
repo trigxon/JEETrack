@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-js:
+    name: Lint (frontend + api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  lint-edge-functions:
+    name: Lint (Supabase edge functions)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+      - run: deno lint supabase/functions
+      - name: Razorpay webhook tests
+        run: deno test --allow-env supabase/functions/razorpay-webhook
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      # The query-performance smoke test (test/db/) needs a full local
+      # Supabase stack (auth.users, RLS, etc. — not just bare Postgres),
+      # which isn't wired up here yet. Run it locally via `npm run test:db`
+      # after `supabase start`; see that file's own header comment.

@@ -9,7 +9,7 @@
 // These "✓ tracking active" confirmations are only useful while you're
 // actively developing/testing analytics wiring — on the real production
 // domain they're just console noise for every visitor. Auto-silences on
-// JEE ADV OSINT.in, stays on everywhere else (localhost, vercel preview URLs).
+// jee-adv-osint.vercel.app, stays on everywhere else (localhost, vercel preview URLs).
 const _JT_DEBUG = !/^(www\.)?JEE ADV OSINT\.in$/.test(location.hostname);
 function _jtLog(...args){ if(_JT_DEBUG) console.log(...args); }
 
