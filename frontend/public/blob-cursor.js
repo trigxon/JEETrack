@@ -1,43 +1,44 @@
-// blob-cursor.js v12 — "physics rebuild, part 2": keeps the v11 spring engine
-// (symplectic sub-stepped integrator — mathematically stable at any frame
-// rate) and fixes the two things the user still experienced after v11:
-//
-//  1. "I can't see the cursor in that video" —
-//     v11's dot was 14px pink with no outline; the glow faded out during
-//     scrolling and disappeared in lite mode. On the dark glass dashboard a
-//     screen recording then shows a lone 14px dot (often mid-fade) — invisible.
-//     v12: 16px dot with a 1.5px white ring (visible over pink accents, dark
-//     glass, white surfaces, compressed video — any background), and the glow
-//     NEVER fades: not while scrolling, not while sweeping. (A 56px static
-//     gradient layer costs the compositor nothing — the fade was solving a
-//     non-problem while hiding the one thing the user wants to see.)
-//
-//  2. "Still glitching very much" —
-//     v11 kept the v10 glass BLUR SUSPENSION (jt-blob-noblur): every time the
-//     pointer crossed onto/off a backdrop-filter panel, that panel's blur was
-//     stripped and restored INSTANTLY — the entire panel visibly pops. On the
-//     glass-heavy dashboard a sweep flicks whole panels on/off. That is the
-//     page glitching, not the cursor. v12 deletes blur suspension entirely:
-//     the cursor never mutates the page. The blob layers are tiny static
-//     composited textures moved by transforms only — there is nothing left to
-//     spike. (Detection cost drops to zero too: no elementFromPoint walk for
-//     glass, no per-element getComputedStyle memo, nothing.)
-//
-// Also in v12: dot + glow stage positions are snapped to the device-pixel
-// grid (no subpixel shimmer on 1x displays), and hover scale is gated by
-// pointer speed (no scale-breathing while sweeping across menus).
-//
-// Kept from v11 (the engine): ONE rAF loop; symplectic Euler with stability-
-// guaranteed substepping (h = 1/(ω·1.25)); dot spring ω=150 critically damped
-// (perceptually glued, absorbs event bursts into continuous motion); glow
-// spring ω=11 slightly overdamped (the silky trail, no teleports, no snaps);
+// blob-cursor.js v13 — "pop + no outline", user-directed revision of v12.
+// The engine underneath is the same proven symplectic spring system (v11/v12):
+// ONE rAF loop; semi-implicit Euler with stability-guaranteed substepping
+// (omega*h = 0.75, stable at ANY frame rate); dot spring omega=150 critically
+// damped (perceptually glued); glow trail omega=11 overdamped (silky flow);
 // area-preserving stretch + shortest-arc rotation from the glow's own
-// velocity; hover scale as springs (no CSS transform transitions anywhere);
-// fixed-size compositor stages (clipping geometrically impossible); idle
-// sleep; touch-only skip + hybrid guards; reduced-motion path; ?blob-lite;
-// modal perf mode (html.blob-perf strips scrim blur); native-cursor hiding.
-// Removed from v11: adaptive auto-lite, the 220px teleport (both already
-// gone), and now blur suspension + scroll glow-fade.
+// velocity; fixed-size compositor stages; device-pixel snapping; idle sleep;
+// robust re-show after leave/touch; touch-only skip; lite/reduced path;
+// modal perf mode. Nothing about the core motion changed — it is already
+// dt-normalized and frame-rate independent.
+//
+// What v13 changes (each maps to a direct user request):
+//
+//  1. "I don't want that outline in blob" —
+//     The 1.5px white ring from v12 is DELETED. Visibility is now carried by
+//     a 17px dot + layered SOFT glow shadows (no crisp edge to shimmer in
+//     compressed video, nothing that reads as an outline). The always-on
+//     56px radial glow underneath does the rest.
+//
+//  2. "I want that pop effect on hovering" —
+//     v12 animated hover scale with exponential smoothing (no velocity
+//     state) — it could only approach the target asymptotically: a dead
+//     fade, never a pop. v13 gives scale its own UNDERDAMPED spring
+//     (zeta = 0.5, omega = 24): the blob overshoots ~16% past its target
+//     and settles with a visible elastic bounce. Dot pops to 1.65x, glow
+//     to 1.4x. The v12 speed-gate is deleted — hover must trigger
+//     reliably, not only when the pointer is slow.
+//
+//  3. Press feedback — pointerdown squeezes the blob to 0.82x, release
+//     springs back through the hover target with the same overshoot. The
+//     cursor now physically reacts to clicks.
+//
+//  4. "Not functioning properly" hardening —
+//     a. cursor:none is now gated behind html.blob-live, a class added the
+//        moment the blob first becomes visible. If the blob can never show
+//        (JS blocked, hybrid-device edge case), the native cursor simply
+//        stays — there is no scenario left where the user has NO pointer.
+//     b. Hover is re-sensed on SCROLL: after a wheel/fling the element
+//        under a still pointer changed, and v12 kept the stale hover state.
+//     c. Re-sensing is throttled by distance (4px) or time (110ms) — one
+//        elementFromPoint max per frame, but no speed gate.
 (function(){
   'use strict';
 
@@ -48,9 +49,11 @@
   // ---- tuning ------------------------------------------------------------
   const DOT_OMEGA   = 150;   // dot spring stiffness (rad/s) — glued, not welded
   const DOT_ZETA    = 1.0;   // critically damped: fastest settle, zero overshoot
-  const GLOW_OMEGA  = 11;    // glow trail stiffness — the blob feel
+  const GLOW_OMEGA  = 11;    // glow trail stiffness — the flowing blob feel
   const GLOW_ZETA   = 1.05;  // hair overdamped: no rubber-band wobble
-  const SCALE_OMEGA = 26;    // hover scale spring
+  const SCALE_OMEGA = 24;    // hover/press scale spring stiffness
+  const SCALE_ZETA  = 0.5;   // UNDERDAMPED: ~16% overshoot = the pop
+  const GLOW_SCALE_ZETA = 0.6; // glow pops slightly calmer
   const MAX_DT      = 0.05;  // clamp frame delta (50ms) — stalls never explode
   const STRETCH_MAX = 0.42;  // max elongation (+42% along motion)
   const STRETCH_GAIN = 0.00016; // px/s of glow velocity → stretch amount
@@ -58,9 +61,12 @@
   const ANGLE_RATE  = 14;    // 1/s — velocity-angle smoothing
   const VEL_SMOOTH  = 10;    // 1/s — glow-velocity smoothing for stretch
   const IDLE_MS     = 1200;  // at rest this long → sleep rAF
-  const HOVER_MIN_MOVE = 6;  // px pointer travel before hover re-evaluation
-  const HOVER_MAX_WAIT = 150;// ms between hover re-evaluations while moving
-  const HOVER_SLOW_PXMS = 1.1; // px/ms — pointer faster than this: hover scale off
+  const HOVER_MIN_MOVE = 4;  // px pointer travel before hover re-evaluation
+  const HOVER_MAX_WAIT = 110;// ms between hover re-evaluations while moving
+  const HOVER_DOT   = 1.65;  // dot scale target while on interactive elements
+  const HOVER_GLOW  = 1.40;  // glow scale target while hovering
+  const PRESS_DOT   = 0.82;  // dot scale while pointer is down
+  const PRESS_GLOW  = 0.90;  // glow scale while pointer is down
 
   const REDUCED_MOTION = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -99,16 +105,17 @@
       position: absolute; width: 72px; height: 72px;
       left: -36px; top: -36px; will-change: transform;
     }
-    /* 16px dot + white ring: visible over pink accents, dark glass, white
-       surfaces and in compressed screen recordings — any background. */
+    /* 17px dot, NO outline/ring (user request). Visibility comes from size
+       plus layered soft glow shadows — soft edges never read as an outline
+       and cannot shimmer in compressed screen recordings. */
     #custom-cursor .jt-dot {
-      position: absolute; width: 16px; height: 16px;
-      left: 28px; top: 28px; border-radius: 50%;
+      position: absolute; width: 17px; height: 17px;
+      left: 27.5px; top: 27.5px; border-radius: 50%;
       background: rgba(244, 114, 182, 1);
       transform-origin: 50% 50%; will-change: transform;
       box-shadow:
-        0 0 0 1.5px rgba(255, 255, 255, 0.92),
-        0 2px 12px rgba(244, 114, 182, 0.85);
+        0 2px 12px rgba(244, 114, 182, 0.85),
+        0 0 26px rgba(244, 114, 182, 0.40);
     }
     #custom-cursor .jt-glow-stage {
       position: absolute; width: 192px; height: 192px;
@@ -131,8 +138,10 @@
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    /* The blob replaces the native cursor on mouse-driven devices. */
-    html, html * { cursor: none !important; }
+    /* The blob replaces the native cursor ONLY once it is actually visible
+       (html.blob-live). Until the first real pointer move the native cursor
+       stays — the user is never left without a pointer, no matter what. */
+    html.blob-live, html.blob-live * { cursor: none !important; }
   `;
   document.head.appendChild(style);
 
@@ -157,17 +166,21 @@
   let gx = -200, gy = -200, gvx = 0, gvy = 0;
   // stretch + angle (driven by glow velocity)
   let stretch = 0, angle = 0, vSmooth = 0;
-  // hover scale springs
-  let dotScale = 1, glowScale = 1, hoverTarget = 1;
+  // hover + press scale springs (with velocity — that's what makes a pop)
+  let dotScale = 1, dotScaleVel = 0;
+  let glowScale = 1, glowScaleVel = 0;
+  let hoverTarget = 1;   // 1 or HOVER_DOT/HOVER_GLOW
+  let press = 1;         // 1 or PRESS_DOT/PRESS_GLOW
 
-  const DOT_STAGE_HALF = 36, GLOW_STAGE_HALF = 96, GLOW_OFF = 68;
+  const DOT_STAGE_HALF = 36, GLOW_STAGE_HALF = 96;
 
   // ---- spring integrator (semi-implicit Euler, stability-guaranteed) -----
-  // For ζ≈1 symplectic Euler the error eigenvalue crosses |λ|=1 at ω·h≈0.91.
-  // Substep h is therefore DERIVED from ω (ω·h = 0.75, comfortably inside the
-  // stable region) and never capped: at MAX_DT=50ms and ω=150 that is ≤10
-  // substeps of trivial arithmetic. Stability is a property of the scheme,
-  // not of the frame rate — slow frames can never make the cursor explode.
+  // For zeta near 1 symplectic Euler's error eigenvalue crosses |lambda|=1 at
+  // omega*h = 0.91. Substep h is DERIVED from omega (omega*h = 0.75,
+  // comfortably inside the stable region) and never capped: at MAX_DT=50ms
+  // and omega=150 that is <=10 substeps of trivial arithmetic. Stability is
+  // a property of the scheme, not of the frame rate — slow frames can never
+  // make the cursor explode. Same integrator for position AND scale springs.
   function springStep(pos, vel, target, omega, zeta, dt) {
     let n = Math.ceil((dt * omega) / 0.75);
     if (n < 1) n = 1;
@@ -199,10 +212,33 @@
     }
   }, { passive: true });
 
+  // Press pop: squeeze on down, springy release on up. Pure state — the
+  // loop does the animation; if it is asleep, wake it so the squeeze shows.
+  window.addEventListener('pointerdown', (e) => {
+    if (recentTouch()) return;
+    press = PRESS_DOT;
+    lastMoveAt = performance.now();
+    if (e.clientX || e.clientY) { mx = e.clientX; my = e.clientY; }
+    wake(false);
+  }, { passive: true, capture: true });
+  window.addEventListener('pointerup', () => { press = 1; }, { passive: true });
+  window.addEventListener('pointercancel', () => { press = 1; }, { passive: true });
+
+  // Scroll changes what is under a still pointer — re-sense hover on the
+  // next frame (v12 kept stale hover state after every scroll).
+  let hoverDirty = false;
+  window.addEventListener('scroll', () => {
+    hoverDirty = true;
+    wake(false);
+  }, { passive: true, capture: true });
+
   function wake(showNow) {
     if (showNow && !visible) {
       visible = true;
       cursor.classList.add('blob-on');
+      // From this instant on the blob is provably on screen — only now may
+      // we hide the native cursor.
+      document.documentElement.classList.add('blob-live');
     }
     if (!rafId && visible && !LITE) {
       rafId = requestAnimationFrame(render);
@@ -224,8 +260,7 @@
     });
     // Hybrid touch screens: finger down hides the blob; synthesized mouse
     // events within 1s of a touch are ignored. Re-arm first-contact so the
-    // next real mouse move re-shows the blob (v11 bug: it stayed hidden
-    // forever after any touch until reload).
+    // next real mouse move re-shows the blob.
     window.addEventListener('touchstart', () => {
       lastTouchAt = Date.now();
       visible = false;
@@ -260,21 +295,22 @@
     dotStage.style.transform = `translate3d(${snap(mx) - DOT_STAGE_HALF}px, ${snap(my) - DOT_STAGE_HALF}px, 0)`;
   }
 
-  // ---- hover detection: 1 hit-test per frame max, speed-gated ------------
-  const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], .ob-opt, .btn';
+  // ---- hover detection: 1 hit-test per frame max, distance/time throttled.
+  // No speed gate (deleted in v13): the pop must trigger reliably even when
+  // the pointer arrives fast at a button.
+  const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], [onclick], .ob-opt, .btn';
   let lastHoverX = -1, lastHoverY = -1, lastHoverCheck = 0;
-  let pointerFast = false; // updated per frame in render()
 
   function hoverSense(now) {
     if (!visible) { hoverTarget = 1; return; }
-    // Sweeping fast across menus: hover scale stays off (no breathing).
-    if (pointerFast) { hoverTarget = 1; return; }
     const moved = Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > HOVER_MIN_MOVE;
     const due = now - lastHoverCheck > HOVER_MAX_WAIT;
-    if (!moved && !due) return;
+    if (!moved && !due && !hoverDirty) return;
+    hoverDirty = false;
     lastHoverX = mx; lastHoverY = my; lastHoverCheck = now;
     const el = document.elementFromPoint(mx, my);
-    hoverTarget = (el && el.closest && el.closest(INTERACTIVE)) ? 1.55 : 1;
+    const hit = el && el.closest && el.closest(INTERACTIVE);
+    hoverTarget = hit ? HOVER_DOT : 1;
   }
 
   // ---- the loop -----------------------------------------------------------
@@ -287,12 +323,6 @@
     lastT = now;
     if (dt > MAX_DT) dt = MAX_DT;
     if (dt <= 0) { rafId = requestAnimationFrame(render); return; }
-
-    // Pointer speed for the hover gate (per frame — one cheap decay calc).
-    const pdx = mx - pmx, pdy = my - pmy;
-    pmx = mx; pmy = my;
-    const pdist = Math.sqrt(pdx * pdx + pdy * pdy);
-    pointerFast = (pdist / (dt * 1000)) > HOVER_SLOW_PXMS;
 
     hoverSense(now);
 
@@ -326,11 +356,14 @@
       angle += delta * (1 - Math.exp(-ANGLE_RATE * dt));
     }
 
-    // Hover scale springs.
-    const dotST = hoverTarget;
-    const glowST = hoverTarget > 1 ? 1.35 : 1;
-    dotScale += (dotST - dotScale) * (1 - Math.exp(-SCALE_OMEGA * dt));
-    glowScale += (glowST - glowScale) * (1 - Math.exp(-SCALE_OMEGA * dt));
+    // ---- hover/press scale springs (the POP) ----
+    // Real underdamped springs with velocity state: they overshoot the
+    // target (~16% at zeta=0.5) and settle with an elastic bounce. This is
+    // the physical definition of a pop — exponential smoothing cannot do it.
+    const dT = hoverTarget * press;                    // press < 1 squeezes
+    const gT = (hoverTarget > 1 ? HOVER_GLOW : 1) * (press < 1 ? PRESS_GLOW : 1);
+    [dotScale, dotScaleVel] = springStep(dotScale, dotScaleVel, dT, SCALE_OMEGA, SCALE_ZETA, dt);
+    [glowScale, glowScaleVel] = springStep(glowScale, glowScaleVel, gT, SCALE_OMEGA, GLOW_SCALE_ZETA, dt);
 
     // ---- write (one transform per layer, device-pixel snapped) ----
     dotStage.style.transform = `translate3d(${(snap(dx) - DOT_STAGE_HALF)}px, ${(snap(dy) - DOT_STAGE_HALF)}px, 0)`;
@@ -344,7 +377,8 @@
     const settled = Math.abs(dx - mx) + Math.abs(dy - my) < 0.1
       && Math.abs(gx - mx) + Math.abs(gy - my) < 0.15
       && vSmooth < 8 && stretch < 0.004
-      && Math.abs(dotScale - dotST) < 0.004;
+      && Math.abs(dotScale - dT) < 0.004 && Math.abs(dotScaleVel) < 0.05
+      && Math.abs(glowScale - gT) < 0.004 && Math.abs(glowScaleVel) < 0.05;
     if (settled && now - lastMoveAt > IDLE_MS) {
       lastT = 0;
       dx = mx; dy = my; gx = mx; gy = my;
