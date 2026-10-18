@@ -22,8 +22,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..'); // adjust if this script lives elsewhere
-const FILES_TO_HASH = ['app.js', 'index.html', 'styles.css'];
-const SW_PATH = path.join(ROOT, 'sw.js');
+const FILES_TO_HASH = ['index.html', 'styles.css', 'public/blob-cursor.js'];
+const SW_PATH = path.join(ROOT, 'public', 'sw.js');
 
 function hashFiles(files) {
   const hash = crypto.createHash('sha256');
