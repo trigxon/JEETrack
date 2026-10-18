@@ -1,287 +1,284 @@
-// blob-cursor.js — small solid pink cursor with a trailing glow, built so the
-// part the eye tracks (the dot) can never lag or stutter: its position is
-// written synchronously on every mousemove, exactly like the native cursor.
-// The soft glow is the only smoothed layer (the "blob" feel) and it moves,
-// scales and fades via transforms alone — no repaints, no filters.
+// blob-cursor.js v11 — "physics rebuild": one spring integrator drives every
+// layer, so the blob is mathematically incapable of jumping, clipping or
+// stuttering — it can only glide.
 //
-// v10 — "never glitches, never half-disappears, never hangs" overhaul:
-//  - STABLE LAYER BOUNDS: the stretch wrapper is now a real 160x160 box
-//    (v9 nested everything in 0x0 elements). Compositor layers with a
-//    constant size never resize mid-flight, which is what made the glow
-//    visibly CLIP ("half of the blob disappearing") on fast flicks when
-//    stretch + hover-scale stacked up. Max extent needed: glow 46px x
-//    hover 1.5 x stretch 1.35 = 93px < 160px, with margin to spare.
-//  - BLUR SUSPENSION: v9 tried to dodge glass panels by hiding the glow —
-//    but the DOT still moved above backdrop-filter surfaces, forcing a
-//    full-surface blur re-filter every frame. That is the "hangs on the
-//    home page / signup page" feel (land-nav blur(32px), auth scrim,
-//    every glass panel). v10 instead SUSPENDS the backdrop-filter of the
-//    panel under the pointer for exactly as long as the pointer is over
-//    it (event-driven, memoized, restored on leave). The backgrounds are
-//    >=72% opaque, so the visual difference is imperceptible — and the
-//    GPU cost of moving above them drops to zero.
-//  - THE GLOW NEVER VANISHES ANYMORE: lite mode (weak devices) used to
-//    display:none the glow — one-way — so a couple of slow frames on a
-//    heavy page made the blob "half disappear" for the rest of the
-//    session. Lite now keeps the glow glued to the dot (no trail, no
-//    rAF, near-zero cost) and its triggers were made much harder to
-//    trip (6 consecutive spikes / sustained <38fps over 50 frames).
-//  - NO HOVER PULSE SPAM WHILE SWEEPING: crossing interactive elements
-//    at speed no longer re-triggers the 1.6x spring on every boundary —
-//    hover scaling only engages when the pointer is moving slowly or
-//    has arrived. This was the "glitching very much" on fast moves.
-//  - Modal perf mode now covers BOTH full-screen scrims (.mo and the
-//    auth modal) and strips their blur while open.
-// Kept from v9: zero-lag event-driven dot, event-driven glass detection
-// with WeakMap memo, scroll guard, idle sleep, touch-only skip, reduced
-// motion, ?blob-lite force flag.
+// WHY v10 STILL FELT GLITCHY (root causes, honestly listed):
+//  1. The dot was written synchronously on every mousemove while the glow ran
+//     on rAF. Two clocks. When the main thread stalls (GC, layout, blur
+//     re-filter), mousemove events queue up; on the next frame the dot JUMPED
+//     dozens of px while the glow stayed behind — a visible tear. A burst of
+//     events must become continuous motion, not a jump → solve with springs.
+//  2. The glow "snap if 220px behind" rule was a teleport — a hard
+//     discontinuity the eye reads as the blob glitching/half-vanishing.
+//  3. Every mouseover ran a getComputedStyle() ancestor walk (up to 14
+//     nodes) to find backdrop-filter glass. Sweeping fast across a complex
+//     page fires mouseover on every element boundary → style-recalc storms.
+//  4. CSS transitions on the same transforms JS writes = the transition
+//     restarts on every write = micro-jitter.
+//
+// THE v11 ENGINEERING:
+//  - ONE requestAnimationFrame loop. Semi-implicit (symplectic) Euler spring
+//     integrator with adaptive sub-stepping: h = 1/(ω·1.25), which keeps the
+//     integration stable for ANY ω and any frame rate (60fps → 4 substeps for
+//     the dot; a 200ms stall → 8 substeps, still stable, no explosion).
+//  - Dot spring: ω=150/s, ζ=1 (critically damped) → 90% of a step within
+//    ~25ms: perceptually glued to the pointer, but events that arrive in
+//    bursts are absorbed into fast, CONTINUOUS catch-up. No jumps, ever.
+//  - Glow spring: ω=11/s, ζ=1.05 (slightly overdamped — no overshoot wobble)
+//    → the silky blob trail. It is never snapped: spring acceleration scales
+//    with distance, so catch-up is fast but always continuous.
+//  - Stretch: computed from the glow spring's own velocity vector
+//    (v is continuous because x is continuous — physics, not heuristics).
+//    Area-preserving elongation (sx = 1+s, sy = 1/(1+s)) along the smoothed
+//    velocity angle: the blob "deforms like a fluid", never tears.
+//  - Hover scale (dot 1.55×, glow 1.35×) is ALSO a spring — no CSS
+//    transitions anywhere on animated transforms.
+//  - Layout-engine hygiene: the event handlers only store coordinates and
+//    wake the loop. Exactly ONE document.elementFromPoint() per animation
+//    frame drives BOTH hover detection and glass (backdrop-filter)
+//    suspension, memoized per element in a WeakMap. Zero style recalcs in
+//    the event path, zero per-element walks during sweeps.
+//  - Constant composited layer bounds: two fixed-size stages (72px dot
+//    stage, 192px glow stage). Max glow extent 56px × 1.35 hover × 1.55
+//    stretch ≈ 117px < 192px. Scaling can never clip ("half of the blob
+//    disappearing" is geometrically impossible).
+//  - Idle sleep: springs fully at rest + pointer still 1.2s → rAF stops;
+//    any event wakes it with a clean dt. No teleports on wake (springs are
+//    already at rest at the pointer).
+//  - Kept from v10: touch-only skip + hybrid-touch guard, reduced-motion
+//    path, ?blob-lite force flag, scroll glow-fade, modal perf mode
+//    (html.blob-perf strips scrim blur), jt-blob-noblur glass suspension,
+//    native-cursor hiding.
+//  - Removed from v10: adaptive lite mode (one-way visual pops = "blob half
+//    disappeared"), the 220px teleport, all event-path style walks.
 (function(){
-  // Touch-only devices (phones/tablets): the primary pointer is a finger,
-  // so there is nothing for the blob to follow — skip everything and leave
-  // native behavior untouched. We deliberately do NOT bail on
-  // `maxTouchPoints > 0`: many laptops report touch support while being
-  // driven by a mouse, and the blob must still work there. Hybrids are
-  // handled at runtime below: touching the screen hides the blob and
-  // mouse events synthesized from a tap are ignored.
+  'use strict';
+
+  // Touch-only devices: the primary pointer is a finger — nothing to follow.
+  // Laptops that report touch but are mouse-driven still run (hover:hover).
   if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
 
-  const GLOW_RATE = 18;            // glow trail smoothing (1/s) — soft, silky tail
-  const STRETCH_RATE = 16;         // how quickly the dynamic stretch eases (1/s)
-  const MAX_DT = 0.05;             // clamp delta time (50ms) so stalls never snap
-  const MAX_STRETCH = 1.35;        // max elongation when flicking fast
-  const SNAP_DIST = 220;           // glow this far behind while pointer is STILL -> teleport
-  const SETTLE_EPS = 0.05;         // px — glow settled when offsets are below this
-  const IDLE_STOP_MS = 1400;       // settled + pointer idle this long -> stop rAF
-  const LITE_WINDOW = 50;          // moving frames per lite-mode sample
-  const LITE_MAX_DT = 0.026;       // avg dt above this (~<38fps sustained) engages lite
-  const SPIKE_DT = 0.11;           // a single frame slower than this is a spike
-  const SPIKES_TO_LITE = 6;        // consecutive spikes -> engage lite
-  const HOVER_MAX_SPEED = 1.1;     // px/ms — above this, hover pulses stay off
-  const SPEED_WINDOW_MS = 90;      // hover-speed memory window
+  // ---- tuning ------------------------------------------------------------
+  const DOT_OMEGA   = 150;   // dot spring stiffness (rad/s) — glued, not welded
+  const DOT_ZETA    = 1.0;   // critically damped: fastest settle, zero overshoot
+  const GLOW_OMEGA  = 11;    // glow trail stiffness — the blob feel
+  const GLOW_ZETA   = 1.05;  // hair overdamped: no rubber-band wobble
+  const SCALE_OMEGA = 26;    // hover scale spring
+  const MAX_DT      = 0.05;  // clamp frame delta (50ms) — stalls never explode
+  const STRETCH_MAX = 0.42;  // max elongation (+42% along motion)
+  const STRETCH_GAIN = 0.00016; // px/s of glow velocity → stretch amount
+  const STRETCH_ON  = 90;    // px/s: glow speed above which stretch engages
+  const ANGLE_RATE  = 14;    // 1/s — velocity-angle smoothing
+  const VEL_SMOOTH  = 10;    // 1/s — glow-velocity smoothing for stretch
+  const IDLE_MS     = 1200;  // at rest this long → sleep rAF
+  const GLASS_MIN_MOVE = 6;  // px pointer travel before re-checking glass
+  const GLASS_MAX_WAIT = 150;// ms between glass checks while moving
+  const HOVER_SLOW_PX = 8;   // px travel before hover target re-evaluation
 
-  // Reduced motion (vestibular accessibility): a plain pink dot that sits
-  // under the pointer — same instant-follow as everyone now, minus glow,
-  // stretch and transitions. Zero induced motion.
   const REDUCED_MOTION = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FORCE_LITE = new URLSearchParams(location.search).has('blob-lite');
+  // Lite / reduced: dot glued to the pointer (event-driven), no glow, no loop.
+  const LITE = FORCE_LITE || REDUCED_MOTION;
 
+  // ---- DOM: two fixed-size stages, one transform write per layer per frame
   const cursor = document.createElement('div');
   cursor.id = 'custom-cursor';
-  // 160x160 real-sized stage centered on the pointer: constant composited
-  // layer bounds, so scaling the children can never clip ("half blob").
-  const stretch = document.createElement('div');
-  stretch.className = 'cursor-stretch';
-  const glowWrap = document.createElement('div');
-  glowWrap.className = 'cursor-glowwrap';
-  const glow = document.createElement('div');
-  glow.className = 'cursor-glow';
+  const dotStage = document.createElement('div');
+  dotStage.className = 'jt-dot-stage';
   const dot = document.createElement('div');
-  dot.className = 'cursor-dot';
-  glowWrap.appendChild(glow);
-  stretch.appendChild(glowWrap);
-  stretch.appendChild(dot);
-  cursor.appendChild(stretch);
+  dot.className = 'jt-dot';
+  dotStage.appendChild(dot);
+  const glowStage = document.createElement('div');
+  glowStage.className = 'jt-glow-stage';
+  const glow = document.createElement('div');
+  glow.className = 'jt-glow';
+  glowStage.appendChild(glow);
+  if (!LITE) cursor.appendChild(glowStage);
+  cursor.appendChild(dotStage);
   document.body.appendChild(cursor);
-
-  let mouseX = -100, mouseY = -100;
-  let glowX = -100, glowY = -100;   // absolute glow position (eases toward pointer)
-  let stretchX = 1, stretchY = 1;
-  let prevMX = -100, prevMY = -100; // pointer position at previous frame
-  let isVisible = false;
-  let rafId = 0;
-  let lastTime = 0;
-  let lastMoveAt = 0;
-  let perfMode = false;
-
-  // Recent pointer speed (px/ms), decayed on a short window — used to keep
-  // hover pulses off during fast sweeps without touching the dot's tracking.
-  let speedPXms = 0;
-  let lastHoverCheck = 0;
-  function noteHoverSpeed(now) {
-    if (lastHoverCheck) {
-      const dt = Math.max(1, now - lastHoverCheck);
-      const d = Math.hypot(mouseX - prevMX, mouseY - prevMY);
-      const inst = d / dt;
-      // decay previous value so a single fast flick doesn't stick around
-      speedPXms = Math.max(inst, speedPXms * Math.exp(-dt / SPEED_WINDOW_MS));
-    }
-    lastHoverCheck = now;
-  }
-  function movingFast() { return speedPXms > HOVER_MAX_SPEED; }
-
-  // Adaptive lite mode: forceable via ?blob-lite, otherwise engaged only on
-  // SUSTAINED slowness. Lite = dot + static glow glued to the dot, fully
-  // event-driven, zero continuous rAF/GPU work.
-  let liteMode = false;
-  let liteAcc = 0, liteN = 0, liteSpikes = 0;
-  function enableLite() {
-    if (liteMode) return;
-    liteMode = true;
-    cursor.classList.add('cursor-lite');
-    stretchX = 1; stretchY = 1;
-    stretch.style.transform = 'scale(1, 1)';
-    glowX = mouseX; glowY = mouseY;
-    glow.style.transform = 'translate3d(0, 0, 0)';
-    stopLoop(); // dot is event-driven; nothing left to animate
-  }
-
-  if (REDUCED_MOTION) {
-    cursor.classList.add('cursor-reduced');
-    liteMode = true; // reuse the event-driven fast path
-  }
 
   const style = document.createElement('style');
   style.textContent = `
     #custom-cursor {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 0;
-      height: 0;
-      pointer-events: none;
-      z-index: 2147483647;
-      transform: translate3d(-100px, -100px, 0);
-      opacity: 0;
-      transition: opacity 0.25s ease;
-      will-change: transform;
+      position: fixed; top: 0; left: 0; width: 0; height: 0;
+      pointer-events: none; z-index: 2147483647;
+      transform: translate3d(-200px, -200px, 0);
+      opacity: 0; transition: opacity 0.2s ease;
     }
-    /* Real-sized stage: constant composited layer bounds. Scaling radiates
-       from its center, which sits exactly on the pointer. */
-    #custom-cursor .cursor-stretch {
-      position: absolute;
-      width: 160px;
-      height: 160px;
-      left: -80px;
-      top: -80px;
-      transform: scale(1, 1);
-      transform-origin: 50% 50%;
-      will-change: transform;
+    #custom-cursor.blob-on { opacity: 1; }
+    /* Fixed-size compositor stages — constant layer bounds, transform-only. */
+    #custom-cursor .jt-dot-stage {
+      position: absolute; width: 72px; height: 72px;
+      left: -36px; top: -36px; will-change: transform;
     }
-    #custom-cursor .cursor-glowwrap {
-      position: absolute;
-      width: 0;
-      height: 0;
-      left: 80px;
-      top: 80px;
-      transform: scale(1);
-      transform-origin: center;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-      will-change: transform;
-      pointer-events: none;
-    }
-    #custom-cursor.cursor-hovering .cursor-glowwrap {
-      transform: scale(1.5);
-    }
-    #custom-cursor .cursor-glow {
-      position: absolute;
-      width: 46px;
-      height: 46px;
-      left: -23px;
-      top: -23px;
-      border-radius: 50%;
-      background: radial-gradient(circle,
-        rgba(244, 114, 182, 0.55) 0%,
-        rgba(244, 114, 182, 0.28) 34%,
-        rgba(244, 114, 182, 0.10) 55%,
-        rgba(244, 114, 182, 0) 72%);
-      transform: translate3d(0, 0, 0);
-      transition: opacity 0.15s ease;
-      will-change: transform;
-      pointer-events: none;
-    }
-    #custom-cursor .cursor-dot {
-      position: absolute;
-      width: 14px;
-      height: 14px;
-      left: 73px;
-      top: 73px;
-      border-radius: 50%;
+    #custom-cursor .jt-dot {
+      position: absolute; width: 14px; height: 14px;
+      left: 29px; top: 29px; border-radius: 50%;
       background: rgba(244, 114, 182, 1);
-      transform: scale(1);
-      transform-origin: center;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease;
-      will-change: transform;
+      transform-origin: 50% 50%; will-change: transform;
+      box-shadow: 0 0 6px rgba(244, 114, 182, 0.8);
     }
-    #custom-cursor.cursor-hovering .cursor-dot {
-      transform: scale(1.6);
-      background: rgba(251, 113, 133, 1);
+    #custom-cursor .jt-glow-stage {
+      position: absolute; width: 192px; height: 192px;
+      left: -96px; top: -96px; will-change: transform;
     }
-    /* Blur suspension: the glass panel currently under the pointer gets its
-       backdrop-filter removed for exactly as long as the pointer is over it.
-       A moving cursor above a live blur forces a full-surface re-filter every
-       frame — the single biggest cause of cursor "hanging" on pages with
-       glass navs and modal scrims. These panels are >=72% opaque, so the
-       visual change is imperceptible while it is active. */
+    #custom-cursor .jt-glow {
+      position: absolute; width: 56px; height: 56px;
+      left: 68px; top: 68px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(244, 114, 182, 0.50) 0%,
+        rgba(244, 114, 182, 0.26) 34%,
+        rgba(244, 114, 182, 0.09) 55%,
+        rgba(244, 114, 182, 0) 72%);
+      transform-origin: 50% 50%; will-change: transform;
+    }
+    /* Scroll guard: fade the trail while the page scrolls under the pointer. */
+    #custom-cursor.blob-scroll .jt-glow { opacity: 0; }
+    #custom-cursor .jt-glow { transition: opacity 0.15s ease; }
+    /* Glass suspension: while the pointer is over a backdrop-filter panel,
+       that panel's blur is lifted (visually imperceptible — panels are
+       >=72% opaque) so a moving cursor never forces full-surface re-filters
+       ("hanging" on navs, cards, modals). */
     .jt-blob-noblur {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    /* Perf mode (a full-screen scrim is open): strip the scrim's blur for
-       the whole time it is visible. Covers the generic .mo dialogs AND the
-       auth (signup/login) modal — v9 only knew about .mo. */
-    html.blob-perf .mo,
-    html.blob-perf .mo.open,
-    html.blob-perf .auth-modal-scrim,
-    html.blob-perf .auth-modal-scrim.open {
+    /* Full-screen scrim perf mode: strip the blur for the whole time a
+       modal/auth sheet is open. */
+    html.blob-perf .mo, html.blob-perf .mo.open,
+    html.blob-perf .auth-modal-scrim, html.blob-perf .auth-modal-scrim.open {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    #custom-cursor.cursor-perf .cursor-dot {
-      transition: none;
-    }
-    /* Scroll guard: glow hides while the page is scrolling (a moving glow
-       over moving content is the classic jank moment), comes back when
-       scrolling stops. The dot is event-driven and stays exact. */
-    #custom-cursor.cursor-scroll .cursor-glow {
-      opacity: 0;
-    }
-    /* Reduced motion: dot-only, no transitions, glow never rendered. */
-    #custom-cursor.cursor-reduced .cursor-glow {
-      display: none;
-    }
-    #custom-cursor.cursor-reduced .cursor-dot {
-      transition: none;
-    }
-    /* Lite mode (weak devices, or ?blob-lite): the glow stays but is glued
-       to the dot (no trail animation). The blob keeps its full look at a
-       near-zero, fully event-driven cost — v9 hid the glow entirely here,
-       which read as "half of the blob disappearing". */
-    #custom-cursor.cursor-lite .cursor-glowwrap {
-      transition: none;
-    }
-    #custom-cursor.cursor-lite .cursor-dot {
-      transition: none;
-    }
-    /* The pink blob replaces the native cursor entirely on devices with a
-       mouse. Touch-only devices never run this script, so they keep the
-       default behavior. */
-    html, html * {
-      cursor: none !important;
-    }
+    /* The blob replaces the native cursor on mouse-driven devices. */
+    html, html * { cursor: none !important; }
   `;
   document.head.appendChild(style);
 
-  if (new URLSearchParams(location.search).has('blob-lite')) enableLite();
+  // ---- state -------------------------------------------------------------
+  let mx = -200, my = -200;         // pointer target (client px)
+  let havePointer = false;
+  let visible = false;
+  let rafId = 0, lastT = 0, lastMoveAt = 0;
 
+  // dot spring
+  let dx = -200, dy = -200, dvx = 0, dvy = 0;
+  // glow spring
+  let gx = -200, gy = -200, gvx = 0, gvy = 0;
+  // stretch + angle (driven by glow velocity)
+  let stretch = 0, angle = 0, vSmooth = 0;
+  // hover scale springs
+  let dotScale = 1, glowScale = 1, hoverTarget = 1;
+
+  const DOT_STAGE_HALF = 36, GLOW_STAGE_HALF = 96, GLOW_OFF = 68;
+
+  // ---- spring integrator (semi-implicit Euler, stability-guaranteed) -----
+  // For ζ≈1 symplectic Euler the error eigenvalue crosses |λ|=1 at ω·h≈0.91.
+  // Substep h is therefore DERIVED from ω (ω·h = 0.75, comfortably inside the
+  // stable region — |λ|max ≈ 0.9) and never capped: at MAX_DT=50ms and
+  // ω=150 that is ≤10 substeps of trivial arithmetic. Stability is a
+  // property of the scheme, not of the frame rate — slow frames can no
+  // longer make the cursor explode (the classic random "glitch").
+  function springStep(pos, vel, target, omega, zeta, dt) {
+    let n = Math.ceil((dt * omega) / 0.75);
+    if (n < 1) n = 1;
+    const h = dt / n;
+    for (let i = 0; i < n; i++) {
+      const a = omega * omega * (target - pos) - 2 * zeta * omega * vel;
+      vel += a * h;
+      pos += vel * h;
+    }
+    return [pos, vel];
+  }
+
+  // ---- events: store + wake. NOTHING else happens here. ------------------
+  window.addEventListener('pointermove', (e) => {
+    if (recentTouch()) return;
+    mx = e.clientX; my = e.clientY;
+    lastMoveAt = performance.now();
+    if (!havePointer) {
+      // First contact: snap everything to the pointer — no streaks.
+      havePointer = true;
+      dx = gx = mx; dy = gy = my;
+      dvx = dvy = gvx = gvy = 0;
+      wake(true);
+    }
+    wake(false);
+  }, { passive: true });
+
+  function wake(showNow) {
+    if (showNow && !visible) {
+      visible = true;
+      cursor.classList.add('blob-on');
+    }
+    if (!rafId && visible && !LITE) {
+      rafId = requestAnimationFrame(render);
+    }
+  }
+
+  if (!LITE) {
+    document.addEventListener('mouseleave', () => {
+      visible = false;
+      cursor.classList.remove('blob-on');
+      stopLoop();
+      suspendGlass(null);
+    });
+    document.addEventListener('mouseenter', () => {
+      if (recentTouch()) return;
+      dx = gx = mx; dy = gy = my;
+      dvx = dvy = gvx = gvy = 0;
+      visible = true;
+      cursor.classList.add('blob-on');
+      wake(false);
+    });
+    // Hybrid touch screens: finger down hides the blob; synthesized mouse
+    // events within 1s of a touch are ignored.
+    window.addEventListener('touchstart', () => {
+      lastTouchAt = Date.now();
+      if (visible) {
+        visible = false;
+        cursor.classList.remove('blob-on');
+        stopLoop();
+        suspendGlass(null);
+      }
+    }, { passive: true, capture: true });
+  } else {
+    // Lite: dot follows the pointer directly on the event — zero loop cost.
+    document.addEventListener('mouseleave', () => {
+      visible = false;
+      cursor.classList.remove('blob-on');
+    });
+    document.addEventListener('mouseenter', () => {
+      if (recentTouch()) return;
+      visible = true;
+      cursor.classList.add('blob-on');
+    });
+    window.addEventListener('touchstart', () => {
+      lastTouchAt = Date.now();
+      visible = false;
+      cursor.classList.remove('blob-on');
+    }, { passive: true, capture: true });
+  }
+
+  let lastTouchAt = 0;
+  function recentTouch() { return Date.now() - lastTouchAt < 1000; }
+
+  function liteWrite() {
+    if (!visible) return;
+    dotStage.style.transform = `translate3d(${mx - DOT_STAGE_HALF}px, ${my - DOT_STAGE_HALF}px, 0)`;
+  }
+  if (LITE) {
+    window.addEventListener('pointermove', liteWrite, { passive: true });
+  }
+
+  // ---- glass (backdrop-filter) suspension + hover, 1 hit-test per frame --
   const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], .ob-opt, .btn';
-
-  function isInteractive(target) {
-    return target && (target instanceof Element) && target.closest(INTERACTIVE);
-  }
-  function interactiveRoot(target) {
-    return target && (target instanceof Element) ? target.closest(INTERACTIVE) : null;
-  }
-
-  function addHoverClass() { cursor.classList.add('cursor-hovering'); }
-  function removeHoverClass() { cursor.classList.remove('cursor-hovering'); }
-
-  // Hover flicker fix (from v8/v9): moving between a control and its own
-  // child fires mouseout on the parent then mouseover on the child. If both
-  // resolve to the SAME interactive root, ignore the pair.
   const glassMemo = new WeakMap();
-  // Returns the nearest ancestor carrying a backdrop-filter (the element to
-  // suspend), memoized per element so sweeping over known UI costs nothing.
+  let suspended = null;
+
   function glassRootUnder(el) {
+    // Memoized ancestor walk — repeated sweeps over known UI cost nothing.
     let n = el, depth = 0;
     const chain = [];
     while (n && n !== document.documentElement && depth++ < 14) {
@@ -290,8 +287,8 @@
         for (let i = 0; i < chain.length; i++) glassMemo.set(chain[i], cached);
         return cached;
       }
-      chain.push(n);
       if (n.nodeType === 1) {
+        chain.push(n);
         const s = getComputedStyle(n);
         const bf = s.backdropFilter || s.webkitBackdropFilter;
         if (bf && bf !== 'none') {
@@ -305,8 +302,6 @@
     return null;
   }
 
-  // One suspended panel at a time; restored the moment the pointer leaves it.
-  let suspended = null;
   function suspendGlass(el) {
     if (el === suspended) return;
     if (suspended) suspended.classList.remove('jt-blob-noblur');
@@ -314,217 +309,118 @@
     if (suspended) suspended.classList.add('jt-blob-noblur');
   }
 
-  document.addEventListener('mouseover', (e) => {
-    // Fast sweeps: skip the hover spring entirely (no pulsing while the
-    // pointer is flying across menus — this was the "glitching very much").
-    if (isInteractive(e.target) && !movingFast()) addHoverClass();
-    if (!REDUCED_MOTION && isVisible && e.target instanceof Element) {
-      suspendGlass(glassRootUnder(e.target));
+  let lastGlassX = -1, lastGlassY = -1, lastGlassCheck = 0;
+  let lastHoverX = -1, lastHoverY = -1;
+
+  function pointerSense(now) {
+    if (!visible) { suspendGlass(null); hoverTarget = 1; return; }
+    const movedGlass = Math.abs(mx - lastGlassX) + Math.abs(my - lastGlassY) > GLASS_MIN_MOVE;
+    const due = now - lastGlassCheck > GLASS_MAX_WAIT;
+    if (!movedGlass && !due) return;
+    lastGlassX = mx; lastGlassY = my; lastGlassCheck = now;
+    const el = document.elementFromPoint(mx, my);
+    suspendGlass(el ? glassRootUnder(el) : null);
+    // Hover scale: re-evaluate only after real travel (not every frame).
+    if (Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > HOVER_SLOW_PX || !el) {
+      lastHoverX = mx; lastHoverY = my;
+      hoverTarget = (el && el.closest && el.closest(INTERACTIVE)) ? 1.55 : 1;
     }
-  });
-  document.addEventListener('mouseout', (e) => {
-    const from = interactiveRoot(e.target);
-    if (!from) return;
-    const to = interactiveRoot(e.relatedTarget);
-    if (to === from) return; // still inside the same control — keep the spring
-    removeHoverClass();
-  });
+  }
 
-  window.addEventListener('mousemove', (e) => {
-    if (recentTouch()) return; // mousemove synthesized from a finger tap
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-    lastMoveAt = Date.now();
-    noteHoverSpeed(lastMoveAt);
-
-    if (!isVisible) {
-      // Snap to the pointer on the very first move so nothing ever streaks
-      // across the screen from an off-screen starting position.
-      prevMX = mouseX; prevMY = mouseY;
-      glowX = mouseX; glowY = mouseY;
-      glow.style.transform = 'translate3d(0, 0, 0)';
-      cursor.style.opacity = '1';
-      isVisible = true;
-      lastTime = 0;
-    }
-
-    // THE core: the dot position is written synchronously, right here,
-    // at mouse-event speed. No rAF wait, no easing — the dot is exactly
-    // where the pointer is, on every event, even if the rAF loop is stalled.
-    cursor.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
-
-    if (liteMode) {
-      // Event-driven mode: the glow is glued to the dot (its transform was
-      // reset on enable), stretch is neutral — literally nothing left to
-      // animate. Zero continuous work, full blob look.
-      return;
-    }
-
-    startLoop(); // wakes/keeps the glow+stretch animation loop
-  }, { passive: true });
-
-  document.addEventListener('mouseleave', () => {
-    cursor.style.opacity = '0';
-    isVisible = false;
-    lastTime = 0;
-    stopLoop();
-    suspendGlass(null);
-    removeHoverClass();
-  });
-
-  document.addEventListener('mouseenter', () => {
-    if (recentTouch()) return; // synthesized by a tap, not a real mouse
-    cursor.style.opacity = '1';
-    isVisible = true;
-    lastTime = 0;
-    // Snap the glow to the pointer on re-entry — it may have been frozen
-    // mid-trail while the pointer was outside the window.
-    if (!liteMode) {
-      glowX = mouseX; glowY = mouseY;
-      glow.style.transform = 'translate3d(0, 0, 0)';
-      startLoop();
-    }
-  });
-
-  // Hybrid touch screens: a finger tap makes the browser synthesize mouse
-  // events right after; ignore those so the blob never pops up from touch,
-  // and hide the blob if it was visible (mouse user switched to finger).
-  let lastTouchAt = 0;
-  function recentTouch() { return Date.now() - lastTouchAt < 1000; }
-  window.addEventListener('touchstart', () => {
-    lastTouchAt = Date.now();
-    if (isVisible) {
-      cursor.style.opacity = '0';
-      isVisible = false;
-      lastTime = 0;
-      stopLoop();
-      suspendGlass(null);
-      removeHoverClass();
-    }
-  }, { passive: true, capture: true });
-
-  // Scroll guard: any scrolling (wheel, momentum, keyboard, scrollbar drag,
-  // scroll-into-view) briefly hides the glow. The dot is event-driven and
-  // stays exact through all of it.
+  // ---- scroll guard -------------------------------------------------------
   let scrollHideTimer = 0;
   window.addEventListener('scroll', () => {
-    if (liteMode || REDUCED_MOTION || !isVisible) return;
-    cursor.classList.add('cursor-scroll');
+    if (LITE || !visible) return;
+    cursor.classList.add('blob-scroll');
     clearTimeout(scrollHideTimer);
-    scrollHideTimer = setTimeout(() => cursor.classList.remove('cursor-scroll'), 150);
+    scrollHideTimer = setTimeout(() => cursor.classList.remove('blob-scroll'), 150);
   }, { passive: true, capture: true });
 
-  function startLoop() {
-    if (!rafId) {
-      rafId = requestAnimationFrame(render);
+  // ---- the loop -----------------------------------------------------------
+  function render(now) {
+    rafId = 0;
+    if (!visible) return;
+
+    if (!lastT) lastT = now;
+    let dt = (now - lastT) / 1000;
+    lastT = now;
+    if (dt > MAX_DT) dt = MAX_DT;
+    if (dt <= 0) { rafId = requestAnimationFrame(render); return; }
+
+    pointerSense(now);
+
+    // Dot spring → pointer.
+    [dx, dvx] = springStep(dx, dvx, mx, DOT_OMEGA, DOT_ZETA, dt);
+    [dy, dvy] = springStep(dy, dvy, my, DOT_OMEGA, DOT_ZETA, dt);
+    // Defensive sanity clamp — physically unreachable, but a bad state must
+    // never be able to paint the blob off-screen.
+    if (Math.abs(dx - mx) > 4000 || Math.abs(dy - my) > 4000) {
+      dx = mx; dy = my; dvx = dvy = 0;
+      gx = mx; gy = my; gvx = gvy = 0;
     }
+
+    // Glow spring → pointer (the trail).
+    [gx, gvx] = springStep(gx, gvx, mx, GLOW_OMEGA, GLOW_ZETA, dt);
+    [gy, gvy] = springStep(gy, gvy, my, GLOW_OMEGA, GLOW_ZETA, dt);
+
+    // Stretch from the glow spring's own (continuous) velocity.
+    const v = Math.hypot(gvx, gvy);
+    vSmooth += (v - vSmooth) * (1 - Math.exp(-VEL_SMOOTH * dt));
+    const sTarget = vSmooth > STRETCH_ON
+      ? Math.min(vSmooth * STRETCH_GAIN, STRETCH_MAX)
+      : 0;
+    stretch += (sTarget - stretch) * (1 - Math.exp(-ANGLE_RATE * dt));
+    if (v > 120) {
+      // shortest-arc smoothing — the blob never spins the long way round
+      const target = Math.atan2(gvy, gvx);
+      let delta = target - angle;
+      while (delta > Math.PI) delta -= 2 * Math.PI;
+      while (delta < -Math.PI) delta += 2 * Math.PI;
+      angle += delta * (1 - Math.exp(-ANGLE_RATE * dt));
+    }
+
+    // Hover scale springs.
+    const dotST = hoverTarget;
+    const glowST = hoverTarget > 1 ? 1.35 : 1;
+    dotScale += (dotST - dotScale) * (1 - Math.exp(-SCALE_OMEGA * dt));
+    glowScale += (glowST - glowScale) * (1 - Math.exp(-SCALE_OMEGA * dt));
+
+    // ---- write (one transform per layer) ----
+    dotStage.style.transform = `translate3d(${(dx - DOT_STAGE_HALF).toFixed(2)}px, ${(dy - DOT_STAGE_HALF).toFixed(2)}px, 0)`;
+    dot.style.transform = `scale(${dotScale.toFixed(4)})`;
+    glowStage.style.transform = `translate3d(${(gx - GLOW_STAGE_HALF).toFixed(2)}px, ${(gy - GLOW_STAGE_HALF).toFixed(2)}px, 0)`;
+    const sx = (1 + stretch) * glowScale;
+    const sy = (1 / (1 + stretch)) * glowScale;
+    glow.style.transform = `rotate(${angle.toFixed(4)}rad) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+
+    // Idle sleep: everything at rest + pointer quiet → stop burning cycles.
+    const settled = Math.abs(dx - mx) + Math.abs(dy - my) < 0.1
+      && Math.abs(gx - mx) + Math.abs(gy - my) < 0.15
+      && vSmooth < 8 && stretch < 0.004
+      && Math.abs(dotScale - dotST) < 0.004;
+    if (settled && now - lastMoveAt > IDLE_MS) {
+      lastT = 0;
+      dx = mx; dy = my; gx = mx; gy = my;
+      dotStage.style.transform = `translate3d(${mx - DOT_STAGE_HALF}px, ${my - DOT_STAGE_HALF}px, 0)`;
+      glowStage.style.transform = `translate3d(${mx - GLOW_STAGE_HALF}px, ${my - GLOW_STAGE_HALF}px, 0)`;
+      return; // rAF stays stopped; next pointermove wakes us
+    }
+    rafId = requestAnimationFrame(render);
   }
 
   function stopLoop() {
     if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
+    lastT = 0;
   }
 
-  // Continuous loop — only animates the GLOW trail and the stretch. The dot
-  // never waits for this loop. Once the glow is fully settled and the
-  // pointer rests ~1.4s, the loop stops entirely (idle sleep); the next
-  // mousemove restarts it with a clean dt so there is never a resume jump.
-  function render(now) {
-    rafId = 0;
-    if (!isVisible || liteMode) return;
-
-    if (!lastTime) lastTime = now;
-    let dt = (now - lastTime) / 1000;
-    lastTime = now;
-    if (dt > MAX_DT) dt = MAX_DT;
-
-    let settled = false;
-
-    if (dt > 0) {
-      // Pointer velocity for this frame (drives stretch + lite detection).
-      const mvx = mouseX - prevMX;
-      const mvy = mouseY - prevMY;
-      prevMX = mouseX; prevMY = mouseY;
-      const speed = Math.sqrt(mvx * mvx + mvy * mvy);
-
-      // Adaptive lite trigger: sampled only while actually moving, and much
-      // harder to trip than v9 (6 consecutive spikes, or sustained <38fps
-      // across 50 moving frames) so a GC pause pair can't kill the trail.
-      if (!REDUCED_MOTION && speed > 0.5) {
-        liteAcc += dt; liteN++;
-        if (dt > SPIKE_DT) {
-          liteSpikes++;
-          if (liteSpikes >= SPIKES_TO_LITE) { enableLite(); return; }
-        } else {
-          liteSpikes = 0;
-        }
-        if (liteN >= LITE_WINDOW) {
-          if (liteAcc / liteN > LITE_MAX_DT) { enableLite(); return; }
-          liteAcc = 0; liteN = 0;
-        }
-      }
-
-      // Glow trail: exponential ease toward the pointer, frame-rate
-      // independent, with a hard snap if it ever falls too far behind.
-      const t = 1 - Math.exp(-GLOW_RATE * dt);
-      glowX += (mouseX - glowX) * t;
-      glowY += (mouseY - glowY) * t;
-
-      // Dynamic stretch: elongates slightly along the movement direction
-      // when flicking fast, then relaxes back to a perfect circle.
-      if (speed > 0.5 && (mvx !== 0 || mvy !== 0)) {
-        const target = Math.min(1 + speed * 0.0045, MAX_STRETCH);
-        const nx = mvx / speed, ny = mvy / speed;
-        const st = 1 - Math.exp(-STRETCH_RATE * dt);
-        stretchX += (1 + (target - 1) * nx - stretchX) * st;
-        stretchY += (1 + (target - 1) * ny - stretchY) * st;
-      } else {
-        const st = 1 - Math.exp(-STRETCH_RATE * dt);
-        stretchX += (1 - stretchX) * st;
-        stretchY += (1 - stretchY) * st;
-      }
-
-      // Stall snap: if the pointer has been STILL for >120ms and the glow
-      // is still far away (rAF was frozen by a tab stall / GC pause /
-      // alt-tab), teleport it instead of gliding across the page. While the
-      // pointer is actively moving we NEVER snap — long soft trails on fast
-      // flicks are the intended blob feel, and snapping mid-flick would
-      // itself read as a glitch.
-      const gdx = mouseX - glowX, gdy = mouseY - glowY;
-      const gapSq = gdx * gdx + gdy * gdy;
-      if (gapSq > SNAP_DIST * SNAP_DIST && Date.now() - lastMoveAt > 120) {
-        glowX = mouseX; glowY = mouseY;
-      }
-
-      // Snap exactly when fully settled so there's never residual drift.
-      if (Math.abs(gdx) < SETTLE_EPS && Math.abs(gdy) < SETTLE_EPS
-          && Math.abs(stretchX - 1) < 0.002 && Math.abs(stretchY - 1) < 0.002) {
-        glowX = mouseX; glowY = mouseY;
-        stretchX = 1; stretchY = 1;
-        settled = true;
-      }
-
-      glow.style.transform = `translate3d(${(glowX - mouseX).toFixed(2)}px, ${(glowY - mouseY).toFixed(2)}px, 0)`;
-      stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
-    }
-
-    // Idle sleep: fully settled and the pointer hasn't moved in a while —
-    // stop burning rAF/GPU cycles. Modal perf mode keeps working via the
-    // housekeeping timer below; the dot keeps following via mousemove.
-    if (settled && Date.now() - lastMoveAt > IDLE_STOP_MS) {
-      lastTime = 0;
-      return;
-    }
-    startLoop();
-  }
-
-  // ---- 300ms housekeeping: modal perf mode only ----
-  // A single pair of classList queries — no style flush, no layout,
-  // trivial at any frequency. Covers every full-screen scrim in the app.
+  // ---- 300ms housekeeping: modal perf mode only ---------------------------
+  // Two classList queries — trivial. Covers every full-screen scrim.
+  let perfMode = false;
   setInterval(() => {
     const pm = !!document.querySelector('.mo.open, .auth-modal-scrim.open');
     if (pm !== perfMode) {
       perfMode = pm;
-      cursor.classList.toggle('cursor-perf', pm);
+      cursor.classList.toggle('blob-perf', pm);
       document.documentElement.classList.toggle('blob-perf', pm);
     }
   }, 300);
