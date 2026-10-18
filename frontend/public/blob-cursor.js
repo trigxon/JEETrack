@@ -1,46 +1,39 @@
-// blob-cursor.js v13 — "pop + no outline", user-directed revision of v12.
-// The engine underneath is the same proven symplectic spring system (v11/v12):
-// ONE rAF loop; semi-implicit Euler with stability-guaranteed substepping
-// (omega*h = 0.75, stable at ANY frame rate); dot spring omega=150 critically
-// damped (perceptually glued); glow trail omega=11 overdamped (silky flow);
-// area-preserving stretch + shortest-arc rotation from the glow's own
-// velocity; fixed-size compositor stages; device-pixel snapping; idle sleep;
-// robust re-show after leave/touch; touch-only skip; lite/reduced path;
-// modal perf mode. Nothing about the core motion changed — it is already
-// dt-normalized and frame-rate independent.
+// blob-cursor.js v14 — "malfunction hardening": the pop engine (v13) is kept
+// exactly as shipped; v14 fixes the four behaviors that could READ as a
+// malfunction on a real machine (headless tests never feel these):
 //
-// What v13 changes (each maps to a direct user request):
+//  1. Scroll breathing — v13 re-sensed what is under a STILL pointer after
+//     every scroll event: wheeling made the blob pop in/out rhythmically as
+//     elements passed beneath it. v14: scroll RELAXES hover and suppresses
+//     new pops for 250ms; the blob re-pops only when the pointer moves again
+//     (native-OS behavior).
+//  2. Phantom pulsing — v13 re-sensed every 110ms even with an idle pointer,
+//     so animated content cycling under a stationary cursor toggled the pop
+//     forever. v14: hover is sensed ONLY on real pointer travel. A still
+//     pointer holds a perfectly stable hover state, always.
+//  3. Stuck squeeze — pointerup did not wake the loop: click-and-hold past
+//     the idle sleep, release → blob stayed squeezed until the next move.
+//     v14: release/cancel/blur wakes the spring. Non-primary buttons
+//     (right-click/middle) no longer squeeze at all.
+//  4. Sweep flicker — v13 deleted the speed gate entirely, so sweeping across
+//     text links/menus made the blob pulse up/down per link. v14 restores a
+//     mild native-style gate: a fast pointer (>1.5 px/ms) relaxes instead of
+//     popping; the pop lands the instant the pointer settles on a target.
 //
-//  1. "I don't want that outline in blob" —
-//     The 1.5px white ring from v12 is DELETED. Visibility is now carried by
-//     a 17px dot + layered SOFT glow shadows (no crisp edge to shimmer in
-//     compressed video, nothing that reads as an outline). The always-on
-//     56px radial glow underneath does the rest.
+// Hover model (v14): hover = pointer AT REST over an interactive target.
+// Sensed on >2px travel, suppressed for 250ms after any scroll, suppressed
+// while the pointer is fast. Escape hatch: ?blob-off disables the blob
+// entirely (native cursor) for debugging/preference.
 //
-//  2. "I want that pop effect on hovering" —
-//     v12 animated hover scale with exponential smoothing (no velocity
-//     state) — it could only approach the target asymptotically: a dead
-//     fade, never a pop. v13 gives scale its own UNDERDAMPED spring
-//     (zeta = 0.5, omega = 24): the blob overshoots ~16% past its target
-//     and settles with a visible elastic bounce. Dot pops to 1.65x, glow
-//     to 1.4x. The v12 speed-gate is deleted — hover must trigger
-//     reliably, not only when the pointer is slow.
-//
-//  3. Press feedback — pointerdown squeezes the blob to 0.82x, release
-//     springs back through the hover target with the same overshoot. The
-//     cursor now physically reacts to clicks.
-//
-//  4. "Not functioning properly" hardening —
-//     a. cursor:none is now gated behind html.blob-live, a class added the
-//        moment the blob first becomes visible. If the blob can never show
-//        (JS blocked, hybrid-device edge case), the native cursor simply
-//        stays — there is no scenario left where the user has NO pointer.
-//     b. Hover is re-sensed on SCROLL: after a wheel/fling the element
-//        under a still pointer changed, and v12 kept the stale hover state.
-//     c. Re-sensing is throttled by distance (4px) or time (110ms) — one
-//        elementFromPoint max per frame, but no speed gate.
+// v13 history — "pop + no outline": white ring deleted (soft glow shadows
+// only), underdamped scale spring (omega=24, zeta=0.5, ~16% overshoot) for
+// hover + press, cursor:none gated on html.blob-live (never pointerless).
 (function(){
   'use strict';
+
+  // Escape hatch: ?blob-off runs the page with the native cursor and no blob
+  // at all (debugging / personal preference). Nothing is created or hidden.
+  if (new URLSearchParams(location.search).has('blob-off')) return;
 
   // Touch-only devices: the primary pointer is a finger — nothing to follow.
   // Laptops that report touch but are mouse-driven still run (hover:hover).
@@ -61,8 +54,9 @@
   const ANGLE_RATE  = 14;    // 1/s — velocity-angle smoothing
   const VEL_SMOOTH  = 10;    // 1/s — glow-velocity smoothing for stretch
   const IDLE_MS     = 1200;  // at rest this long → sleep rAF
-  const HOVER_MIN_MOVE = 4;  // px pointer travel before hover re-evaluation
-  const HOVER_MAX_WAIT = 110;// ms between hover re-evaluations while moving
+  const HOVER_MIN_MOVE = 2;  // px pointer travel before hover re-evaluation
+  const HOVER_SLOW_PXMS = 1.5; // px/ms — pointer faster than this relaxes, no pops
+  const SCROLL_SUPPRESS_MS = 250; // ms after any scroll: hover stays relaxed
   const HOVER_DOT   = 1.65;  // dot scale target while on interactive elements
   const HOVER_GLOW  = 1.40;  // glow scale target while hovering
   const PRESS_DOT   = 0.82;  // dot scale while pointer is down
@@ -215,20 +209,27 @@
   // Press pop: squeeze on down, springy release on up. Pure state — the
   // loop does the animation; if it is asleep, wake it so the squeeze shows.
   window.addEventListener('pointerdown', (e) => {
-    if (recentTouch()) return;
+    if (recentTouch() || (e.button !== undefined && e.button !== 0)) return;
     press = PRESS_DOT;
     lastMoveAt = performance.now();
     if (e.clientX || e.clientY) { mx = e.clientX; my = e.clientY; }
     wake(false);
   }, { passive: true, capture: true });
-  window.addEventListener('pointerup', () => { press = 1; }, { passive: true });
-  window.addEventListener('pointercancel', () => { press = 1; }, { passive: true });
+  window.addEventListener('pointerup', () => { press = 1; wake(false); }, { passive: true });
+  window.addEventListener('pointercancel', () => { press = 1; wake(false); }, { passive: true });
+  // Alt-tab / window switch while holding a button: release the squeeze so
+  // the blob can never come back stuck small.
+  window.addEventListener('blur', () => { press = 1; }, { passive: true });
 
-  // Scroll changes what is under a still pointer — re-sense hover on the
-  // next frame (v12 kept stale hover state after every scroll).
-  let hoverDirty = false;
+  // Scroll: RELAX hover and suppress re-popping for a beat (native-OS
+  // style). v13 re-sensed what was under the still pointer after every
+  // scroll, so wheeling popped the blob in/out rhythmically — reads as a
+  // malfunction. Now scroll clears hover, and no new pops until the pointer
+  // itself moves again.
+  let lastScrollAt = -1e9;
   window.addEventListener('scroll', () => {
-    hoverDirty = true;
+    lastScrollAt = performance.now();
+    hoverTarget = 1;
     wake(false);
   }, { passive: true, capture: true });
 
@@ -295,19 +296,22 @@
     dotStage.style.transform = `translate3d(${snap(mx) - DOT_STAGE_HALF}px, ${snap(my) - DOT_STAGE_HALF}px, 0)`;
   }
 
-  // ---- hover detection: 1 hit-test per frame max, distance/time throttled.
-  // No speed gate (deleted in v13): the pop must trigger reliably even when
-  // the pointer arrives fast at a button.
-  const INTERACTIVE = 'a, button, input, select, textarea, label, [role="button"], [onclick], .ob-opt, .btn';
-  let lastHoverX = -1, lastHoverY = -1, lastHoverCheck = 0;
+  // ---- hover detection: native-OS semantics — hover = pointer AT REST over
+  // a target. Re-sense ONLY on real pointer travel (no periodic re-sense:
+  // animated content under a still pointer can never pulse the blob);
+  // scroll suppresses pops for SCROLL_SUPPRESS_MS; a fast pointer relaxes
+  // instead of popping (calm across menus/text; pops the instant it lands).
+  const INTERACTIVE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="radio"], [role="tab"], [role="menuitem"], [role="link"], [role="checkbox"], [onclick], .ob-opt, .btn';
+  let lastHoverX = -1, lastHoverY = -1;
+  let pointerFast = false; // recomputed each frame in render()
 
   function hoverSense(now) {
     if (!visible) { hoverTarget = 1; return; }
+    if (now - lastScrollAt < SCROLL_SUPPRESS_MS) { hoverTarget = 1; return; }
+    if (pointerFast) { hoverTarget = 1; return; }
     const moved = Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > HOVER_MIN_MOVE;
-    const due = now - lastHoverCheck > HOVER_MAX_WAIT;
-    if (!moved && !due && !hoverDirty) return;
-    hoverDirty = false;
-    lastHoverX = mx; lastHoverY = my; lastHoverCheck = now;
+    if (!moved) return;
+    lastHoverX = mx; lastHoverY = my;
     const el = document.elementFromPoint(mx, my);
     const hit = el && el.closest && el.closest(INTERACTIVE);
     hoverTarget = hit ? HOVER_DOT : 1;
@@ -323,6 +327,12 @@
     lastT = now;
     if (dt > MAX_DT) dt = MAX_DT;
     if (dt <= 0) { rafId = requestAnimationFrame(render); return; }
+
+    // Pointer speed for the hover gate: one cheap hypot on the raw pointer
+    // delta per frame (frame-rate independent — px per MILLISECOND).
+    const pdx = mx - pmx, pdy = my - pmy;
+    pmx = mx; pmy = my;
+    pointerFast = dt > 0 && (Math.hypot(pdx, pdy) / (dt * 1000)) > HOVER_SLOW_PXMS;
 
     hoverSense(now);
 
