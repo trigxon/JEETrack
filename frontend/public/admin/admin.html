@@ -192,6 +192,7 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .live-row .lr-dot{width:7px;height:7px;border-radius:50%;background:#34d399;flex-shrink:0;box-shadow:0 0 6px rgba(52,211,153,.7)}
 .live-row .lr-name{flex:1;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .live-row .lr-ago{color:var(--mu2);font-size:.68rem;flex-shrink:0}
+.online-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 6px rgba(52,211,153,.8);margin-right:4px;vertical-align:1px}
 .delta-up{color:#34d399;font-weight:700}
 .delta-down{color:#f87171;font-weight:700}
 .bar-count{font-size:.72rem;color:var(--mu);width:34px;text-align:right;flex-shrink:0;font-family:'Space Grotesk',sans-serif}
@@ -572,6 +573,10 @@ tr.fb-expand-row{background:transparent!important;}
         </div>
       </div>
       <div class="card" style="margin-top:1.1rem">
+        <h3><span class="ic">⚡</span>Live Activity · last 24h <span id="lv-act-hint" style="margin-left:auto;font-size:.62rem;color:var(--mu2);font-weight:400"></span></h3>
+        <div id="lv-activity" class="live-list"><div class="loading"><div class="spinner"></div></div></div>
+      </div>
+      <div class="card" style="margin-top:1.1rem">
         <h3><span class="ic">🧊</span>All-Time Snapshot</h3>
         <div class="stats-grid" id="lv-totals" style="margin-bottom:0"><div class="loading"><div class="spinner"></div></div></div>
       </div>
@@ -580,6 +585,11 @@ tr.fb-expand-row{background:transparent!important;}
     
     <div class="page active" id="page-overview">
       <div class="section-title">Key Metrics<span class="line"></span></div>
+      <div class="card" style="padding:.85rem 1.1rem;display:flex;align-items:center;gap:.7rem;margin-bottom:1.1rem">
+        <span class="live-pulse"></span>
+        <div style="font-size:.86rem"><b id="ov-live-now" style="font-size:1.05rem">—</b> <span style="color:var(--mu)">on the platform right now · refreshes every 60s</span></div>
+        <span id="ov-live-updated" style="margin-left:auto;font-size:.64rem;color:var(--mu2)"></span>
+      </div>
       <div class="stats-grid" id="stats-grid">
         <div class="loading"><div class="spinner"></div></div>
       </div>
@@ -885,6 +895,37 @@ tr.fb-expand-row{background:transparent!important;}
           <button class="action-btn btn-ghost btn-sm" onclick="showPage('feedback', document.querySelector('.nav-item[onclick*=\'feedback\']'))">View Feedback →</button>
         </div>
 
+        <div class="action-card">
+          <h3>📣 Announcement Banner</h3>
+          <p>Show a dismissible message to every visitor and signed-in user — maintenance windows, new features, exam updates. Publishing a new version re-shows it to users who dismissed the previous one.</p>
+          <div class="compose-field">
+            <span class="compose-label">Message · max 500 chars</span>
+            <textarea class="compose-input" id="ann-text" rows="3" maxlength="500" placeholder="e.g. 🔧 Scheduled maintenance tonight 11 PM – 12 AM IST. Your data is safe — nothing needs to be done." style="resize:vertical"></textarea>
+          </div>
+          <div style="display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap;margin-top:.7rem">
+            <div class="compose-field" style="margin-bottom:0">
+              <span class="compose-label">Style</span>
+              <select class="compose-input" id="ann-level" style="width:auto">
+                <option value="info">Info · purple</option>
+                <option value="warning">Warning · amber</option>
+                <option value="success">Success · green</option>
+              </select>
+            </div>
+            <div class="compose-field" style="margin-bottom:0">
+              <span class="compose-label">Status</span>
+              <select class="compose-input" id="ann-active" style="width:auto">
+                <option value="off">Hidden</option>
+                <option value="on">LIVE · visible to everyone</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:.7rem;margin-top:.9rem;flex-wrap:wrap">
+            <button class="action-btn btn-primary" onclick="saveAnnouncement()">Publish Announcement</button>
+            <button class="action-btn btn-ghost btn-sm" onclick="loadSiteConfig()">↻ Reload</button>
+          </div>
+          <div class="action-result" id="result-ann"></div>
+        </div>
+
       </div>
 
       <div class="section-title" style="margin-top:.4rem">Landing Page &amp; App Settings<span class="line"></span></div>
@@ -1089,7 +1130,7 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=8"></script>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=9"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -1530,6 +1571,11 @@ function showPage(page, el) {
   document.getElementById('page-sub').textContent = meta.sub;
   document.getElementById('range-btns').style.display =
     ['overview','funnel','new_users'].includes(page) ? 'flex' : 'none';
+  if (page === 'live') {
+    // set by loadLive once data arrives; keeps the live count in the tab
+  } else {
+    document.title = 'Admin — Jee Adv Osint';
+  }
   toggleSidebar(false);
   loadCurrentPage();
 }
@@ -1566,6 +1612,22 @@ async function loadOverview() {
   loadStats();
   loadSubjectChart();
   loadExamChart();
+  loadOverviewLive();
+}
+
+// Overview live strip — refreshes every 60s while Overview is open. The
+// server caches the live payload for 30s, so this costs one cheap call.
+let _ovLiveTimer = null;
+async function loadOverviewLive() {
+  clearTimeout(_ovLiveTimer);
+  try {
+    const d = await api('live');
+    const el = document.getElementById('ov-live-now');
+    if (el) el.textContent = fmt(d.liveNow);
+    const up = document.getElementById('ov-live-updated');
+    if (up) up.textContent = 'updated ' + new Date(d.ts).toLocaleTimeString();
+  } catch (e) { /* strip stays at previous value */ }
+  _ovLiveTimer = setTimeout(() => { if (_currentPage === 'overview') loadOverviewLive(); }, 60000);
 }
 
 // ---- Live Realtime (auto-refreshes every 30s while the page is open) ----
@@ -1585,6 +1647,7 @@ async function loadLive() {
   clearTimeout(_liveTimer);
   try {
     const d = await api('live');
+    document.title = '🟢 ' + fmt(d.liveNow) + ' live · Admin — Jee Adv Osint';
     document.getElementById('lv-now').textContent = fmt(d.liveNow);
     document.getElementById('lv-hint').textContent = 'auto-refresh 30s · updated ' + new Date(d.ts).toLocaleTimeString();
     document.getElementById('lv-windows').innerHTML = [
@@ -1655,6 +1718,20 @@ async function loadLive() {
       ? d.newest.map((u) => `
         <div class="live-row"><span class="lr-dot" style="background:#7c6af7;box-shadow:0 0 6px rgba(124,106,247,.7)"></span><span class="lr-name">${esc(u.name)}</span><span class="lr-ago">${agoStr(u.agoH * 3600)}</span></div>`).join('')
       : '<div class="no-data">No signups yet</div>';
+
+    const act = document.getElementById('lv-activity');
+    const ACT_ICON = { signup: '🧑‍🎓', test: '📝', todo: '✅', feedback: '⭐', donation: '💛' };
+    const ACT_TEXT = { signup: 'joined the platform', test: 'logged a mock test', todo: 'added a todo', feedback: 'left a review', donation: 'supported the site' };
+    act.innerHTML = (d.activity || []).length
+      ? d.activity.map((a) => `
+        <div class="live-row"><span class="lr-dot" style="background:#7c6af7;box-shadow:0 0 6px rgba(124,106,247,.7)"></span><span class="lr-name">${ACT_ICON[a.type] || '•'} ${esc(a.name)} ${a.type === 'donation'
+          ? 'supported the site — <b style="color:#fbbf24">₹' + esc(a.meta) + '</b>'
+          : a.type === 'feedback'
+            ? 'left a review — <b style="color:#fbbf24">' + esc(a.meta || 0) + '★</b>'
+            : esc(ACT_TEXT[a.type] || '')}</span><span class="lr-ago">${agoStr(a.agoSec)}</span></div>`).join('')
+      : '<div class="no-data">No activity in the last 24 hours</div>';
+    const actHint = document.getElementById('lv-act-hint');
+    if (actHint) actHint.textContent = 'newest first · auto-refresh 30s';
 
     const tt = d.totals;
     document.getElementById('lv-totals').innerHTML = [
@@ -1898,7 +1975,7 @@ async function loadUsers(page = 0) {
         <td style="color:var(--mu)">${u.source_id ? esc(u.source) : '<span style="color:var(--mu2)">—</span>'}</td>
         <td style="color:var(--mu)">${esc(u.target_year) || '—'}</td>
         <td style="color:var(--mu);white-space:nowrap">${fmtDate(u.created_at)}</td>
-        <td style="color:var(--mu);white-space:nowrap">${fmtDate(u.last_active)}</td>
+        <td style="color:var(--mu);white-space:nowrap">${u.last_active && (Date.now() - new Date(u.last_active).getTime()) < 300000 ? '<span class="online-dot" title="Online now (active in the last 5 minutes)"></span>' : ''}${fmtDate(u.last_active)}</td>
         <td>${u.email_reports === 'monthly'
           ? '<span class="pill pill-green">Monthly ✓</span>'
           : '<span class="pill pill-red">Off</span>'}</td>
@@ -2258,6 +2335,12 @@ async function loadSiteConfig() {
     document.getElementById('cfg-reviews').value      = d.reviews_count     ?? '';
     document.getElementById('cfg-rating').value       = d.avg_rating        ?? '';
     document.getElementById('cfg-version').value      = d.app_version       ?? '';
+    const annText = document.getElementById('ann-text');
+    if (annText) {
+      annText.value = d.announcement_text ?? '';
+      document.getElementById('ann-level').value = d.announcement_level || 'info';
+      document.getElementById('ann-active').value = d.announcement_active ? 'on' : 'off';
+    }
     const saved = document.getElementById('cfg-last-saved');
     if (saved) saved.textContent = d.updated_at ? `Last updated ${new Date(d.updated_at).toLocaleString('en-IN')}` : '';
   } catch(e) {
@@ -2292,6 +2375,36 @@ async function saveSiteConfig() {
     if (saved && d.config?.updated_at) saved.textContent = `Last updated ${new Date(d.config.updated_at).toLocaleString('en-IN')}`;
     showToast('Saved ✓');
   } catch(e) {
+    resultEl.className = 'action-result result-err';
+    resultEl.textContent = '✗ Error: ' + e.message;
+    resultEl.style.display = 'block';
+    showToast('Error: ' + e.message);
+  }
+}
+
+async function saveAnnouncement() {
+  const resultEl = document.getElementById('result-ann');
+  resultEl.style.display = 'none';
+  const text = document.getElementById('ann-text').value.trim();
+  const level = document.getElementById('ann-level').value;
+  const active = document.getElementById('ann-active').value === 'on';
+  if (active && !text) {
+    resultEl.className = 'action-result result-err';
+    resultEl.textContent = '✗ Write a message first — or set Status to Hidden.';
+    resultEl.style.display = 'block';
+    return;
+  }
+  showToast('Publishing…');
+  try {
+    const d = await apiPost('save_site_config', { announcement_text: text, announcement_level: level, announcement_active: active });
+    if (d.error) throw new Error(d.error);
+    resultEl.className = 'action-result result-ok';
+    resultEl.textContent = active
+      ? '✓ Announcement is LIVE — every visitor and signed-in user sees it now (dismissals reset for the new version).'
+      : '✓ Announcement hidden.';
+    resultEl.style.display = 'block';
+    showToast(active ? 'Announcement live ✓' : 'Announcement hidden ✓');
+  } catch (e) {
     resultEl.className = 'action-result result-err';
     resultEl.textContent = '✗ Error: ' + e.message;
     resultEl.style.display = 'block';
@@ -3048,6 +3161,6 @@ function replyToFeedback(userId, email, subject, name) {
 
 </script>
 
-<script src="/blob-cursor.js?v=8"></script>
+<script src="/blob-cursor.js?v=9"></script>
 </body>
 </html>

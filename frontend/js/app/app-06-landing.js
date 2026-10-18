@@ -696,6 +696,58 @@ function _fmtStatPlain(n){
   n = Math.max(0, Math.round(Number(n) || 0));
   return n.toLocaleString('en-IN') + '+';
 }
+// Announcement pill for visitors (landing view). Signed-in users get the
+// same pill from the dashboard bundle (renderAnnouncementPill) — shared
+// element id + dismissal key keep them consistent. No backdrop-filter here
+// on purpose: a glass layer at the top of the page is exactly the kind of
+// surface that makes the blob cursor stutter while it moves over it.
+function renderAnnouncement(cfg){
+  try{
+    if (!cfg || !cfg.announcement_active || !String(cfg.announcement_text || '').trim()) return;
+    if (window.__jtAnnShown === cfg.announcement_updated_at) return;
+    window.__jtAnnShown = cfg.announcement_updated_at;
+    const dismissKey = 'jt_ann_dismissed_' + (cfg.announcement_updated_at || '1');
+    if (localStorage.getItem(dismissKey) === '1') return;
+    let el = document.getElementById('jt-announce');
+    if (!el){
+      el = document.createElement('div');
+      el.id = 'jt-announce';
+      el.setAttribute('role', 'status');
+      el.innerHTML = '<span class="jt-ann-dot"></span><span class="jt-ann-text"></span><button class="jt-ann-x" aria-label="Dismiss announcement">\u2715</button>';
+      document.body.appendChild(el);
+      el.querySelector('.jt-ann-x').addEventListener('click', () => {
+        try { localStorage.setItem(dismissKey, '1'); } catch(e){}
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 350);
+      });
+      const css = document.createElement('style');
+      css.textContent = [
+        '#jt-announce{position:fixed;top:12px;left:50%;transform:translate(-50%,-18px);z-index:9989;',
+        'max-width:min(92vw,640px);display:flex;align-items:center;gap:.55rem;padding:.55rem .95rem;',
+        'border-radius:999px;font-size:.8rem;font-weight:600;color:#fff;line-height:1.35;',
+        'background:rgba(18,18,28,.96);border:1px solid rgba(255,255,255,.16);',
+        'box-shadow:0 10px 32px rgba(0,0,0,.5);opacity:0;transition:opacity .3s ease,transform .3s ease}',
+        '#jt-announce.show{opacity:1;transform:translate(-50%,0)}',
+        '#jt-announce .jt-ann-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#a695ff;',
+        'box-shadow:0 0 8px rgba(166,149,255,.9)}',
+        '#jt-announce.jt-ann-warning .jt-ann-dot{background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,.9)}',
+        '#jt-announce.jt-ann-warning{border-color:rgba(251,191,36,.55)}',
+        '#jt-announce.jt-ann-success .jt-ann-dot{background:#34d399;box-shadow:0 0 8px rgba(52,211,153,.9)}',
+        '#jt-announce.jt-ann-success{border-color:rgba(52,211,153,.55)}',
+        '#jt-announce .jt-ann-text{overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}',
+        '#jt-announce .jt-ann-x{background:none;border:none;color:rgba(255,255,255,.55);font-size:.85rem;',
+        'padding:.15rem .3rem;margin-left:.15rem;flex-shrink:0}',
+        '#jt-announce .jt-ann-x:hover{color:#fff}'
+      ].join('');
+      document.head.appendChild(css);
+    }
+    const lvl = ['info','warning','success'].includes(cfg.announcement_level) ? cfg.announcement_level : 'info';
+    el.className = 'jt-ann-' + lvl;
+    el.querySelector('.jt-ann-text').textContent = String(cfg.announcement_text).slice(0, 500);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  }catch(e){}
+}
+
 function loadPublicSiteConfig(){
   if (_siteConfigPromise) return _siteConfigPromise;
   _siteConfigPromise = (async () => {
@@ -703,6 +755,7 @@ function loadPublicSiteConfig(){
     try {
       const { data, error } = await sb.from('app_config').select('*').eq('id', 1).maybeSingle();
       if (error || !data) return null;
+      renderAnnouncement(data);
       _siteConfigCache = data;
 
       const applyHero = (elId, key, fmt) => {

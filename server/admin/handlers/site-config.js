@@ -9,7 +9,12 @@ const DEFAULTS = {
   avg_rating: 4.8,
   app_version: 'v2.0',
   monthly_infra_cost: 0,
+  announcement_text: '',
+  announcement_level: 'info',
+  announcement_active: false,
 };
+
+const ANNOUNCEMENT_LEVELS = ['info', 'warning', 'success'];
 
 export async function getSiteConfig(req, res) {
   try {
@@ -43,6 +48,26 @@ export async function saveSiteConfig(req, res) {
     const c = parseFloat(body.monthly_infra_cost);
     if (!isNaN(c) && c >= 0) payload.monthly_infra_cost = Math.round(c * 100) / 100;
   }
+
+  // Announcement / broadcast banner — text is capped at 500 chars, level is
+  // one of the known presets. Touching any announcement field bumps
+  // announcement_updated_at, which is the dismissal key on the client (so
+  // editing a live announcement re-shows it to users who dismissed the old
+  // one, while an unchanged announcement stays dismissed).
+  let annTouched = false;
+  if (body.announcement_text !== undefined && body.announcement_text !== null) {
+    payload.announcement_text = String(body.announcement_text).trim().slice(0, 500);
+    annTouched = true;
+  }
+  if (body.announcement_level !== undefined && ANNOUNCEMENT_LEVELS.includes(body.announcement_level)) {
+    payload.announcement_level = body.announcement_level;
+    annTouched = true;
+  }
+  if (body.announcement_active !== undefined) {
+    payload.announcement_active = !!body.announcement_active;
+    annTouched = true;
+  }
+  if (annTouched) payload.announcement_updated_at = new Date().toISOString();
 
   if (!Object.keys(payload).length) {
     return res.status(400).json({ error: 'No valid fields to update' });

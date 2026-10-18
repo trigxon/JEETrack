@@ -169,6 +169,91 @@ async function updateActivity(){
   }catch(e){}
 }
 
+// ---- Presence heartbeat (makes the admin "Live" page genuinely realtime) ----
+// last_active_at used to be written only on shell load and profile saves, so
+// a student sitting on the dashboard for 20 minutes without syncing looked
+// offline after the first 5. While the dashboard bundle is open (it only
+// loads after a confirmed session), touch last_active_at every 3 minutes and
+// the moment the user returns to a hidden tab. Idle open tabs now count as
+// live; closed tabs stop beating immediately — no fake online counts.
+(function(){
+  if (window.__jtPresenceHB) return;
+  window.__jtPresenceHB = true;
+  let beating = false;
+  const beat = async () => {
+    if (beating || document.visibilityState !== 'visible' || !currentUser) return;
+    beating = true;
+    try { await updateActivity(); } catch(e){}
+    beating = false;
+  };
+  setTimeout(beat, 4000); // first touch shortly after the shell boots
+  setInterval(beat, 3 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) beat(); });
+})();
+
+// ---- Announcement banner for signed-in users (app view) ----
+// Reads the announcement fields from the single app_config row and shows a
+// dismissible floating pill. The landing page has its own copy for visitors
+// (renderAnnouncement in the core bundle); the element id + localStorage
+// dismissal key are shared, so whichever runs first wins and dismissal is
+// respected across both.
+async function jtShowAnnouncement(){
+  if (!sb) return;
+  try{
+    const { data } = await sb.from('app_config')
+      .select('announcement_text,announcement_level,announcement_active,announcement_updated_at')
+      .eq('id', 1).maybeSingle();
+    if (data) renderAnnouncementPill(data);
+  }catch(e){}
+}
+function renderAnnouncementPill(cfg){
+  try{
+    if (!cfg || !cfg.announcement_active || !String(cfg.announcement_text || '').trim()) return;
+    if (window.__jtAnnShown === cfg.announcement_updated_at) return;
+    window.__jtAnnShown = cfg.announcement_updated_at;
+    const dismissKey = 'jt_ann_dismissed_' + (cfg.announcement_updated_at || '1');
+    if (localStorage.getItem(dismissKey) === '1') return;
+    let el = document.getElementById('jt-announce');
+    if (!el){
+      el = document.createElement('div');
+      el.id = 'jt-announce';
+      el.setAttribute('role', 'status');
+      el.innerHTML = '<span class="jt-ann-dot"></span><span class="jt-ann-text"></span><button class="jt-ann-x" aria-label="Dismiss announcement">\u2715</button>';
+      document.body.appendChild(el);
+      el.querySelector('.jt-ann-x').addEventListener('click', () => {
+        try { localStorage.setItem(dismissKey, '1'); } catch(e){}
+        el.classList.remove('show');
+        setTimeout(() => el.remove(), 350);
+      });
+      const css = document.createElement('style');
+      css.textContent = [
+        '#jt-announce{position:fixed;top:12px;left:50%;transform:translate(-50%,-18px);z-index:9989;',
+        'max-width:min(92vw,640px);display:flex;align-items:center;gap:.55rem;padding:.55rem .95rem;',
+        'border-radius:999px;font-size:.8rem;font-weight:600;color:#fff;line-height:1.35;',
+        'background:rgba(18,18,28,.96);border:1px solid rgba(255,255,255,.16);',
+        'box-shadow:0 10px 32px rgba(0,0,0,.5);opacity:0;transition:opacity .3s ease,transform .3s ease}',
+        '#jt-announce.show{opacity:1;transform:translate(-50%,0)}',
+        '#jt-announce .jt-ann-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:#a695ff;',
+        'box-shadow:0 0 8px rgba(166,149,255,.9)}',
+        '#jt-announce.jt-ann-warning .jt-ann-dot{background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,.9)}',
+        '#jt-announce.jt-ann-warning{border-color:rgba(251,191,36,.55)}',
+        '#jt-announce.jt-ann-success .jt-ann-dot{background:#34d399;box-shadow:0 0 8px rgba(52,211,153,.9)}',
+        '#jt-announce.jt-ann-success{border-color:rgba(52,211,153,.55)}',
+        '#jt-announce .jt-ann-text{overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}',
+        '#jt-announce .jt-ann-x{background:none;border:none;color:rgba(255,255,255,.55);font-size:.85rem;',
+        'padding:.15rem .3rem;margin-left:.15rem;flex-shrink:0}',
+        '#jt-announce .jt-ann-x:hover{color:#fff}'
+      ].join('');
+      document.head.appendChild(css);
+    }
+    const lvl = ['info','warning','success'].includes(cfg.announcement_level) ? cfg.announcement_level : 'info';
+    el.className = 'jt-ann-' + lvl;
+    el.querySelector('.jt-ann-text').textContent = String(cfg.announcement_text).slice(0, 500);
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  }catch(e){}
+}
+jtShowAnnouncement();
+
 // CUSTOM_CHAPTER_ID_THRESHOLD and isCustomChapter() are declared globally in
 // index.html's inline script, which loads before this file — reused here as-is.
 

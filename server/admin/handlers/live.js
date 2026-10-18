@@ -44,6 +44,8 @@ export default async function live(req, res) {
       donPaidRows, donLatest,
       // splits
       repRows, streakRows,
+      // live activity feed (24h, merged by type)
+      evSignups, evTests, evTodos, evFeedback, evDonations,
     ] = await Promise.all([
       countSince('user_preferences', 'last_active_at', t5),
       countSince('user_preferences', 'last_active_at', t15),
@@ -80,6 +82,12 @@ export default async function live(req, res) {
 
       sbQuery(`user_preferences?select=email_reports`).catch(() => []),
       sbQuery(`streaks?select=user_id,best_streak,backlog_streak&order=best_streak.desc&limit=5`).catch(() => []),
+
+      sbQuery(`user_preferences?select=created_at,username,name,email&created_at=gte.${t24h}&order=created_at.desc&limit=6`).catch(() => []),
+      sbQuery(`tests?select=created_at,user_id&created_at=gte.${t24h}&order=created_at.desc&limit=6`).catch(() => []),
+      sbQuery(`todos?select=created_at,user_id&created_at=gte.${t24h}&order=created_at.desc&limit=6`).catch(() => []),
+      sbQuery(`feedback?select=created_at,display_name,rating&created_at=gte.${t24h}&order=created_at.desc&limit=6`).catch(() => []),
+      sbQuery(`donations?select=created_at,display_name,amount&status=eq.paid&created_at=gte.${t24h}&order=created_at.desc&limit=6`).catch(() => []),
     ]);
 
     // prev-7d signups = created in [14d, 7d) — PostgREST range filter
@@ -118,6 +126,28 @@ export default async function live(req, res) {
 
     const maskEmail = (e) => (e ? e.replace(/^(.{2}).*(@.*)$/, '$1•••$2') : '—');
 
+    // ---- Live activity feed (last 24h): signups, tests, todos, feedback,
+    // donations merged into one reverse-chronological stream. Names for
+    // user-owned events come from one roster lookup over the involved ids.
+    const evUserIds = [...new Set([...evTests, ...evTodos].map((r) => r.user_id).filter(Boolean))];
+    const nameMap = {};
+    if (evUserIds.length) {
+      const or = evUserIds.slice(0, 40).map((id) => `id.eq.${id}`).join(',');
+      const profs = await sbQuery(`admin_user_roster?select=id,username,name,email&or=(${or})`).catch(() => []);
+      profs.forEach((p) => { nameMap[p.id] = p.username || p.name || maskEmail(p.email); });
+    }
+    const ago = (iso) => Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+    const activity = [
+      ...evSignups.map((r) => ({ type: 'signup', name: r.username || r.name || maskEmail(r.email), t: r.created_at })),
+      ...evTests.map((r) => ({ type: 'test', name: nameMap[r.user_id] || 'A student', t: r.created_at })),
+      ...evTodos.map((r) => ({ type: 'todo', name: nameMap[r.user_id] || 'A student', t: r.created_at })),
+      ...evFeedback.map((r) => ({ type: 'feedback', name: r.display_name || 'A student', meta: r.rating, t: r.created_at })),
+      ...evDonations.map((r) => ({ type: 'donation', name: r.display_name || 'Anonymous', meta: Number(r.amount) || 0, t: r.created_at })),
+    ]
+      .sort((a, b) => new Date(b.t) - new Date(a.t))
+      .slice(0, 14)
+      .map((r) => ({ type: r.type, name: r.name, meta: r.meta, agoSec: ago(r.t) }));
+
     return {
       ts: nowIso(),
       liveNow: live5,
@@ -150,6 +180,7 @@ export default async function live(req, res) {
         } : null,
       },
       reports: repSplit,
+      activity,
       onboarding: { done: onboarded, total: totalUsers, rate: totalUsers ? Math.round((onboarded / totalUsers) * 100) : 0 },
       streakLeaders,
       newest: newestRows.map((r) => ({

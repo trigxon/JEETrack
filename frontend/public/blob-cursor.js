@@ -1,26 +1,30 @@
-// blob-cursor.js — small solid pink cursor with dynamic, smooth, lag-free motion.
-// Same 14px pink dot, same 1.6x hover spring, same directional stretch.
-// The glow is a pre-rendered radial-gradient layer that only ever moves and
-// scales via transforms, so cursor motion never triggers a repaint — critical
-// on weak GPUs where a repaint above a backdrop-filter layer re-filters the
-// whole blur and reads as the cursor "hanging" (modals, glass inputs, …).
+// blob-cursor.js — small solid pink cursor with a trailing glow, built so the
+// part the eye tracks (the dot) can never lag or stutter: its position is
+// written synchronously on every mousemove, exactly like the native cursor.
+// The soft glow is the only smoothed layer (the "blob" feel) and it moves,
+// scales and fades via transforms alone — no repaints, no filters.
 //
-// v8 smoothness overhaul:
-//  - Glass-aware glow: while the pointer is over any element that paints a
-//    backdrop-filter (glass navbar/cards/inputs — the expensive case), the
-//    glow fades out (dot stays) instead of forcing the GPU to re-filter the
-//    blur 60x/s. Checked at 5Hz, smoothed by an opacity transition.
-//  - Hover flicker fix: crossing between an interactive element and its child
-//    no longer removes+re-adds the hover class (no scale-pump on dense UI).
-//  - Idle sleep: once the dot is fully settled and the pointer rests ~1.6s,
-//    the rAF loop stops entirely (battery + GPU wakeups). Restarts on the
-//    next mousemove with a clean dt so there is never a resume jump.
-//  - Faster adaptive lite: engages after ~0.5s of sustained <33fps movement
-//    or 2 consecutive >110ms frames, so weak devices get the silky dot sooner.
-// Additional guards: while any full-screen modal (.mo.open) is up, its
-// backdrop-filter blur is switched off (html.blob-perf) and the glow hides;
-// if the device still sustains slow frames while moving, lite mode drops the
-// glow + stretch for the session so the dot stays silky everywhere.
+// v9 — "butterly smooth everywhere" overhaul (user still felt v8 glitching):
+//  - Zero-lag dot: v8 eased the dot toward the pointer (~4 frames behind on
+//    fast flicks — reads as glitch/stutter). v9 writes the dot position
+//    directly inside the mousemove handler, so the dot is glued to the
+//    pointer at event speed even if rAF stalls. The GLOW now does the
+//    trailing, which is where a soft delay looks intentional, not broken.
+//  - Event-driven glass detection: v8 walked getComputedStyle ancestors at
+//    5Hz — a forced style recalc on a timer is a periodic frame spike while
+//    moving (the "glitch every few hundred ms" feel). v9 checks only on
+//    mouseover (element boundary crossings) with a WeakMap memo, so it costs
+//    nothing while moving over already-seen UI and nothing while idle.
+//  - Scroll guard: a 46px glow compositing over scrolling content is the
+//    classic jank moment — the glow now fades out for 150ms during any
+//    scroll and returns when scrolling stops. The dot stays exact.
+//  - Lite mode is now event-driven only: on weak devices the rAF loop stops
+//    entirely and the cursor costs literally zero continuous CPU/GPU.
+//  - Streak snap: if the glow ever falls >160px behind (tab stall, alt-tab,
+//    hiccup), it teleports instead of streaking across the screen.
+// Kept from v8: hover same-root flicker fix, modal perf mode (backdrop blur
+// off while a modal is open), idle sleep, touch-only skip, reduced motion,
+// ?blob-lite force flag.
 (function(){
   // Touch-only devices (phones/tablets): the primary pointer is a finger,
   // so there is nothing for the blob to follow — skip everything and leave
@@ -31,51 +35,53 @@
   // mouse events synthesized from a tap are ignored.
   if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
 
-  const FOLLOW_RATE = 40;          // exponential smoothing rate (1/s) — near-instant, lag-free
-  const STRETCH_RATE = 16;         // how quickly the dynamic stretch eases (1/s) — slower = silkier
-  const MAX_DT = 0.05;             // clamp delta time (50ms) so tab switches don't cause jumps
+  const GLOW_RATE = 18;            // glow trail smoothing (1/s) — soft, silky tail
+  const STRETCH_RATE = 16;         // how quickly the dynamic stretch eases (1/s)
+  const MAX_DT = 0.05;             // clamp delta time (50ms) so stalls never snap
   const MAX_STRETCH = 1.35;        // max elongation when flicking fast
-  const SETTLE_EPS = 0.05;         // px threshold below which the dot is considered settled
-  const IDLE_STOP_MS = 1600;       // settled + pointer idle this long -> stop the rAF loop
-  const LITE_WINDOW = 30;          // moving frames per lite-mode sample (was 50)
+  const SNAP_DIST = 220;           // glow this far behind while pointer is STILL -> teleport
+  const SETTLE_EPS = 0.05;         // px — glow settled when offsets are below this
+  const IDLE_STOP_MS = 1400;       // settled + pointer idle this long -> stop rAF
+  const LITE_WINDOW = 30;          // moving frames per lite-mode sample
   const LITE_MAX_DT = 0.030;       // avg dt above this (~<33fps) engages lite
   const SPIKE_DT = 0.11;           // a single frame slower than this is a spike
   const SPIKES_TO_LITE = 2;        // consecutive spikes -> engage lite immediately
 
-  // Reduced motion (vestibular accessibility): the trailing/stretch/glow
-  // effects are exactly the kind of continuous movement those users opt out
-  // of. Keep the brand-pink identity (a plain dot that sits under the
-  // pointer) but remove all induced motion and transitions.
+  // Reduced motion (vestibular accessibility): a plain pink dot that sits
+  // under the pointer — same instant-follow as everyone now, minus glow,
+  // stretch and transitions. Zero induced motion.
   const REDUCED_MOTION = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const followRate = REDUCED_MOTION ? 1000 : FOLLOW_RATE;  // ~instant follow, no trail
 
   const cursor = document.createElement('div');
   cursor.id = 'custom-cursor';
   const stretch = document.createElement('div');
   stretch.className = 'cursor-stretch';
+  const glowWrap = document.createElement('div');
+  glowWrap.className = 'cursor-glowwrap';
   const glow = document.createElement('div');
   glow.className = 'cursor-glow';
   const dot = document.createElement('div');
   dot.className = 'cursor-dot';
-  stretch.appendChild(glow);
+  glowWrap.appendChild(glow);
+  stretch.appendChild(glowWrap);
   stretch.appendChild(dot);
   cursor.appendChild(stretch);
   document.body.appendChild(cursor);
 
   let mouseX = -100, mouseY = -100;
-  let currentX = -100, currentY = -100;
+  let glowX = -100, glowY = -100;   // absolute glow position (eases toward pointer)
   let stretchX = 1, stretchY = 1;
+  let prevMX = -100, prevMY = -100; // pointer position at previous frame
   let isVisible = false;
   let rafId = 0;
   let lastTime = 0;
-  let dirty = true;
-  let perfMode = false;
   let lastMoveAt = 0;
+  let perfMode = false;
 
-  // Adaptive lite mode: forceable via ?blob-lite for testing, otherwise
-  // engaged automatically when sustained movement runs below ~33fps (or on
-  // repeated frame spikes).
+  // Adaptive lite mode: forceable via ?blob-lite, otherwise engaged
+  // automatically when sustained movement runs below ~33fps (or on
+  // repeated frame spikes). Lite = dot only, fully event-driven, no rAF.
   let liteMode = false;
   let liteAcc = 0, liteN = 0, liteSpikes = 0;
   function enableLite() {
@@ -84,13 +90,14 @@
     cursor.classList.add('cursor-lite');
     stretchX = 1; stretchY = 1;
     stretch.style.transform = 'scale(1, 1)';
+    glowX = mouseX; glowY = mouseY;
+    glow.style.transform = 'translate3d(0, 0, 0)';
+    stopLoop(); // dot is event-driven; nothing left to animate
   }
 
   if (REDUCED_MOTION) {
-    // No glow layer, no stretch, no scale/color transitions — the dot just
-    // glides with the pointer. (cursor-reduced styles below.)
     cursor.classList.add('cursor-reduced');
-    liteMode = true; // reuse the "skip stretch writes" fast path
+    liteMode = true; // reuse the event-driven fast path
   }
 
   const style = document.createElement('style');
@@ -114,40 +121,51 @@
       transform: scale(1, 1);
       will-change: transform;
     }
+    #custom-cursor .cursor-glowwrap {
+      position: absolute;
+      width: 0;
+      height: 0;
+      transform: scale(1);
+      transform-origin: center;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+      will-change: transform;
+      pointer-events: none;
+    }
+    #custom-cursor.cursor-hovering .cursor-glowwrap {
+      transform: scale(1.5);
+    }
     #custom-cursor .cursor-glow {
       position: absolute;
       width: 46px;
       height: 46px;
-      left: 0;
-      top: 0;
+      left: -23px;
+      top: -23px;
       border-radius: 50%;
       background: radial-gradient(circle,
         rgba(244, 114, 182, 0.55) 0%,
         rgba(244, 114, 182, 0.28) 34%,
         rgba(244, 114, 182, 0.10) 55%,
         rgba(244, 114, 182, 0) 72%);
-      transform: translate3d(-50%, -50%, 0) scale(1);
-      transform-origin: center;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s ease;
+      transform: translate3d(0, 0, 0);
+      transition: opacity 0.15s ease;
       will-change: transform;
       pointer-events: none;
     }
     #custom-cursor .cursor-dot {
-      position: relative;
+      position: absolute;
       width: 14px;
       height: 14px;
+      left: -7px;
+      top: -7px;
       border-radius: 50%;
       background: rgba(244, 114, 182, 1);
-      transform: translate3d(-50%, -50%, 0) scale(1);
+      transform: scale(1);
       transform-origin: center;
       transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.22s ease;
       will-change: transform;
     }
-    #custom-cursor.cursor-hovering .cursor-glow {
-      transform: translate3d(-50%, -50%, 0) scale(1.5);
-    }
     #custom-cursor.cursor-hovering .cursor-dot {
-      transform: translate3d(-50%, -50%, 0) scale(1.6);
+      transform: scale(1.6);
       background: rgba(251, 113, 133, 1);
     }
     /* Perf mode (engaged while a full-screen modal is open): kill the
@@ -170,6 +188,12 @@
        the glow so the GPU never re-filters the blur while it moves. The
        dot (14px) stays: tiny composite area, negligible over any blur. */
     #custom-cursor.cursor-nogl .cursor-glow {
+      opacity: 0;
+    }
+    /* Scroll guard: glow hides while the page is scrolling (a moving glow
+       over moving content is the classic jank moment), comes back when
+       scrolling stops. */
+    #custom-cursor.cursor-scroll .cursor-glow {
       opacity: 0;
     }
     /* Reduced motion: dot-only, no transitions, glow never rendered. */
@@ -207,13 +231,49 @@
   function addHoverClass() { cursor.classList.add('cursor-hovering'); }
   function removeHoverClass() { cursor.classList.remove('cursor-hovering'); }
 
-  // Hover flicker fix: moving between a control and its own child (icon,
-  // label span, svg…) fires mouseout on the parent then mouseover on the
-  // child. If both resolve to the SAME interactive root, ignore the pair —
-  // otherwise the 1.6x spring transition re-starts on every boundary and
-  // reads as a pulse while sweeping across dense UI (tables, sidebars).
+  // Hover flicker fix (kept from v8): moving between a control and its own
+  // child (icon, label span, svg…) fires mouseout on the parent then
+  // mouseover on the child. If both resolve to the SAME interactive root,
+  // ignore the pair — otherwise the 1.6x spring transition re-starts on
+  // every boundary and reads as a pulse while sweeping across dense UI.
+  // The glass check rides along on mouseover: it only ever runs when the
+  // pointer crosses into a different element (never on a timer, never
+  // while sweeping inside one element), and results are memoized per
+  // element in a WeakMap so re-crossing known UI is free.
+  const glassMemo = new WeakMap();
+  function glassUnder(el) {
+    let n = el, depth = 0;
+    const chain = [];
+    while (n && n !== document.documentElement && depth++ < 14) {
+      const cached = glassMemo.get(n);
+      if (cached !== undefined) {
+        for (let i = 0; i < chain.length; i++) glassMemo.set(chain[i], cached);
+        return cached;
+      }
+      chain.push(n);
+      const s = getComputedStyle(n);
+      const bf = s.backdropFilter || s.webkitBackdropFilter;
+      if (bf && bf !== 'none') {
+        for (let i = 0; i < chain.length; i++) glassMemo.set(chain[i], true);
+        return true;
+      }
+      n = n.parentElement;
+    }
+    for (let i = 0; i < chain.length; i++) glassMemo.set(chain[i], false);
+    return false;
+  }
+  let glassOn = false;
+  function setGlass(on) {
+    if (on === glassOn) return;
+    glassOn = on;
+    cursor.classList.toggle('cursor-nogl', on);
+  }
+
   document.addEventListener('mouseover', (e) => {
     if (isInteractive(e.target)) addHoverClass();
+    if (!liteMode && !REDUCED_MOTION && isVisible && e.target instanceof Element) {
+      setGlass(glassUnder(e.target));
+    }
   });
   document.addEventListener('mouseout', (e) => {
     const from = interactiveRoot(e.target);
@@ -230,16 +290,34 @@
     lastMoveAt = Date.now();
 
     if (!isVisible) {
-      // Snap to the pointer on the very first move so the dot never streaks
-      // across the screen from its off-screen starting position.
-      currentX = mouseX;
-      currentY = mouseY;
-      dirty = true;
+      // Snap to the pointer on the very first move so nothing ever streaks
+      // across the screen from an off-screen starting position.
+      prevMX = mouseX; prevMY = mouseY;
+      glowX = mouseX; glowY = mouseY;
+      glow.style.transform = 'translate3d(0, 0, 0)';
       cursor.style.opacity = '1';
       isVisible = true;
       lastTime = 0;
     }
-    startLoop(); // cheap no-op if already running; wakes the idle-slept loop
+
+    // THE core of v9: the dot position is written synchronously, right here,
+    // at mouse-event speed. No rAF wait, no easing — the dot is exactly
+    // where the pointer is, on every event, even if the rAF loop is stalled.
+    cursor.style.transform = `translate3d(${mouseX}px, ${mouseY}px, 0)`;
+
+    if (liteMode) {
+      // Event-driven mode: glow and stretch don't exist, so there is
+      // literally nothing left to animate. Zero continuous work.
+      return;
+    }
+
+    if (glassOn) {
+      // The pointer just moved on a glass surface — the element under it
+      // may have changed between boundary events (hover popups). mouseover
+      // will catch real crossings; nothing per-move here on purpose.
+    }
+
+    startLoop(); // wakes/keeps the glow+stretch animation loop
   }, { passive: true });
 
   document.addEventListener('mouseleave', () => {
@@ -254,7 +332,13 @@
     cursor.style.opacity = '1';
     isVisible = true;
     lastTime = 0;
-    startLoop();
+    // Snap the glow to the pointer on re-entry — it may have been frozen
+    // mid-trail while the pointer was outside the window.
+    if (!liteMode) {
+      glowX = mouseX; glowY = mouseY;
+      glow.style.transform = 'translate3d(0, 0, 0)';
+      startLoop();
+    }
   });
 
   // Hybrid touch screens: a finger tap makes the browser synthesize mouse
@@ -272,6 +356,17 @@
     }
   }, { passive: true, capture: true });
 
+  // Scroll guard: any scrolling (wheel, momentum, keyboard, scrollbar drag,
+  // scroll-into-view) briefly hides the glow. The dot is event-driven and
+  // stays exact through all of it.
+  let scrollHideTimer = 0;
+  window.addEventListener('scroll', () => {
+    if (liteMode || REDUCED_MOTION || !isVisible) return;
+    cursor.classList.add('cursor-scroll');
+    clearTimeout(scrollHideTimer);
+    scrollHideTimer = setTimeout(() => cursor.classList.remove('cursor-scroll'), 150);
+  }, { passive: true, capture: true });
+
   function startLoop() {
     if (!rafId) {
       rafId = requestAnimationFrame(render);
@@ -282,58 +377,13 @@
     if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
   }
 
-  function commit() {
-    if (!dirty) return;
-    dirty = false;
-    cursor.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
-    if (!liteMode) {
-      stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
-    }
-  }
-
-  // ---- 5Hz housekeeping: modal perf mode + glass-aware glow (v8) ----
-  // Runs on a timer instead of inside the rAF loop, so modal open/close and
-  // glass surfaces are still handled while the cursor is idle-sleeping, at a
-  // battery cost of ~nothing. elementFromPoint at the pointer + a bounded
-  // ancestor walk for backdrop-filter, both trivial at 5Hz.
-  let glassOn = false;
-  function glassCheckNow() {
-    let hit = false;
-    const el = document.elementFromPoint(mouseX, mouseY);
-    let n = el, depth = 0;
-    while (n && n !== document.documentElement && depth++ < 14) {
-      const s = getComputedStyle(n);
-      const bf = s.backdropFilter || s.webkitBackdropFilter;
-      if (bf && bf !== 'none') { hit = true; break; }
-      n = n.parentElement;
-    }
-    if (hit !== glassOn) {
-      glassOn = hit;
-      cursor.classList.toggle('cursor-nogl', hit);
-    }
-  }
-  setInterval(() => {
-    const pm = !!document.querySelector('.mo.open');
-    if (pm !== perfMode) {
-      perfMode = pm;
-      cursor.classList.toggle('cursor-perf', pm);
-      document.documentElement.classList.toggle('blob-perf', pm);
-    }
-    if (isVisible && !liteMode && !REDUCED_MOTION) {
-      glassCheckNow();
-    } else if (glassOn) {
-      glassOn = false;
-      cursor.classList.remove('cursor-nogl');
-    }
-  }, 200);
-
-  // Continuous render loop: stays alive while the pointer moves or the dot
-  // is still gliding; once fully settled AND the pointer rests ~1.6s it
-  // sleeps entirely (lastTime is zeroed so the wake-up frame has dt=0 —
-  // a resumed move glides from the settled position with no restart jank).
+  // Continuous loop — only animates the GLOW trail and the stretch. The dot
+  // never waits for this loop. Once the glow is fully settled and the
+  // pointer rests ~1.4s, the loop stops entirely (idle sleep); the next
+  // mousemove restarts it with a clean dt so there is never a resume jump.
   function render(now) {
     rafId = 0;
-    if (!isVisible) return;
+    if (!isVisible || liteMode) return;
 
     if (!lastTime) lastTime = now;
     let dt = (now - lastTime) / 1000;
@@ -343,67 +393,92 @@
     let settled = false;
 
     if (dt > 0) {
-      // Lag-free, frame-rate independent follow.
-      const t = 1 - Math.exp(-followRate * dt);
-      currentX += (mouseX - currentX) * t;
-      currentY += (mouseY - currentY) * t;
-
-      // Dynamic stretch: the dot elongates slightly along the direction of
-      // movement when flicking fast, then relaxes back to a perfect circle.
-      // (Skipped in lite/reduced mode — pure dot, zero extra layers.)
-      const dx = mouseX - currentX;
-      const dy = mouseY - currentY;
-      const speed = Math.sqrt(dx * dx + dy * dy);
+      // Pointer velocity for this frame (drives stretch + lite detection).
+      const mvx = mouseX - prevMX;
+      const mvy = mouseY - prevMY;
+      prevMX = mouseX; prevMY = mouseY;
+      const speed = Math.sqrt(mvx * mvx + mvy * mvy);
 
       // Adaptive lite trigger: sampled only while actually moving, so a
       // stalled tab or a paused frame never causes a false positive.
-      if (!liteMode && !REDUCED_MOTION && speed > 0.5) {
+      if (!REDUCED_MOTION && speed > 0.5) {
         liteAcc += dt; liteN++;
         if (dt > SPIKE_DT) {
           liteSpikes++;
-          if (liteSpikes >= SPIKES_TO_LITE) enableLite();
+          if (liteSpikes >= SPIKES_TO_LITE) { enableLite(); return; }
         } else {
           liteSpikes = 0;
         }
-        if (!liteMode && liteN >= LITE_WINDOW) {
-          if (liteAcc / liteN > LITE_MAX_DT) enableLite();   // sustained < ~33fps
+        if (liteN >= LITE_WINDOW) {
+          if (liteAcc / liteN > LITE_MAX_DT) { enableLite(); return; }  // sustained < ~33fps
           liteAcc = 0; liteN = 0;
         }
       }
 
-      if (!liteMode) {
+      // Glow trail: exponential ease toward the pointer, frame-rate
+      // independent, with a hard snap if it ever falls too far behind.
+      const t = 1 - Math.exp(-GLOW_RATE * dt);
+      glowX += (mouseX - glowX) * t;
+      glowY += (mouseY - glowY) * t;
+
+      // Dynamic stretch: elongates slightly along the movement direction
+      // when flicking fast, then relaxes back to a perfect circle.
+      if (speed > 0.5 && (mvx !== 0 || mvy !== 0)) {
+        const target = Math.min(1 + speed * 0.0045, MAX_STRETCH);
+        const nx = mvx / speed, ny = mvy / speed;
         const st = 1 - Math.exp(-STRETCH_RATE * dt);
-        if (speed > 0.5) {
-          const target = Math.min(1 + speed * 0.0045, MAX_STRETCH);
-          stretchX += (1 + (target - 1) * (dx / speed) - stretchX) * st;
-          stretchY += (1 + (target - 1) * (dy / speed) - stretchY) * st;
-        } else {
-          stretchX += (1 - stretchX) * st;
-          stretchY += (1 - stretchY) * st;
-        }
+        stretchX += (1 + (target - 1) * nx - stretchX) * st;
+        stretchY += (1 + (target - 1) * ny - stretchY) * st;
+      } else {
+        const st = 1 - Math.exp(-STRETCH_RATE * dt);
+        stretchX += (1 - stretchX) * st;
+        stretchY += (1 - stretchY) * st;
+      }
+
+      // Stall snap: if the pointer has been STILL for >120ms and the glow
+      // is still far away (rAF was frozen by a tab stall / GC pause /
+      // alt-tab), teleport it instead of gliding across the page. While the
+      // pointer is actively moving we NEVER snap — long soft trails on fast
+      // flicks are the intended blob feel, and snapping mid-flick would
+      // itself read as a glitch.
+      const gdx = mouseX - glowX, gdy = mouseY - glowY;
+      const gapSq = gdx * gdx + gdy * gdy;
+      if (gapSq > SNAP_DIST * SNAP_DIST && Date.now() - lastMoveAt > 120) {
+        glowX = mouseX; glowY = mouseY;
       }
 
       // Snap exactly when fully settled so there's never residual drift.
-      if (speed < SETTLE_EPS && Math.abs(stretchX - 1) < 0.002 && Math.abs(stretchY - 1) < 0.002) {
-        currentX = mouseX;
-        currentY = mouseY;
-        stretchX = 1;
-        stretchY = 1;
+      if (Math.abs(gdx) < SETTLE_EPS && Math.abs(gdy) < SETTLE_EPS
+          && Math.abs(stretchX - 1) < 0.002 && Math.abs(stretchY - 1) < 0.002) {
+        glowX = mouseX; glowY = mouseY;
+        stretchX = 1; stretchY = 1;
         settled = true;
       }
 
-      dirty = true;
+      glow.style.transform = `translate3d(${(glowX - mouseX).toFixed(2)}px, ${(glowY - mouseY).toFixed(2)}px, 0)`;
+      stretch.style.transform = `scale(${stretchX.toFixed(4)}, ${stretchY.toFixed(4)})`;
     }
 
-    commit();
-
-    // Idle sleep (v8): fully settled and the pointer hasn't moved in a while
-    // — stop burning rAF/GPU cycles. Perf-mode and glass glow toggles keep
-    // working via the 5Hz housekeeping timer above.
+    // Idle sleep: fully settled and the pointer hasn't moved in a while —
+    // stop burning rAF/GPU cycles. Modal perf mode keeps working via the
+    // housekeeping timer below; the dot keeps following via mousemove.
     if (settled && Date.now() - lastMoveAt > IDLE_STOP_MS) {
       lastTime = 0;
       return;
     }
     startLoop();
   }
+
+  // ---- 300ms housekeeping: modal perf mode only (v9) ----
+  // v8 also ran its glass walk here; glass detection is now event-driven
+  // (mouseover + WeakMap memo). What remains is a single classList query —
+  // no style flush, no layout, trivial at any frequency.
+  setInterval(() => {
+    const pm = !!document.querySelector('.mo.open');
+    if (pm !== perfMode) {
+      perfMode = pm;
+      cursor.classList.toggle('cursor-perf', pm);
+      document.documentElement.classList.toggle('blob-perf', pm);
+    }
+  }, 300);
 })();
