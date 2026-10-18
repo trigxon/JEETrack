@@ -1,29 +1,35 @@
-// blob-cursor.js v14 — "malfunction hardening": the pop engine (v13) is kept
-// exactly as shipped; v14 fixes the four behaviors that could READ as a
-// malfunction on a real machine (headless tests never feel these):
+// blob-cursor.js v15 — "pointer never disappears": v14's pop engine and its
+// four hardening fixes are kept exactly as shipped; v15 fixes the ONE defect
+// class the live adversarial probe confirmed (the real "malfunction"):
 //
-//  1. Scroll breathing — v13 re-sensed what is under a STILL pointer after
-//     every scroll event: wheeling made the blob pop in/out rhythmically as
-//     elements passed beneath it. v14: scroll RELAXES hover and suppresses
-//     new pops for 250ms; the blob re-pops only when the pointer moves again
-//     (native-OS behavior).
-//  2. Phantom pulsing — v13 re-sensed every 110ms even with an idle pointer,
-//     so animated content cycling under a stationary cursor toggled the pop
-//     forever. v14: hover is sensed ONLY on real pointer travel. A still
-//     pointer holds a perfectly stable hover state, always.
-//  3. Stuck squeeze — pointerup did not wake the loop: click-and-hold past
-//     the idle sleep, release → blob stayed squeezed until the next move.
-//     v14: release/cancel/blur wakes the spring. Non-primary buttons
-//     (right-click/middle) no longer squeeze at all.
-//  4. Sweep flicker — v13 deleted the speed gate entirely, so sweeping across
-//     text links/menus made the blob pulse up/down per link. v14 restores a
-//     mild native-style gate: a fast pointer (>1.5 px/ms) relaxes instead of
-//     popping; the pop lands the instant the pointer settles on a target.
+//  5. INVISIBLE POINTER — v13/v14 added html.blob-live (cursor:none) the
+//     moment the blob first showed, but NEVER removed it on hide paths. After
+//     mouseleave (pointer leaves the window / recorder overlay / second
+//     monitor), a touchstart on hybrid laptops, or a tab switch, the blob was
+//     hidden while cursor:none STILL applied — the user had NO pointer at
+//     all until they happened to move again. v15: every hide path goes
+//     through hideNow(), which removes blob-live and hands control back to
+//     the native cursor the instant the blob is not on screen. Re-shown on
+//     the next real pointer move (blob-live re-added only when visible).
+//  6. Stale pop — v14 senses hover only on pointer travel, so DOM changing
+//     under a STILL popped pointer (SPA view switch, modal opening, element
+//     removal) left the blob big forever. v15: the 300ms housekeeping tick
+//     re-verifies a popped target and relaxes it when the element is gone.
+//     A still pointer over a real target never pulses — the check only
+//     corrects popped→flat, never flat→popped.
+//  7. Touch dead-zone — touchstart still swallows mouse moves for 1s (this
+//     filters Chrome's synthesized compatibility events), but the native
+//     cursor is now RESTORED during the swallow, so a hybrid-laptop user is
+//     never pointerless.
+//  8. Sweep hysteresis — the v14 speed gate computed speed per frame, so a
+//     momentary zero-delta frame mid-sweep (hand hesitation, discrete event
+//     bursts) opened the gate and flashed a pop. v15: crossing the speed
+//     limit holds the gate shut for 90ms; only a genuine stop opens it.
 //
-// Hover model (v14): hover = pointer AT REST over an interactive target.
-// Sensed on >2px travel, suppressed for 250ms after any scroll, suppressed
-// while the pointer is fast. Escape hatch: ?blob-off disables the blob
-// entirely (native cursor) for debugging/preference.
+// v14 history — scroll relaxes hover + 250ms pop suppression (no wheel
+// breathing), hover sensed ONLY on pointer travel (no phantom pulsing),
+// release/cancel/blur wakes the spring, non-primary buttons excluded, mild
+// speed gate restored, ?blob-off escape hatch.
 //
 // v13 history — "pop + no outline": white ring deleted (soft glow shadows
 // only), underdamped scale spring (omega=24, zeta=0.5, ~16% overshoot) for
@@ -56,6 +62,10 @@
   const IDLE_MS     = 1200;  // at rest this long → sleep rAF
   const HOVER_MIN_MOVE = 2;  // px pointer travel before hover re-evaluation
   const HOVER_SLOW_PXMS = 1.5; // px/ms — pointer faster than this relaxes, no pops
+  const FAST_HOLD_MS = 90;   // hysteresis: once fast, gate stays shut 90ms — a
+                             // momentary zero-delta frame mid-sweep (hand
+                             // hesitation, discrete event bursts) can never
+                             // flash a pop; only a REAL stop opens the gate
   const SCROLL_SUPPRESS_MS = 250; // ms after any scroll: hover stays relaxed
   const HOVER_DOT   = 1.65;  // dot scale target while on interactive elements
   const HOVER_GLOW  = 1.40;  // glow scale target while hovering
@@ -246,10 +256,20 @@
     }
   }
 
+  // THE v15 CONTRACT: blob-live (cursor:none) may only be on <html> while the
+  // blob is provably visible. Every hide path funnels through here so the
+  // native cursor comes back the instant the blob is gone — the user can
+  // never be left without a pointer, whatever happened (leave, touch,
+  // recorder overlay, tab switch, element removal).
+  function hideNow() {
+    visible = false;
+    cursor.classList.remove('blob-on');
+    document.documentElement.classList.remove('blob-live');
+  }
+
   if (!LITE) {
     document.addEventListener('mouseleave', () => {
-      visible = false;
-      cursor.classList.remove('blob-on');
+      hideNow();
       stopLoop();
     });
     document.addEventListener('mouseenter', () => {
@@ -259,31 +279,27 @@
       // the dot across the screen for a frame (mx is the pre-leave position).
       havePointer = false;
     });
-    // Hybrid touch screens: finger down hides the blob; synthesized mouse
-    // events within 1s of a touch are ignored. Re-arm first-contact so the
-    // next real mouse move re-shows the blob.
+    // Hybrid touch screens: finger down hides the blob (and restores the
+    // native cursor); synthesized mouse events within 1s of a touch are
+    // ignored. Re-arm first-contact so the next real mouse move re-shows
+    // the blob.
     window.addEventListener('touchstart', () => {
       lastTouchAt = Date.now();
-      visible = false;
       havePointer = false;
-      cursor.classList.remove('blob-on');
+      hideNow();
       stopLoop();
     }, { passive: true, capture: true });
   } else {
     // Lite: dot follows the pointer directly on the event — zero loop cost.
-    document.addEventListener('mouseleave', () => {
-      visible = false;
-      cursor.classList.remove('blob-on');
-    });
+    document.addEventListener('mouseleave', hideNow);
     document.addEventListener('mouseenter', () => {
       if (recentTouch()) return;
       havePointer = false; // re-arm: show on the next real move, at its position
     });
     window.addEventListener('touchstart', () => {
       lastTouchAt = Date.now();
-      visible = false;
       havePointer = false;
-      cursor.classList.remove('blob-on');
+      hideNow();
     }, { passive: true, capture: true });
     window.addEventListener('pointermove', liteWrite, { passive: true });
   }
@@ -303,12 +319,12 @@
   // instead of popping (calm across menus/text; pops the instant it lands).
   const INTERACTIVE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="radio"], [role="tab"], [role="menuitem"], [role="link"], [role="checkbox"], [onclick], .ob-opt, .btn';
   let lastHoverX = -1, lastHoverY = -1;
-  let pointerFast = false; // recomputed each frame in render()
+  let fastUntil = 0; // pointer is "fast" until this timestamp (hysteresis)
 
   function hoverSense(now) {
     if (!visible) { hoverTarget = 1; return; }
     if (now - lastScrollAt < SCROLL_SUPPRESS_MS) { hoverTarget = 1; return; }
-    if (pointerFast) { hoverTarget = 1; return; }
+    if (now < fastUntil) { hoverTarget = 1; return; }
     const moved = Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > HOVER_MIN_MOVE;
     if (!moved) return;
     lastHoverX = mx; lastHoverY = my;
@@ -329,10 +345,14 @@
     if (dt <= 0) { rafId = requestAnimationFrame(render); return; }
 
     // Pointer speed for the hover gate: one cheap hypot on the raw pointer
-    // delta per frame (frame-rate independent — px per MILLISECOND).
+    // delta per frame (frame-rate independent — px per MILLISECOND). Crossing
+    // the speed limit holds the gate shut for FAST_HOLD_MS; only a genuine
+    // stop re-opens it (hysteresis — no flicker from momentary pauses).
     const pdx = mx - pmx, pdy = my - pmy;
     pmx = mx; pmy = my;
-    pointerFast = dt > 0 && (Math.hypot(pdx, pdy) / (dt * 1000)) > HOVER_SLOW_PXMS;
+    const speed = dt > 0 ? (Math.hypot(pdx, pdy) / (dt * 1000)) : 0;
+    if (speed > HOVER_SLOW_PXMS) fastUntil = now + FAST_HOLD_MS;
+    const pointerFast = now < fastUntil;
 
     hoverSense(now);
 
@@ -404,8 +424,14 @@
     lastT = 0;
   }
 
-  // ---- 300ms housekeeping: modal perf mode only ---------------------------
+  // ---- 300ms housekeeping: modal perf mode + stale-pop correction -------
   // Two classList queries — trivial. Covers every full-screen scrim.
+  // v15 stale-pop correction: hover is sensed only on pointer travel, so if
+  // the DOM changes under a STILL popped pointer (SPA view switch, modal
+  // opening, element removal) the pop would never relax. While popped and
+  // the pointer has been quiet for 500ms, re-verify the target once per
+  // tick; relax only popped→flat — a still pointer over a real target can
+  // never be pulsed by this.
   let perfMode = false;
   setInterval(() => {
     if (document.hidden) return;
@@ -413,6 +439,15 @@
     if (pm !== perfMode) {
       perfMode = pm;
       document.documentElement.classList.toggle('blob-perf', pm);
+    }
+    if (visible && hoverTarget > 1
+        && performance.now() - lastMoveAt > 500
+        && performance.now() - lastScrollAt > SCROLL_SUPPRESS_MS) {
+      const el = document.elementFromPoint(mx, my);
+      if (!(el && el.closest && el.closest(INTERACTIVE))) {
+        hoverTarget = 1;
+        wake(false); // loop may be asleep — wake it so the relax animates
+      }
     }
   }, 300);
 })();
