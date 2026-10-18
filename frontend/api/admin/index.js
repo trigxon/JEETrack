@@ -12,6 +12,7 @@ import userDetail from '../../../server/admin/handlers/user-detail.js';
 import { triggerMonthly, triggerReview } from '../../../server/admin/handlers/triggers.js';
 import { getSiteConfig, saveSiteConfig } from '../../../server/admin/handlers/site-config.js';
 import dbStats from '../../../server/admin/handlers/db-stats.js';
+import live from '../../../server/admin/handlers/live.js';
 import { feedbackList, feedbackFeature, feedbackStats } from '../../../server/admin/handlers/feedback.js';
 import retention from '../../../server/admin/handlers/retention.js';
 
@@ -23,6 +24,7 @@ import retention from '../../../server/admin/handlers/retention.js';
 // through to the "Unknown action" 400 same as any typo would.
 const actions = {
   stats,
+  live,
   new_users: newUsers,
   subjects,
   exams,

@@ -4,6 +4,19 @@
 // scales via transforms, so cursor motion never triggers a repaint — critical
 // on weak GPUs where a repaint above a backdrop-filter layer re-filters the
 // whole blur and reads as the cursor "hanging" (modals, glass inputs, …).
+//
+// v8 smoothness overhaul:
+//  - Glass-aware glow: while the pointer is over any element that paints a
+//    backdrop-filter (glass navbar/cards/inputs — the expensive case), the
+//    glow fades out (dot stays) instead of forcing the GPU to re-filter the
+//    blur 60x/s. Checked at 5Hz, smoothed by an opacity transition.
+//  - Hover flicker fix: crossing between an interactive element and its child
+//    no longer removes+re-adds the hover class (no scale-pump on dense UI).
+//  - Idle sleep: once the dot is fully settled and the pointer rests ~1.6s,
+//    the rAF loop stops entirely (battery + GPU wakeups). Restarts on the
+//    next mousemove with a clean dt so there is never a resume jump.
+//  - Faster adaptive lite: engages after ~0.5s of sustained <33fps movement
+//    or 2 consecutive >110ms frames, so weak devices get the silky dot sooner.
 // Additional guards: while any full-screen modal (.mo.open) is up, its
 // backdrop-filter blur is switched off (html.blob-perf) and the glow hides;
 // if the device still sustains slow frames while moving, lite mode drops the
@@ -23,6 +36,11 @@
   const MAX_DT = 0.05;             // clamp delta time (50ms) so tab switches don't cause jumps
   const MAX_STRETCH = 1.35;        // max elongation when flicking fast
   const SETTLE_EPS = 0.05;         // px threshold below which the dot is considered settled
+  const IDLE_STOP_MS = 1600;       // settled + pointer idle this long -> stop the rAF loop
+  const LITE_WINDOW = 30;          // moving frames per lite-mode sample (was 50)
+  const LITE_MAX_DT = 0.030;       // avg dt above this (~<33fps) engages lite
+  const SPIKE_DT = 0.11;           // a single frame slower than this is a spike
+  const SPIKES_TO_LITE = 2;        // consecutive spikes -> engage lite immediately
 
   // Reduced motion (vestibular accessibility): the trailing/stretch/glow
   // effects are exactly the kind of continuous movement those users opt out
@@ -53,12 +71,15 @@
   let lastTime = 0;
   let dirty = true;
   let perfMode = false;
+  let lastMoveAt = 0;
 
   // Adaptive lite mode: forceable via ?blob-lite for testing, otherwise
-  // engaged automatically when sustained movement runs below ~42fps.
+  // engaged automatically when sustained movement runs below ~33fps (or on
+  // repeated frame spikes).
   let liteMode = false;
-  let liteAcc = 0, liteN = 0;
+  let liteAcc = 0, liteN = 0, liteSpikes = 0;
   function enableLite() {
+    if (liteMode) return;
     liteMode = true;
     cursor.classList.add('cursor-lite');
     stretchX = 1; stretchY = 1;
@@ -107,7 +128,7 @@
         rgba(244, 114, 182, 0) 72%);
       transform: translate3d(-50%, -50%, 0) scale(1);
       transform-origin: center;
-      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
+      transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s ease;
       will-change: transform;
       pointer-events: none;
     }
@@ -145,6 +166,12 @@
     #custom-cursor.cursor-perf .cursor-dot {
       transition: none;
     }
+    /* Glass-aware glow: pointer is above a backdrop-filter surface — hide
+       the glow so the GPU never re-filters the blur while it moves. The
+       dot (14px) stays: tiny composite area, negligible over any blur. */
+    #custom-cursor.cursor-nogl .cursor-glow {
+      opacity: 0;
+    }
     /* Reduced motion: dot-only, no transitions, glow never rendered. */
     #custom-cursor.cursor-reduced .cursor-glow {
       display: none;
@@ -173,22 +200,34 @@
   function isInteractive(target) {
     return target && (target instanceof Element) && target.closest(INTERACTIVE);
   }
+  function interactiveRoot(target) {
+    return target && (target instanceof Element) ? target.closest(INTERACTIVE) : null;
+  }
 
   function addHoverClass() { cursor.classList.add('cursor-hovering'); }
   function removeHoverClass() { cursor.classList.remove('cursor-hovering'); }
 
+  // Hover flicker fix: moving between a control and its own child (icon,
+  // label span, svg…) fires mouseout on the parent then mouseover on the
+  // child. If both resolve to the SAME interactive root, ignore the pair —
+  // otherwise the 1.6x spring transition re-starts on every boundary and
+  // reads as a pulse while sweeping across dense UI (tables, sidebars).
   document.addEventListener('mouseover', (e) => {
     if (isInteractive(e.target)) addHoverClass();
   });
-
   document.addEventListener('mouseout', (e) => {
-    if (isInteractive(e.target)) removeHoverClass();
+    const from = interactiveRoot(e.target);
+    if (!from) return;
+    const to = interactiveRoot(e.relatedTarget);
+    if (to === from) return; // still inside the same control — keep the spring
+    removeHoverClass();
   });
 
   window.addEventListener('mousemove', (e) => {
     if (recentTouch()) return; // mousemove synthesized from a finger tap
     mouseX = e.clientX;
     mouseY = e.clientY;
+    lastMoveAt = Date.now();
 
     if (!isVisible) {
       // Snap to the pointer on the very first move so the dot never streaks
@@ -199,13 +238,14 @@
       cursor.style.opacity = '1';
       isVisible = true;
       lastTime = 0;
-      startLoop();
     }
+    startLoop(); // cheap no-op if already running; wakes the idle-slept loop
   }, { passive: true });
 
   document.addEventListener('mouseleave', () => {
     cursor.style.opacity = '0';
     isVisible = false;
+    lastTime = 0;
     stopLoop();
   });
 
@@ -227,6 +267,7 @@
     if (isVisible) {
       cursor.style.opacity = '0';
       isVisible = false;
+      lastTime = 0;
       stopLoop();
     }
   }, { passive: true, capture: true });
@@ -250,8 +291,46 @@
     }
   }
 
-  // Continuous render loop: stays alive while the cursor is on screen so a
-  // resumed move glides from a fully settled position without restart jank.
+  // ---- 5Hz housekeeping: modal perf mode + glass-aware glow (v8) ----
+  // Runs on a timer instead of inside the rAF loop, so modal open/close and
+  // glass surfaces are still handled while the cursor is idle-sleeping, at a
+  // battery cost of ~nothing. elementFromPoint at the pointer + a bounded
+  // ancestor walk for backdrop-filter, both trivial at 5Hz.
+  let glassOn = false;
+  function glassCheckNow() {
+    let hit = false;
+    const el = document.elementFromPoint(mouseX, mouseY);
+    let n = el, depth = 0;
+    while (n && n !== document.documentElement && depth++ < 14) {
+      const s = getComputedStyle(n);
+      const bf = s.backdropFilter || s.webkitBackdropFilter;
+      if (bf && bf !== 'none') { hit = true; break; }
+      n = n.parentElement;
+    }
+    if (hit !== glassOn) {
+      glassOn = hit;
+      cursor.classList.toggle('cursor-nogl', hit);
+    }
+  }
+  setInterval(() => {
+    const pm = !!document.querySelector('.mo.open');
+    if (pm !== perfMode) {
+      perfMode = pm;
+      cursor.classList.toggle('cursor-perf', pm);
+      document.documentElement.classList.toggle('blob-perf', pm);
+    }
+    if (isVisible && !liteMode && !REDUCED_MOTION) {
+      glassCheckNow();
+    } else if (glassOn) {
+      glassOn = false;
+      cursor.classList.remove('cursor-nogl');
+    }
+  }, 200);
+
+  // Continuous render loop: stays alive while the pointer moves or the dot
+  // is still gliding; once fully settled AND the pointer rests ~1.6s it
+  // sleeps entirely (lastTime is zeroed so the wake-up frame has dt=0 —
+  // a resumed move glides from the settled position with no restart jank).
   function render(now) {
     rafId = 0;
     if (!isVisible) return;
@@ -261,15 +340,7 @@
     lastTime = now;
     if (dt > MAX_DT) dt = MAX_DT;
 
-    // Engage/disengage perf mode as full-screen modals open and close.
-    // One class-selector scan per frame is negligible; reacting inside the
-    // loop means the toggle also happens while the pointer is idle.
-    const pm = !!document.querySelector('.mo.open');
-    if (pm !== perfMode) {
-      perfMode = pm;
-      cursor.classList.toggle('cursor-perf', pm);
-      document.documentElement.classList.toggle('blob-perf', pm);
-    }
+    let settled = false;
 
     if (dt > 0) {
       // Lag-free, frame-rate independent follow.
@@ -288,8 +359,14 @@
       // stalled tab or a paused frame never causes a false positive.
       if (!liteMode && !REDUCED_MOTION && speed > 0.5) {
         liteAcc += dt; liteN++;
-        if (liteN >= 50) {
-          if (liteAcc / liteN > 0.024) enableLite();   // sustained < ~42fps
+        if (dt > SPIKE_DT) {
+          liteSpikes++;
+          if (liteSpikes >= SPIKES_TO_LITE) enableLite();
+        } else {
+          liteSpikes = 0;
+        }
+        if (!liteMode && liteN >= LITE_WINDOW) {
+          if (liteAcc / liteN > LITE_MAX_DT) enableLite();   // sustained < ~33fps
           liteAcc = 0; liteN = 0;
         }
       }
@@ -312,12 +389,21 @@
         currentY = mouseY;
         stretchX = 1;
         stretchY = 1;
+        settled = true;
       }
 
       dirty = true;
     }
 
     commit();
+
+    // Idle sleep (v8): fully settled and the pointer hasn't moved in a while
+    // — stop burning rAF/GPU cycles. Perf-mode and glass glow toggles keep
+    // working via the 5Hz housekeeping timer above.
+    if (settled && Date.now() - lastMoveAt > IDLE_STOP_MS) {
+      lastTime = 0;
+      return;
+    }
     startLoop();
   }
 })();
