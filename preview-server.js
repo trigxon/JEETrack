@@ -59,6 +59,15 @@ http
       return;
     }
 
+    // Mirror vite/Vercel behavior: frontend/public/* is mounted at the
+    // site root (blob-cursor.js, splash.js, pages/, admin/, assets/...).
+    if ((!fs.existsSync(file) || !fs.statSync(file).isFile())) {
+      const pubFile = safeJoin(path.join(ROOT, 'public'), urlPath);
+      if (pubFile && fs.existsSync(pubFile) && fs.statSync(pubFile).isFile()) {
+        file = pubFile;
+      }
+    }
+
     if (urlPath === '/' || urlPath === '/index.html') {
       serve(res, path.join(ROOT, 'index.html'));
       return;
