@@ -227,7 +227,7 @@ function renderAnnouncementPill(cfg){
       });
       const css = document.createElement('style');
       css.textContent = [
-        '#jt-announce{position:fixed;top:12px;left:50%;transform:translate(-50%,-18px);z-index:9993;',
+        '#jt-announce{position:fixed;top:12px;left:50%;transform:translate(-50%,-18px);z-index:9999;',
         'max-width:min(92vw,640px);display:flex;align-items:center;gap:.55rem;padding:.55rem .95rem;',
         'border-radius:999px;font-size:.8rem;font-weight:600;color:#fff;line-height:1.35;',
         'background:rgba(18,18,28,.96);border:1px solid rgba(255,255,255,.16);',
