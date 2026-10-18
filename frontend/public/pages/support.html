@@ -259,7 +259,12 @@ main{max-width:1040px;margin:0 auto;padding:3.2rem clamp(1rem,5vw,2.5rem) 5rem;p
   /* narrow-screen safety: long tokens (emails/URLs) wrap instead of clipping */
   body { overflow-wrap: break-word; }
   p a, li a { overflow-wrap: anywhere; }
-</style>
+
+  /* audit 2026-10-18: long email CTA buttons must wrap, never clip the page */
+  .cta-btn { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+  /* audit 2026-10-18: comfortable tap targets on footer links (WCAG 2.5.8) */
+  .foot-links a, footer .footer-links a, footer p a { display: inline-block; padding: 4px 2px; }
+  </style>
 </head>
 <body>
 
@@ -1028,6 +1033,6 @@ async function loadCommunityTeaser(){
 }
 </script>
 
-  <script src="/blob-cursor.js?v=6"></script>
+  <script src="/blob-cursor.js?v=7"></script>
 </body>
 </html>

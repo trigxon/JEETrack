@@ -136,6 +136,9 @@ export async function handleRequest(req: Request): Promise<Response> {
         const email = typeof notes.email === "string" && notes.email.length > 0
           ? notes.email.slice(0, 120)
           : null;
+        const note = typeof notes.note === "string" && notes.note.length > 0
+          ? notes.note.slice(0, 200)
+          : null;
         const amount = payment.amount ? payment.amount / 100 : 0;
 
         if (supabaseUrl && serviceKey) {
@@ -158,6 +161,7 @@ export async function handleRequest(req: Request): Promise<Response> {
               display_name: displayName,
               show_publicly: showPublicly,
               email: email,
+              note: note,
             }),
           });
 

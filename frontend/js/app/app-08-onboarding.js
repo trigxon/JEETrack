@@ -81,6 +81,19 @@ function updateObInitials() {
 
 function handleObPhoto(input) {
   const file = input.files[0]; if (!file) return;
+  // The accept="image/*" attribute is only a hint (drag-drop / devtools can
+  // bypass it) — enforce the same rules the avatars bucket enforces
+  // server-side (image mime types only, 2 MB cap) before we even preview.
+  if (!file.type || !file.type.startsWith('image/')) {
+    toast('Please choose an image file (PNG / JPG / WebP)', 'error');
+    input.value = '';
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    toast('Image too large — please pick one under 2 MB', 'error');
+    input.value = '';
+    return;
+  }
   const reader = new FileReader();
   reader.onload = e => {
     obData.avatarDataUrl = e.target.result;

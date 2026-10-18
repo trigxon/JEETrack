@@ -24,6 +24,14 @@
   const MAX_STRETCH = 1.35;        // max elongation when flicking fast
   const SETTLE_EPS = 0.05;         // px threshold below which the dot is considered settled
 
+  // Reduced motion (vestibular accessibility): the trailing/stretch/glow
+  // effects are exactly the kind of continuous movement those users opt out
+  // of. Keep the brand-pink identity (a plain dot that sits under the
+  // pointer) but remove all induced motion and transitions.
+  const REDUCED_MOTION = window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const followRate = REDUCED_MOTION ? 1000 : FOLLOW_RATE;  // ~instant follow, no trail
+
   const cursor = document.createElement('div');
   cursor.id = 'custom-cursor';
   const stretch = document.createElement('div');
@@ -55,6 +63,13 @@
     cursor.classList.add('cursor-lite');
     stretchX = 1; stretchY = 1;
     stretch.style.transform = 'scale(1, 1)';
+  }
+
+  if (REDUCED_MOTION) {
+    // No glow layer, no stretch, no scale/color transitions — the dot just
+    // glides with the pointer. (cursor-reduced styles below.)
+    cursor.classList.add('cursor-reduced');
+    liteMode = true; // reuse the "skip stretch writes" fast path
   }
 
   const style = document.createElement('style');
@@ -128,6 +143,13 @@
       opacity: 0;
     }
     #custom-cursor.cursor-perf .cursor-dot {
+      transition: none;
+    }
+    /* Reduced motion: dot-only, no transitions, glow never rendered. */
+    #custom-cursor.cursor-reduced .cursor-glow {
+      display: none;
+    }
+    #custom-cursor.cursor-reduced .cursor-dot {
       transition: none;
     }
     /* Lite mode (weak devices, or ?blob-lite): dot only — nearly free to
@@ -251,20 +273,20 @@
 
     if (dt > 0) {
       // Lag-free, frame-rate independent follow.
-      const t = 1 - Math.exp(-FOLLOW_RATE * dt);
+      const t = 1 - Math.exp(-followRate * dt);
       currentX += (mouseX - currentX) * t;
       currentY += (mouseY - currentY) * t;
 
       // Dynamic stretch: the dot elongates slightly along the direction of
       // movement when flicking fast, then relaxes back to a perfect circle.
-      // (Skipped in lite mode — pure dot, zero extra layers to composite.)
+      // (Skipped in lite/reduced mode — pure dot, zero extra layers.)
       const dx = mouseX - currentX;
       const dy = mouseY - currentY;
       const speed = Math.sqrt(dx * dx + dy * dy);
 
       // Adaptive lite trigger: sampled only while actually moving, so a
       // stalled tab or a paused frame never causes a false positive.
-      if (!liteMode && speed > 0.5) {
+      if (!liteMode && !REDUCED_MOTION && speed > 0.5) {
         liteAcc += dt; liteN++;
         if (liteN >= 50) {
           if (liteAcc / liteN > 0.024) enableLite();   // sustained < ~42fps

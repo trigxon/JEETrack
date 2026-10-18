@@ -15,11 +15,7 @@ import { z } from "https://esm.sh/zod@4.6.5";
 // and the guest-claim email instead of clobbering them with nulls on its
 // upsert.
 
-const ALLOWED_ORIGINS = [
-  "https://jee-adv-osint.vercel.app",
-  "https://jee-adv-osint.vercel.app",
-  "https://jee-adv-osint.vercel.app",
-];
+const ALLOWED_ORIGINS = ["https://jee-adv-osint.vercel.app"];
 
 function corsHeadersFor(req: Request) {
   const origin = req.headers.get("origin") || "";
@@ -90,6 +86,10 @@ const orderSchema = z.object({
   display_name: z.string().max(60).optional().default(""),
   show_publicly: z.boolean().optional().default(true),
   email: emailField,
+  // Supporter message shown on the Hall of Support wall. UI caps it at 200
+  // chars; enforced here too. (Pre-audit this was collected by the UI but
+  // silently dropped — the donations.note column existed and stayed empty.)
+  note: z.string().max(200).optional().default(""),
 });
 
 Deno.serve(async (req: Request) => {
@@ -117,7 +117,7 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { amount, display_name, show_publicly, email } = parsed.data;
+    const { amount, display_name, show_publicly, email, note } = parsed.data;
 
     const keyId = Deno.env.get("RAZORPAY_KEY_ID");
     const keySecret = Deno.env.get("RAZORPAY_KEY_SECRET");
@@ -150,6 +150,7 @@ Deno.serve(async (req: Request) => {
           display_name: safeDisplayName,
           show_publicly: String(safeShowPublicly),
           email: safeEmail,
+          note: note.slice(0, 200),
         },
       }),
     });

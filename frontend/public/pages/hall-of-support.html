@@ -94,6 +94,7 @@ main{max-width:980px;margin:0 auto;padding:3.4rem clamp(1rem,5vw,2.5rem) 5rem;po
 .supporter-info{display:flex;flex-direction:column;gap:.3rem;min-width:0}
 .supporter-name{font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .supporter-tier{font-size:.66rem;color:var(--mu);font-weight:600}
+.supporter-note{font-size:.68rem;line-height:1.45;color:var(--mu);font-style:italic;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
 .view-all-btn{display:block;margin:1.75rem auto 0;background:none;border:1.5px solid var(--bd2);color:var(--mu);font-family:'Syne',sans-serif;font-weight:700;font-size:.85rem;padding:.75rem 2rem;border-radius:12px;cursor:pointer;transition:all .15s}
 @media(hover:hover){.view-all-btn:hover{border-color:var(--pk);color:var(--tx)}}
@@ -130,7 +131,12 @@ main{max-width:980px;margin:0 auto;padding:3.4rem clamp(1rem,5vw,2.5rem) 5rem;po
   /* narrow-screen safety: long tokens (emails/URLs) wrap instead of clipping */
   body { overflow-wrap: break-word; }
   p a, li a { overflow-wrap: anywhere; }
-</style>
+
+  /* audit 2026-10-18: long email CTA buttons must wrap, never clip the page */
+  .cta-btn { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
+  /* audit 2026-10-18: comfortable tap targets on footer links (WCAG 2.5.8) */
+  .foot-links a, footer .footer-links a, footer p a { display: inline-block; padding: 4px 2px; }
+  </style>
 </head>
 <body>
 
@@ -474,11 +480,13 @@ function renderSupporters(showAll){
   const list = showAll ? _allSupporters : _allSupporters.slice(0, SUPPORTER_PREVIEW_COUNT);
   grid.innerHTML = list.map((s, i) => {
     const name = s.display_name || 'Anonymous';
+    const noteHtml = s.note ? `<div class="supporter-note">\u201C${escapeHtml(s.note)}\u201D</div>` : '';
     return `<div class="supporter-card" style="animation-delay:${Math.min(i,14) * 0.04}s">
       <div class="supporter-badge-icon">${badgeSvg(s.badge_tier, 44)}</div>
       <div class="supporter-info">
         <div class="supporter-name">${escapeHtml(name)}</div>
         <div class="supporter-tier">${escapeHtml(s.badge_tier)}</div>
+        ${noteHtml}
       </div>
     </div>`;
   }).join('');
@@ -536,6 +544,6 @@ function observeImpactCard(){
 }
 </script>
 
-  <script src="/blob-cursor.js?v=6"></script>
+  <script src="/blob-cursor.js?v=7"></script>
 </body>
 </html>

@@ -265,7 +265,21 @@ async function selectPresetAvatar(svgUrl, label) {
 
 function handleSettingsPhoto(input) {
   const file = input.files[0]; if (!file) return;
-  
+
+  // The accept="image/*" attribute is only a hint (drag-drop / devtools can
+  // bypass it) — enforce the same rules the avatars bucket enforces
+  // server-side (image mime types only, 2 MB cap) before we even preview.
+  if (!file.type || !file.type.startsWith('image/')) {
+    toast('Please choose an image file (PNG / JPG / WebP)', 'error');
+    input.value = '';
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    toast('Image too large — please pick one under 2 MB', 'error');
+    input.value = '';
+    return;
+  }
+
   const maxSize = 300 * 1024;
   const reader = new FileReader();
   reader.onload = async e => {
@@ -301,7 +315,7 @@ function handleSettingsPhoto(input) {
           userProfile.avatar_url = urlData.publicUrl;
         }
         toast('Photo updated ✓', 'success');
-      } catch(e) { toast('Photo saved ✓', 'success'); }
+      } catch(e) { toast('Photo shown locally — cloud sync failed', 'error'); }
     } else {
       toast('Photo saved ✓', 'success');
     }
