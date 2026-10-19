@@ -39,6 +39,39 @@
 //          now reconciles both classes to the engine's `visible` flag, so
 //          neither ghost can PERSIST, whatever exotic path produced it.
 //
+//  17. THE v26 SOLO-CURSOR LAW (owner directive: "disable the native cursor
+//      and let the blob cursor act as the main cursor for that whole
+//      website"). The desktop path already hides the OS arrow behind the
+//      proof-of-life gate (blob-live) the instant the mouse moves. The HOLE
+//      was the touch path: on a touchscreen laptop every tap shows the pink
+//      glow WHILE Windows teleports the system arrow to the tap point —
+//      v23 deliberately kept cursor:none OFF there (the hybrid-ghost fix),
+//      which meant "the blob AND the native mouse both are coming" on
+//      exactly the device the owner uses. Now:
+//
+//      (a) THE TOUCH-GLOW CURSOR LAW. While the tap glow is on screen
+//          (tg-on) the html element carries blob-touch-live — the same
+//          cursor:none !important coverage as blob-live — so during every
+//          tap/drag the glow IS the one and only visible pointer. The class
+//          lifecycle is EXACTLY the glow's lifecycle (show/move-re-show
+//          add it, hide strips it BEFORE the element hides — a glowless
+//          cursor:none state is structurally impossible), so a phone is a
+//          no-op (no cursor rendered) and a hybrid gets the arrow back the
+//          moment the glow fades, which is correct: between touches it is
+//          the device's only persistent pointer indicator.
+//
+//      (b) THE DRIFT REPAIR. The desktop 300ms tick also reconciles
+//          blob-touch-live against the glow's actual tg-on state, so an
+//          external writer (extension, refactor) cannot leave the arrow
+//          hidden next to a vanished glow — or glowing next to the arrow.
+//
+//      PHYSICAL LIMITS (honest): (1) before the very first mouse move the
+//      engine cannot know where to put the blob, so the arrow shows until
+//      then — hiding it earlier would risk a pointerless page; (2) over a
+//      cross-origin child frame (Turnstile, Razorpay) the frame's own
+//      document draws its own cursor and no parent CSS can reach it — the
+//      v25 iframe law steps the blob aside so the aim there is honest.
+//
 //      (c) THE TOGGLE TEARDOWN LAW (v24 settings switch hardening). The
 //          cross-tab storage path could leave a tab pointerless: tab A turns
 //          the blob OFF (tab B tears down, tornDown=true), tab A turns it ON
@@ -273,7 +306,9 @@ function initTouchGlow(){
   if (window.__jtBlobStore && window.__jtBlobStore.teardownFns) {
     window.__jtBlobStore.teardownFns.push(function () {
       try { clearTimeout(fadeTimer); } catch (e) {}
-      visible = false;
+      // v26: hide() strips blob-touch-live — the Settings kill-switch must
+      // never leave cursor:none behind with the glow gone (pointerless).
+      try { hide(); } catch (e) {}
       try { wrap.remove(); } catch (e) {}
     });
   }
@@ -323,6 +358,16 @@ function initTouchGlow(){
         rgba(244, 114, 182, 0) 72%);
       transform-origin: 50% 50%; will-change: transform;
     }
+    /* v26 SOLO-CURSOR LAW (touch path): while the tap glow is on screen it
+       IS the pointer — the native arrow (teleported to the tap point on
+       touchscreen laptops, nonexistent on phones) must step aside for
+       exactly as long as the glow is visible. Same coverage as the desktop
+       engine's blob-live rule: every element, pseudo-elements included,
+       !important so site cursor styles can never resurrect the arrow. */
+    html.blob-touch-live, html.blob-touch-live *,
+    html.blob-touch-live *::before, html.blob-touch-live *::after {
+      cursor: none !important;
+    }
   `;
   document.head.appendChild(style);
 
@@ -369,7 +414,13 @@ function initTouchGlow(){
     mx = gx = x; my = gy = y; gvx = gvy = 0;
     scale = 0.6; scaleVel = 0; target = PRESS;  // born small, pops in
     clearTimeout(fadeTimer);
-    if (!visible) { visible = true; wrap.classList.add('tg-on'); }
+    if (!visible) {
+      visible = true;
+      // v26 SOLO-CURSOR LAW: the glow is about to be the only pointer on
+      // screen — hide the native arrow for exactly its lifetime.
+      document.documentElement.classList.add('blob-touch-live');
+      wrap.classList.add('tg-on');
+    }
     paintDot(); paintGlow();
     wake();
   }
@@ -382,6 +433,7 @@ function initTouchGlow(){
     if (!visible) {
       clearTimeout(fadeTimer);
       visible = true;
+      document.documentElement.classList.add('blob-touch-live'); // v26 law
       wrap.classList.add('tg-on');
       gx = mx; gy = my; gvx = gvy = 0;
     }
@@ -396,6 +448,9 @@ function initTouchGlow(){
     wake();
   }
   function hide() {
+    // v26: strip the cursor law FIRST — if anything below throws, the worst
+    // state is the old one (glow + arrow), never the pointerless inverse.
+    document.documentElement.classList.remove('blob-touch-live');
     visible = false;
     wrap.classList.remove('tg-on');
   }
@@ -490,9 +545,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v25';
+  window.__BLOB_CURSOR_VERSION = 'v26';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v25 (iframe law, consistency law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v26 (solo-cursor law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -1214,6 +1269,17 @@ function initTouchGlow(){
         document.documentElement.classList.remove('blob-live');
       }
     }
+    // v26 SOLO-CURSOR LAW, drift repair: the touch module owns
+    // blob-touch-live synchronously with the glow's tg-on lifecycle; this
+    // tick only repairs external writers — an arrow hidden next to a
+    // vanished glow, or a glow shining next to the arrow.
+    try {
+      var tglow = document.getElementById('jt-touch-glow');
+      var tglowOn = !!(tglow && tglow.classList.contains('tg-on'));
+      if (tglowOn !== document.documentElement.classList.contains('blob-touch-live')) {
+        document.documentElement.classList.toggle('blob-touch-live', tglowOn);
+      }
+    } catch (e) {}
     if (visible && hoverTarget > 1
         && performance.now() - lastMoveAt > 500
         && performance.now() - lastScrollAt > SCROLL_SUPPRESS_MS) {
