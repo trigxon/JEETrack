@@ -1,4 +1,4 @@
-// blob-cursor.js v19 — "touch-glow + self-heal".
+// blob-cursor.js v21 — "touch-glow + auto-heal".
 //
 //  12. THE MOBILE LAW (7th usability report: "the blob is still not
 //      functioning, using the blob i cant click anything" — sent from the
@@ -331,11 +331,65 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v20';
+  window.__BLOB_CURSOR_VERSION = 'v21';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v20 (touch-glow)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v21 (touch-glow)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
+
+  // ---- AUTO-HEAL (v21) ----------------------------------------------------
+  // Reports #8-#13 keep reducing to ONE root cause on the owner's devices:
+  // a service worker from an old deploy still controlling the page and
+  // serving an old engine (old caches, or an ancient cache-first SW whose
+  // update cycle never fired). The v19 admin chip fixed this with a manual
+  // tap, but the owner browses the APP, not the admin panel — so the repair
+  // must happen by itself, on every page, without anyone's involvement.
+  //
+  // The law: the page loads this file as /blob-cursor.js?v=N. If the file
+  // that is actually SERVED under that exact URL does not identify itself
+  // as vN, the site's cache chain is broken (stale SW), and this page's
+  // whole asset set is suspect. Repair ONCE per browser session: purge
+  // every CacheStorage bucket, nudge every SW registration to update, and
+  // reload. The sessionStorage guard makes a reload loop structurally
+  // impossible — even if the server itself were serving garbage, the user
+  // sees at most one extra reload, never a bounce.
+  (function healCheck() {
+    try {
+      var expected = null;
+      try { expected = document.currentScript
+        ? new URL(document.currentScript.src).searchParams.get('v') : null;
+      } catch (e) {}
+      if (!expected || !window.fetch || !window.caches) return;
+      var GUARD = 'blobHeal:' + expected;
+      try { if (sessionStorage.getItem(GUARD)) return; } catch (e) {}
+      fetch('/blob-cursor.js?v=' + expected + '&heal=' + Date.now(),
+            { cache: 'no-store' })
+        .then(function (r) { return r && r.ok ? r.text() : null; })
+        .then(function (txt) {
+          if (!txt) return;                       // offline / 404 — stay silent
+          var m = txt.match(/__BLOB_CURSOR_VERSION\s*=\s*['"]([^'"]+)['"]/);
+          var served = m && m[1];
+          if (served === 'v' + expected) return;  // cache chain healthy
+          // STALE ENGINE CONFIRMED — one self-limited repair.
+          try { sessionStorage.setItem(GUARD, '1'); } catch (e) {}
+          console.warn('[blob] stale cursor engine (served ' + served +
+            ', page wants v' + expected + ') — purging caches, updating SW, reloading');
+          var purge = caches.keys()
+            .then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            });
+          var swUpdate = (navigator.serviceWorker &&
+            navigator.serviceWorker.getRegistrations)
+            ? navigator.serviceWorker.getRegistrations().then(function (regs) {
+                regs.forEach(function (r) { try { r.update(); } catch (e) {} });
+              })
+            : Promise.resolve();
+          Promise.allSettled([purge, swUpdate])
+            .then(function () { location.reload(); });
+        })
+        .catch(function () {});                   // never let heal break the page
+    } catch (e) {}
+  })();
 
   // Escape hatch: ?blob-off runs the page with the native cursor and no blob
   // at all (debugging / personal preference). Nothing is created or hidden.

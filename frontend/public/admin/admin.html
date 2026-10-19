@@ -157,9 +157,13 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
    Flex with flex-grow fills every row edge-to-edge at ANY width and ANY
    card count: full rows get equal widths, a partial last row stretches its
    cards to the right edge instead of leaving holes. Phones still get 2-up
-   rows (2×168px+gap fits any ≥320px viewport) and a lone last card
-   automatically spans full width — replacing the v18 grid-column patch. */
-.stats-grid > .stat{flex:1 1 168px;min-width:0}
+   rows and a lone last card automatically spans full width — replacing the
+   v18 grid-column patch. v21: basis 168→148 — at 1366 the Live page's
+   content box is 1058px and 6 Today cards needed 1080px, wrapping to
+   5+1 (five blocks + one STACK-like full-width card). 148px fits all six
+   on one laptop row (960px) down to ~1200px viewports and keeps every
+   other stats-grid count in complete blocks. */
+.stats-grid > .stat{flex:1 1 148px;min-width:0}
 .stats-grid > .loading{flex:1 1 100%}
 .stat{
   background:linear-gradient(165deg,var(--sf),var(--sf2));border:1px solid var(--bd);border-radius:var(--r);
@@ -417,11 +421,31 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   .mobile-topbar{display:flex}
   .grid-2,.grid-3,.grid-main-side,.podium,.kpi-row{grid-template-columns:1fr}
   .content{padding:1.1rem 1rem 3rem}
-  /* v20: .stats-grid is flex now (see base rule) — 2-up phone rows come from
-     flex-basis:168px and an odd last card stretches full width by itself, so
-     the v18 grid-column patches below are retired. */
+  /* v20: .stats-grid is flex now (see base rule) — an odd last card stretches
+     full width by itself, so the v18 grid-column patches below are retired.
+     v21 ("blocks, not stacks"): flex-basis:168px needs ~383px of content width
+     to fit two cards per row — on 360px phones (the most common Android
+     width) every .stats-grid wrapped into ONE full-width card per row, i.e.
+     the exact "stacks" the owner screenshotted on Today · IST. Shrink the
+     basis so 2-up fits down to a 320px viewport, and tighten the cards so
+     two of them stay readable at ~160px each. flex-grow still stretches
+     every completed row edge-to-edge, so alignment is unchanged. */
+  .stats-grid{gap:.7rem}
+  .stats-grid > .stat{flex:1 1 150px}
+  .stat{padding:.85rem .9rem}
+  .stat-value{font-size:1.35rem}
+  .stat-icon-wrap{width:30px;height:30px;font-size:.95rem;margin-bottom:.5rem}
   /* Public-stats field grid (7 fields = odd): last field spans full width. */
   .cfg-grid > .compose-field:last-child:nth-child(odd){grid-column:1/-1}
+}
+/* Smallest common phones (320-345px: iPhone SE 1st gen, small Androids):
+   2×150px+gap no longer fits — drop the basis once more so blocks stay
+   blocks instead of collapsing back into stacks. */
+@media(max-width:380px){
+  .stats-grid > .stat{flex:1 1 132px}
+  .stat-value{font-size:1.25rem}
+  .stat-label{font-size:.68rem}
+  .stat-sub{font-size:.62rem}
 }
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
 .sb-overlay.show{display:block}
@@ -1192,7 +1216,7 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=20"></script>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=21"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -3288,6 +3312,6 @@ function replyToFeedback(userId, email, subject, name) {
 
 </script>
 
-<script src="/blob-cursor.js?v=20"></script>
+<script src="/blob-cursor.js?v=21"></script>
 </body>
 </html>
