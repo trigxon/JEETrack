@@ -1,4 +1,55 @@
-// blob-cursor.js v23 — "clean screen, honest watchdog".
+// blob-cursor.js v25 — "the iframe law".
+//
+//  16. THE v25 LAWS (report #17: "the blob and the native mouse both are
+//      coming and i cant click anything using the blob" — PROVEN on
+//      production with an event-level probe, scripts/jt_r17_iframe_probe.mjs):
+//
+//      (a) THE IFRAME / DOCUMENT-EXIT LAW. The site renders CHILD FRAMES at
+//          the most critical moments: the Cloudflare Turnstile widget inside
+//          the login/signup modal and the Razorpay checkout overlay (full-
+//          screen iframe) at payment time. A child frame is a SEPARATE
+//          document: while the pointer is over it, the parent window receives
+//          ZERO pointermove events, and cursor styles never cross documents
+//          (the parent's html.blob-live * { cursor:none } cannot reach it).
+//          Measured on production: the pointer crossed into a test iframe and
+//          the engine kept blob-live SET (native arrow hidden on the parent),
+//          kept the blob VISIBLE, and the dot FROZE at the last parent-side
+//          position — while the iframe showed its own native arrow and got
+//          every click. The user literally sees BOTH pointers (a frozen pink
+//          blob + a live native arrow over the frame) and aiming the frozen
+//          blob clicks nothing — the exact report. v25 treats "the pointer
+//          left this document" (into the OS, or into a child frame) exactly
+//          like a window exit: capture-phase pointerout/mouseout hooks detect
+//          the crossing (relatedTarget null, in another document, or the
+//          iframe element itself — all three shapes Chromium emits), hideNow()
+//          fires, and the blob re-arms for the next real parent move. The
+//          300ms housekeeping tick additionally checks the pointer's last
+//          position: if an IFRAME is the top-most element there (the Razorpay
+//          overlay APPEARING under a still pointer), the blob hides too.
+//          Over any frame the user now gets the frame's own native cursor —
+//          honest aim — and the blob returns the moment the pointer comes
+//          back (zero-lag, at the fresh position).
+//
+//      (b) THE CONSISTENCY LAW. blob-on (blob visible) and blob-live (native
+//          cursor hidden) are engine-internal state; any external writer (a
+//          theme engine rewriting documentElement.className, an extension,
+//          a future refactor) can break the pairing and produce either ghost:
+//          "blob AND native arrow both visible" or its inverse (cursor:none
+//          with NO blob anywhere = pointerless). The 300ms housekeeping tick
+//          now reconciles both classes to the engine's `visible` flag, so
+//          neither ghost can PERSIST, whatever exotic path produced it.
+//
+//      (c) THE TOGGLE TEARDOWN LAW (v24 settings switch hardening). The
+//          cross-tab storage path could leave a tab pointerless: tab A turns
+//          the blob OFF (tab B tears down, tornDown=true), tab A turns it ON
+//          — tab B's storage event cleared `disabled` but its engine DOM was
+//          already removed, so the next mouse move re-added blob-live with NO
+//          blob in the DOM (arrow hidden, nothing visible, the OFF toggle in
+//          that tab could not fix it because tornDown skipped the teardown).
+//          Now: turning OFF always strips the visible state (even when
+//          tornDown), and turning ON in any tab whose engines are gone or
+//          never booted reloads that tab ONCE for a clean boot. The heartbeat
+//          and the freeze watchdog also refuse to paint into a detached DOM.
 //
 //  15. THE v23 LAWS (report #15):
 //      (a) STATUS PILL REMOVED at the owner's request — the bottom-left
@@ -439,9 +490,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v24';
+  window.__BLOB_CURSOR_VERSION = 'v25';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v24 (settings toggle, light-touch hover)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v25 (iframe law, consistency law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -534,10 +585,28 @@ function initTouchGlow(){
     let off = false;
     try { off = localStorage.getItem('jt_blob') === 'off'; } catch (e) {}
     store.disabled = off;
-    if (off && !store.tornDown) {
-      store.teardownFns.forEach(function (fn) { try { fn(); } catch (e) {} });
-      store.tornDown = true;
-      try { console.info('%c\u25C8 cursor engine disabled from Settings', 'color:#f472b6'); } catch (e) {}
+    if (off) {
+      // v25: ALWAYS strip the visible state, even when the full teardown
+      // already ran once (tornDown guard) — blob-live must never outlive the
+      // toggle, whatever state the tab is in. hideNow touches consts that do
+      // not exist on a tab that booted with the setting off — TDZ error is
+      // expected there and caught (that tab has nothing to strip).
+      try { hideNow(); } catch (e) {}
+      try { stopLoop(); } catch (e) {}
+      if (!store.tornDown) {
+        store.teardownFns.forEach(function (fn) { try { fn(); } catch (e) {} });
+        store.tornDown = true;
+        try { console.info('%c\u25C8 cursor engine disabled from Settings', 'color:#f472b6'); } catch (e) {}
+      }
+    } else if (store.tornDown || window.__jtBlobBootSkipped) {
+      // v25: the engines in THIS tab are gone (torn down live) or never
+      // booted (setting was off at load). Only a clean boot brings them
+      // back. The tab that flipped the toggle reloads via jt-blob-enable;
+      // every OTHER tab learns it from this storage event and reloads here
+      // — exactly once.
+      store.tornDown = false;
+      window.__jtBlobBootSkipped = false;
+      try { location.reload(); } catch (e) {}
     }
   }
   if (!store.offListenerWired) {
@@ -550,6 +619,9 @@ function initTouchGlow(){
 
   if (BLOB_OFF) {
     try { console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine off (Settings)', 'color:#94a3b8'); } catch (e) {}
+    // v25: mark the skip so a storage-event ON from another tab can bring
+    // this tab back with exactly one clean reload (jtBlobSettingChange).
+    window.__jtBlobBootSkipped = true;
     return;
   }
 
@@ -638,6 +710,7 @@ function initTouchGlow(){
   const HB = { x: -1, y: -1, t: 0 };
   window.__BLOB_HB = HB;
   window.addEventListener('pointermove', (e) => {
+    if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v25: a torn-down engine records nothing
     if (e.pointerType === 'touch') return; // hybrids: the tap-glow owns fingers
     // v23: apply the SAME post-touch swallow window as the engine. On a
     // touchscreen laptop Windows teleports the system cursor to the touch
@@ -936,6 +1009,35 @@ function initTouchGlow(){
     }, { passive: true, capture: true });
   }
 
+  // ---- THE IFRAME / DOCUMENT-EXIT LAW (v25) -------------------------------
+  // A child frame (Turnstile in the auth modal, the Razorpay checkout
+  // overlay, any embed) is a SEPARATE document: while the pointer is over
+  // it this window receives ZERO pointermove events and cursor:none can
+  // never reach it. Proven on production (jt_r17_iframe_probe): the engine
+  // kept blob-live SET and the dot FROZEN at the boundary — the user saw
+  // the frozen pink blob AND the frame's own native arrow and could not
+  // click with either. So: "the pointer left this document" must hide the
+  // blob exactly like a window exit. Chromium announces the crossing with
+  // pointerout/mouseout whose relatedTarget is (a) null, (b) a node from
+  // another document, or (c) the IFRAME element itself — all three shapes
+  // are handled; a routine move inside this document has a same-document
+  // element target and never triggers the law. Capture phase is REQUIRED:
+  // mouseleave/out do not bubble, so the engine's bubble-phase document
+  // listeners never saw these events (that was the whole bug).
+  function pointerLeftOurDocument(e) {
+    if (window.__jtBlobStore && window.__jtBlobStore.disabled) return;
+    const rt = e.relatedTarget;
+    if (rt && rt.nodeType === 1 && rt.ownerDocument === document && rt.tagName !== 'IFRAME') return;
+    // The pointer is gone — into the OS, or into a child frame. Same
+    // contract as mouseleave on the document: hide, stop the loop, re-arm,
+    // and let the next REAL parent-side pointermove re-show at its position.
+    havePointer = false;
+    hideNow();
+    stopLoop();
+  }
+  if (hasPE) window.addEventListener('pointerout', pointerLeftOurDocument, { passive: true, capture: true });
+  window.addEventListener('mouseout', pointerLeftOurDocument, { passive: true, capture: true });
+
   let lastTouchAt = 0;
   function recentTouch() { return Date.now() - lastTouchAt < 1000; }
 
@@ -1077,10 +1179,45 @@ function initTouchGlow(){
       perfMode = pm;
       document.documentElement.classList.toggle('blob-perf', pm);
     }
+    // v25 IFRAME LAW, fallback hook: an overlay iframe that APPEARS under a
+    // still pointer (the Razorpay checkout opening at the click point) never
+    // produces a boundary event — there was no pointer movement. ONE cheap
+    // hit-test per tick (shared with the stale-pop check below so the total
+    // stays inside the 15/s perf budget: ~10Hz hover + ~3.3Hz here): if the
+    // pointer's last position now resolves to an IFRAME, the pointer is
+    // effectively in that document — hide exactly like the capture hooks do.
+    let tickEl = null;
+    if (visible && havePointer) {
+      try {
+        tickEl = document.elementFromPoint(mx, my);
+        if (tickEl && tickEl.tagName === 'IFRAME') {
+          havePointer = false;
+          hideNow();
+          stopLoop();
+        }
+      } catch (e) {}
+    }
+    // v25 CONSISTENCY LAW: blob-on (blob visible) and blob-live (native
+    // cursor hidden) must ALWAYS agree with the engine's `visible` flag.
+    // Any external writer (a theme engine rewriting documentElement
+    // classes, an extension, a future refactor) gets repaired within one
+    // tick — neither "blob AND native arrow both visible" nor its inverse
+    // (cursor:none with NO blob = pointerless) can PERSIST.
+    if (visible) {
+      if (!cursor.classList.contains('blob-on')) cursor.classList.add('blob-on');
+      if (!document.documentElement.classList.contains('blob-live')) {
+        document.documentElement.classList.add('blob-live');
+      }
+    } else {
+      if (cursor.classList.contains('blob-on')) cursor.classList.remove('blob-on');
+      if (document.documentElement.classList.contains('blob-live')) {
+        document.documentElement.classList.remove('blob-live');
+      }
+    }
     if (visible && hoverTarget > 1
         && performance.now() - lastMoveAt > 500
         && performance.now() - lastScrollAt > SCROLL_SUPPRESS_MS) {
-      const el = document.elementFromPoint(mx, my);
+      const el = tickEl || document.elementFromPoint(mx, my); // v25: reuse the tick's hit-test
       if (!(el && el.closest && el.closest(INTERACTIVE))) {
         hoverTarget = 1;
         wake(false); // loop may be asleep — wake it so the relax animates
@@ -1105,6 +1242,7 @@ function initTouchGlow(){
       if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
       if (document.hidden) return;
       if (Date.now() - lastTouchAt < 1500) return;   // v23: swallow window
+      if (!document.body || !document.body.contains(dotStage)) return; // v25: never repaint into a detached DOM
       const now = performance.now();
       if (HB.t <= 0 || now - HB.t > 3000) return;  // no fresh pointer activity
       const tf = getComputedStyle(dotStage).transform;
