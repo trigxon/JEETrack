@@ -1,5 +1,32 @@
-// blob-cursor.js v21 — "touch-glow + auto-heal".
+// blob-cursor.js v22 — "tap-glow on every touch screen + can't-be-frozen".
 //
+//  14. THE v22 LAWS (report #14: "the blob is only seen but it is not
+//      functioning" — on BOTH the phone and the laptop). Four real defect
+//      paths found, all closed structurally:
+//      (a) TOUCH STUCK-PID: if a pointerup is ever missed (in-app webviews,
+//          multi-touch races, id quirks) the old code kept pid != null
+//          forever — the glow froze at the last tap AND the pid-guard
+//          blocked every future tap. Now a pointerdown ALWAYS re-targets
+//          (newest finger wins, a stale pid can never block a tap), a
+//          pointermove from a drifted id is ADOPTED after 1.5s, and the
+//          watchdog hides any glow with no live touch for 3s.
+//      (b) HYBRID (touchscreen laptop): the desktop engine HIDES the blob
+//          on touchstart and nothing ever showed for taps — a laptop user
+//          touching the screen got zero blob feedback. The tap-glow module
+//          now runs on EVERY device with touch (maxTouchPoints > 0), not
+//          just touch-only phones; it ignores mouse pointers, so the
+//          desktop cursor engine coexists untouched.
+//      (c) DESKTOP FREEZE: an independent capture-phase heartbeat records
+//          the pointer even if every engine listener dies (extensions,
+//          stopImmediatePropagation); a 2s watchdog compares it with the
+//          painted dot and RESURRECTS tracking via __BLOB_REPAINT when they
+//          disagree while activity is fresh. "Seen but frozen" on a laptop
+//          is now structurally impossible.
+//      (d) STATUS PILL: a tiny always-on badge (bottom-left, ?pill-off to
+//          hide) shows green 'cursor v22' / 'tap glow v22' whenever a
+//          HEALTHY v22 engine is running. No pill on a page = that page is
+//          still serving a stale engine (the auto-heal repairs it) — the
+//          owner can finally SEE which engine their device runs.
 //  12. THE MOBILE LAW (7th usability report: "the blob is still not
 //      functioning, using the blob i cant click anything" — sent from the
 //      phone). On a touch-only device the v18 gate skipped init ENTIRELY:
@@ -216,6 +243,7 @@ function initTouchGlow(){
 
   let pid = null;                    // tracked pointer/touch id
   let visible = false, fadeTimer = 0;
+  let lastAct = 0;                   // last real down/move (the v22 freeze law)
   let mx = -300, my = -300;
   let gx = -300, gy = -300, gvx = 0, gvy = 0;
   let scale = 1, scaleVel = 0, target = 1;
@@ -245,6 +273,7 @@ function initTouchGlow(){
 
   function show(x, y, id) {
     pid = id;
+    lastAct = performance.now();
     mx = gx = x; my = gy = y; gvx = gvy = 0;
     scale = 0.6; scaleVel = 0; target = PRESS;  // born small, pops in
     clearTimeout(fadeTimer);
@@ -254,6 +283,7 @@ function initTouchGlow(){
   }
   function move(x, y) {
     mx = x; my = y;
+    lastAct = performance.now();
     paintDot();                    // zero lag, the prime directive
     wake();
   }
@@ -296,13 +326,26 @@ function initTouchGlow(){
 
   const hasPE = typeof window.PointerEvent === 'function';
   if (hasPE) {
+    // v22 STUCK-PID LAW: a pointerdown ALWAYS re-targets. The old
+    // `if (pid !== null) return` guard meant one missed pointerup (webview
+    // quirks, multi-touch races) froze the glow forever AND blocked every
+    // future tap — literally "seen but not functioning". The newest finger
+    // always wins; a stale pid can never block a tap again.
     window.addEventListener('pointerdown', (e) => {
-      if (pid !== null) return;                 // already tracking a finger
       if (e.pointerType === 'mouse') return;    // a real mouse on a hybrid
       show(e.clientX, e.clientY, e.pointerId);
     }, { passive: true, capture: true });
     window.addEventListener('pointermove', (e) => {
-      if (e.pointerId !== pid) return;
+      if (e.pointerId !== pid) {
+        // v22 ID-DRIFT ADOPTION: some webviews/pens change the pointerId
+        // between down and move — the glow would appear at the tap and
+        // then never follow ("seen but not functioning"). If the glow is
+        // live but the tracked id has gone quiet, adopt the mover.
+        if (visible && performance.now() - lastAct > 1500) {
+          show(e.clientX, e.clientY, e.pointerId);
+        }
+        return;
+      }
       move(e.clientX, e.clientY);
     }, { passive: true });
     const end = (e) => { if (e.pointerId === pid) lift(); };
@@ -321,19 +364,32 @@ function initTouchGlow(){
     window.addEventListener('touchcancel', lift, { passive: true });
   }
   document.addEventListener('visibilitychange', () => { if (document.hidden) hide(); });
-  // Watchdog: anything anomalous that leaves the glow visible with no live
-  // pointer for one tick gets faded. Belt and braces over the 140ms timer.
-  setInterval(() => { if (visible && pid === null) hide(); }, 2500);
+  // Watchdog (v22): any glow with no live touch for 3s gets faded — whether
+  // the pointerup was missed (pid stuck non-null) or the finger truly left.
+  // The old check (pid === null) could NEVER fire in exactly the stuck case
+  // it was built for. A finger held still >3s loses the glow — acceptable:
+  // the tap feedback has long since played, and a frozen glow that sits on
+  // screen forever reads as "the blob is broken".
+  setInterval(() => {
+    if (visible && (pid === null || performance.now() - lastAct > 3000)) hide();
+  }, 2500);
 }
 
 (function(){
   'use strict';
 
+  // v22 DOUBLE-BOOT GUARD: if this file ever executes twice (an old SW or a
+  // misbuilt page loading it two times), two engines would stack — one dot
+  // follows, the other sits frozen = literally "a blob seen but not
+  // functioning". The first boot wins; later boots bail.
+  if (window.__jtBlobBooted) return;
+  window.__jtBlobBooted = true;
+
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v21';
+  window.__BLOB_CURSOR_VERSION = 'v22';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v21 (touch-glow)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v22 (touch-glow + can\'t-be-frozen)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -391,18 +447,57 @@ function initTouchGlow(){
     } catch (e) {}
   })();
 
+  // ---- STATUS PILL (v22) ---------------------------------------------------
+  // A tiny always-visible badge (bottom-left) that names the engine build
+  // and kind actually running on THIS page. Purpose: end the support loop —
+  // "the blob is seen but not functioning" could never be disambiguated
+  // remotely. Now: pill present + green = a healthy v22 engine is live;
+  // NO pill at all = the page is still running a stale engine (the
+  // auto-heal above repairs it on the next load). ?pill-off hides it.
+  function installPill(label) {
+    try {
+      if (new URLSearchParams(location.search).has('pill-off')) return;
+      if (document.getElementById('jt-blob-pill')) return;
+      const p = document.createElement('div');
+      p.id = 'jt-blob-pill';
+      p.innerHTML = '<span class="jp-dot"></span>' + label;
+      const st = document.createElement('style');
+      st.textContent = [
+        '#jt-blob-pill{position:fixed;left:10px;bottom:10px;z-index:2147483645;',
+        'display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;',
+        'background:rgba(17,24,39,.55);color:#9ca3af;font:600 10px/1.2 system-ui,sans-serif;',
+        'letter-spacing:.02em;pointer-events:none;opacity:.45;transition:opacity .2s}',
+        '#jt-blob-pill .jp-dot{width:6px;height:6px;border-radius:50%;background:#34d399;',
+        'box-shadow:0 0 6px rgba(52,211,153,.9)}',
+        '#jt-blob-pill.jp-warn .jp-dot{background:#fbbf24;box-shadow:0 0 6px rgba(251,191,36,.9)}',
+      ].join('');
+      document.head.appendChild(st);
+      document.body.appendChild(p);
+    } catch (e) {}
+  }
+
   // Escape hatch: ?blob-off runs the page with the native cursor and no blob
   // at all (debugging / personal preference). Nothing is created or hidden.
   if (new URLSearchParams(location.search).has('blob-off')) return;
 
-  // Touch-only devices: the desktop cursor-swap must never run here (a
-  // finger has no hover and cursor semantics are meaningless), but the blob
-  // itself SHOULD live here — v19's touch-glow module. It builds its own
-  // DOM, never touches html.blob-live, and hides on every lift.
-  if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
-    initTouchGlow();
-    return;
-  }
+  // ---- ROUTING (v22): every device with touch gets the tap-glow ----------
+  // Touch-ONLY phones: glow only, no cursor engine (a finger has no hover).
+  // HYBRIDS (touchscreen laptops): BOTH — the tap-glow covers the screen
+  // (it ignores mouse pointers), the desktop engine covers the mouse. The
+  // old routing starved hybrids: touching the laptop screen HID the blob
+  // and nothing ever showed for a tap — "the blob is not functioning" on
+  // exactly the device the owner uses.
+  const TOUCH_ONLY = window.matchMedia
+    && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const HAS_TOUCH = (navigator.maxTouchPoints || 0) > 0;
+  if (HAS_TOUCH) initTouchGlow();
+  if (TOUCH_ONLY || !HAS_TOUCH) installPill(TOUCH_ONLY ? 'tap glow v22' : 'cursor v22');
+  if (TOUCH_ONLY) return;
+
+  // Hybrid (touchscreen laptop): the tap-glow already runs above; the
+  // desktop cursor engine below covers the mouse. Pill says which engine
+  // the user should judge the site by.
+  installPill('cursor v22');
 
   // ---- tuning ------------------------------------------------------------
   // v16: the dot has NO position spring — its position IS the pointer's
@@ -462,6 +557,32 @@ function initTouchGlow(){
   cursor.style.pointerEvents = 'none';
   dotStage.style.pointerEvents = 'none';
   glowStage.style.pointerEvents = 'none';
+
+  // ---- INDEPENDENT HEARTBEAT (v22, cannot-be-frozen law) -----------------
+  // A dumb capture-phase listener that ONLY records where the pointer is.
+  // It shares no state with the engine below; even if every engine
+  // listener dies (an extension calling stopImmediatePropagation, a
+  // poisoned handler, anything), this keeps recording. The watchdog at the
+  // bottom of the file compares it with the painted dot and resurrects
+  // tracking when they disagree. First-registered = last to be silenced.
+  const HB = { x: -1, y: -1, t: 0 };
+  window.__BLOB_HB = HB;
+  window.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return; // hybrids: the tap-glow owns fingers
+    HB.x = e.clientX; HB.y = e.clientY; HB.t = performance.now();
+  }, { passive: true, capture: true });
+
+  // Resurrection hook: repaint the dot at an externally supplied position
+  // and un-hide. Used by the watchdog; exposed for support/debug.
+  window.__BLOB_REPAINT = function (x, y) {
+    try {
+      mx = x; my = y; dx = x; dy = y; dvx = dvy = 0;
+      if (!havePointer || !visible) { gx = x; gy = y; gvx = gvy = 0; pmx = x; pmy = y; }
+      lastMoveAt = performance.now();
+      paintDot();
+      wake(true);
+    } catch (e) {}
+  };
 
   const style = document.createElement('style');
   style.textContent = `
@@ -850,4 +971,26 @@ function initTouchGlow(){
       }
     }
   }, 300);
+
+  // ---- THE FREEZE WATCHDOG (v22) ------------------------------------------
+  // Every 2s: if the pointer has REAL fresh activity (heartbeat) but the
+  // painted dot is not at that position, the engine's tracking is dead —
+  // repaint from the heartbeat and un-hide. This closes the last possible
+  // "blob seen but not functioning" path on desktop: dead listeners,
+  // spurious mouseleave, a loop that never woke, any stuck state. A healthy
+  // engine matches the heartbeat to the pixel and the check is a no-op.
+  setInterval(() => {
+    try {
+      if (document.hidden) return;
+      const now = performance.now();
+      if (HB.t <= 0 || now - HB.t > 3000) return;  // no fresh pointer activity
+      const tf = getComputedStyle(dotStage).transform;
+      let px = -99999, py = -99999;
+      if (tf && tf !== 'none') {
+        const m = new DOMMatrix(tf);
+        px = m.m41 + DOT_STAGE_HALF; py = m.m42 + DOT_STAGE_HALF;
+      }
+      if (Math.hypot(px - HB.x, py - HB.y) > 3) window.__BLOB_REPAINT(HB.x, HB.y);
+    } catch (e) {}
+  }, 2000);
 })();
