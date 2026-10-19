@@ -1,6 +1,6 @@
 
 
-const CACHE_VERSION = 'JEE ADV OSINT-v48dfa9c9babc';
+const CACHE_VERSION = 'JEE ADV OSINT-vb68924d2ed1e';
 const CACHE_NAME = CACHE_VERSION;
 
 const STATIC_ASSETS = [

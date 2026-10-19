@@ -1,4 +1,32 @@
-// blob-cursor.js v18 — "true-cursor, proven-alive".
+// blob-cursor.js v19 — "touch-glow + self-heal".
+//
+//  12. THE MOBILE LAW (7th usability report: "the blob is still not
+//      functioning, using the blob i cant click anything" — sent from the
+//      phone). On a touch-only device the v18 gate skipped init ENTIRELY:
+//      mobile had NO blob at all. "Not functioning" was literal. v19 gives
+//      touch its own blob — the touch-glow module below: it appears where
+//      the finger lands, tracks it synchronously (the v16 zero-lag law),
+//      squeezes on press, springs back with a pop on release, and fades the
+//      instant the finger lifts. Pure decoration: passive listeners,
+//      pointer-events:none on every layer, no cursor classes, nothing
+//      intercepted — it CANNOT affect a tap, only decorate it. A watchdog
+//      fade guarantees a stuck mobile dot is impossible.
+//      Desktop keeps v18 exactly as verified (36/36 + live: the blob IS the
+//      cursor behind the proof-of-life gate; touchstart on hybrids still
+//      hides it and restores the arrow).
+//
+//  13. SUPPORT SELF-HEAL — the root cause of reports #8-#10 was stale
+//      engines (SW/HTTP cache lag), invisible from the outside. v19 exposes
+//      window.__BLOB_CURSOR_VERSION + a console badge, and the admin panel
+//      gained an engine chip that compares the served blob-cursor.js
+//      against the page's own ?v= reference and offers a one-tap SW
+//      repair (purge caches + update + reload) when they disagree.
+//
+// v18 history — "true-cursor, proven-alive": cursor:none restored but
+// scoped to html.blob-live * (!important, every element); gate opens only
+// in wake(true) after a real pointermove painted the dot; hideNow() strips
+// it on every hide path; mouse-event fallback for ancient browsers;
+// GLOW_OMEGA 16->24.
 //
 //  11. THE OWNERSHIP LAW (6th usability report: "the blob is only seen but
 //      not functioning, as the old desktop mouse is also coming with it").
@@ -98,16 +126,229 @@
 // v13 history — "pop + no outline": white ring deleted (soft glow shadows
 // only), underdamped scale spring (omega=24, zeta=0.5, ~16% overshoot) for
 // hover + press, cursor:none gated on html.blob-live (never pointerless).
+
+// ---- v19 TOUCH-GLOW ------------------------------------------------------
+// The mobile blob (header note 12). Appears at the finger on contact, tracks
+// it synchronously while it moves (zero lag by construction — the same law
+// as the desktop dot), squeezes on press, springs back with a small pop on
+// release, and dissolves ~140ms after lift. Guarantees:
+//   - pointer-events:none inline on every layer; listeners passive — it can
+//     never intercept or delay a tap;
+//   - no html.blob-live, no cursor styles — the desktop cursor-swap can
+//     never leak into touch;
+//   - hide on up/cancel/leave/tab-hide + a 2.5s watchdog — a stuck mobile
+//     dot is impossible (the v15 lesson, enforced structurally).
+function initTouchGlow(){
+  'use strict';
+  if (window.__jtTouchGlow) return;
+  window.__jtTouchGlow = true;
+  if (!document.body) {
+    document.addEventListener('DOMContentLoaded', initTouchGlow, { once: true });
+    return;
+  }
+
+  const REDUCED = window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'jt-touch-glow';
+  const glowStage = document.createElement('div');
+  glowStage.className = 'tg-glow-stage';
+  const glow = document.createElement('div');
+  glow.className = 'tg-glow';
+  glowStage.appendChild(glow);
+  const dotStage = document.createElement('div');
+  dotStage.className = 'tg-dot-stage';
+  const dot = document.createElement('div');
+  dot.className = 'tg-dot';
+  dotStage.appendChild(dot);
+  wrap.appendChild(glowStage);
+  wrap.appendChild(dotStage);
+  document.body.appendChild(wrap);
+  wrap.style.pointerEvents = 'none';
+  glowStage.style.pointerEvents = 'none';
+  dotStage.style.pointerEvents = 'none';
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #jt-touch-glow {
+      position: fixed; top: 0; left: 0; width: 0; height: 0;
+      pointer-events: none; z-index: 2147483646;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    #jt-touch-glow.tg-on { opacity: 1; }
+    #jt-touch-glow .tg-dot-stage {
+      position: absolute; width: 76px; height: 76px;
+      left: -38px; top: -38px; will-change: transform;
+    }
+    #jt-touch-glow .tg-dot {
+      position: absolute; width: 18px; height: 18px;
+      left: 29px; top: 29px; border-radius: 50%;
+      background: rgba(244, 114, 182, 1);
+      transform-origin: 50% 50%; will-change: transform;
+      box-shadow:
+        0 2px 12px rgba(244, 114, 182, 0.85),
+        0 0 26px rgba(244, 114, 182, 0.40);
+    }
+    #jt-touch-glow .tg-glow-stage {
+      position: absolute; width: 192px; height: 192px;
+      left: -96px; top: -96px; will-change: transform;
+    }
+    #jt-touch-glow .tg-glow {
+      position: absolute; width: 64px; height: 64px;
+      left: 64px; top: 64px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(244, 114, 182, 0.50) 0%,
+        rgba(244, 114, 182, 0.26) 34%,
+        rgba(244, 114, 182, 0.09) 55%,
+        rgba(244, 114, 182, 0) 72%);
+      transform-origin: 50% 50%; will-change: transform;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const dpr = () => Math.max(1, window.devicePixelRatio || 1);
+  const snap = (v) => Math.round(v * dpr()) / dpr();
+  const DOT_HALF = 38, GLOW_HALF = 96;
+  const GLOW_OMEGA = 22, GLOW_ZETA = 1.05;   // same hair-overdamped trail
+  const SCALE_OMEGA = 22, SCALE_ZETA = 0.5;  // same underdamped pop
+  const PRESS = 0.82, MAX_DT = 0.05;
+
+  let pid = null;                    // tracked pointer/touch id
+  let visible = false, fadeTimer = 0;
+  let mx = -300, my = -300;
+  let gx = -300, gy = -300, gvx = 0, gvy = 0;
+  let scale = 1, scaleVel = 0, target = 1;
+  let rafId = 0, lastT = 0;
+
+  // Same stability-guaranteed integrator as the desktop engine.
+  function springStep(pos, vel, tgt, omega, zeta, dt) {
+    let n = Math.ceil((dt * omega) / 0.75);
+    if (n < 1) n = 1;
+    const h = dt / n;
+    for (let i = 0; i < n; i++) {
+      const a = omega * omega * (tgt - pos) - 2 * zeta * omega * vel;
+      vel += a * h;
+      pos += vel * h;
+    }
+    return [pos, vel];
+  }
+
+  function paintDot() {
+    dotStage.style.transform =
+      `translate3d(${snap(mx) - DOT_HALF}px, ${snap(my) - DOT_HALF}px, 0)`;
+  }
+  function paintGlow() {
+    glowStage.style.transform =
+      `translate3d(${snap(gx) - GLOW_HALF}px, ${snap(gy) - GLOW_HALF}px, 0)`;
+  }
+
+  function show(x, y, id) {
+    pid = id;
+    mx = gx = x; my = gy = y; gvx = gvy = 0;
+    scale = 0.6; scaleVel = 0; target = PRESS;  // born small, pops in
+    clearTimeout(fadeTimer);
+    if (!visible) { visible = true; wrap.classList.add('tg-on'); }
+    paintDot(); paintGlow();
+    wake();
+  }
+  function move(x, y) {
+    mx = x; my = y;
+    paintDot();                    // zero lag, the prime directive
+    wake();
+  }
+  function lift() {
+    pid = null;
+    target = 1.45;                 // release pop (springs over, fades out)
+    clearTimeout(fadeTimer);
+    fadeTimer = setTimeout(hide, 140);
+    wake();
+  }
+  function hide() {
+    visible = false;
+    wrap.classList.remove('tg-on');
+  }
+  function wake() {
+    if (!rafId && visible && !REDUCED) {
+      lastT = 0;
+      rafId = requestAnimationFrame(render);
+    }
+  }
+  function render(now) {
+    rafId = 0;
+    if (!visible) return;
+    if (!lastT) lastT = now;
+    let dt = (now - lastT) / 1000;
+    lastT = now;
+    if (dt > MAX_DT) dt = MAX_DT;
+    if (dt <= 0) { rafId = requestAnimationFrame(render); return; }
+
+    [gx, gvx] = springStep(gx, gvx, mx, GLOW_OMEGA, GLOW_ZETA, dt);
+    [gy, gvy] = springStep(gy, gvy, my, GLOW_OMEGA, GLOW_ZETA, dt);
+    [scale, scaleVel] = springStep(scale, scaleVel, target, SCALE_OMEGA, SCALE_ZETA, dt);
+    target += (1 - target) * (1 - Math.exp(-9 * dt)); // release pop decays to rest
+
+    paintGlow();
+    dot.style.transform = `scale(${scale.toFixed(4)})`;
+    glow.style.transform = `scale(${(scale * 1.06).toFixed(4)})`;
+    rafId = requestAnimationFrame(render);
+  }
+
+  const hasPE = typeof window.PointerEvent === 'function';
+  if (hasPE) {
+    window.addEventListener('pointerdown', (e) => {
+      if (pid !== null) return;                 // already tracking a finger
+      if (e.pointerType === 'mouse') return;    // a real mouse on a hybrid
+      show(e.clientX, e.clientY, e.pointerId);
+    }, { passive: true, capture: true });
+    window.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== pid) return;
+      move(e.clientX, e.clientY);
+    }, { passive: true });
+    const end = (e) => { if (e.pointerId === pid) lift(); };
+    window.addEventListener('pointerup', end, { passive: true });
+    window.addEventListener('pointercancel', end, { passive: true });
+  } else {
+    window.addEventListener('touchstart', (e) => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (t) show(t.clientX, t.clientY, t.identifier);
+    }, { passive: true, capture: true });
+    window.addEventListener('touchmove', (e) => {
+      const t = e.changedTouches && e.changedTouches[0];
+      if (t) move(t.clientX, t.clientY);
+    }, { passive: true });
+    window.addEventListener('touchend', lift, { passive: true });
+    window.addEventListener('touchcancel', lift, { passive: true });
+  }
+  document.addEventListener('visibilitychange', () => { if (document.hidden) hide(); });
+  // Watchdog: anything anomalous that leaves the glow visible with no live
+  // pointer for one tick gets faded. Belt and braces over the 140ms timer.
+  setInterval(() => { if (visible && pid === null) hide(); }, 2500);
+}
+
 (function(){
   'use strict';
+
+  // Support marker (see header note 13): the admin engine chip reads this
+  // out of the SERVED file and compares it with the ?v= the page loaded.
+  window.__BLOB_CURSOR_VERSION = 'v19';
+  try {
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v19 (touch-glow)',
+      'color:#f472b6;font-weight:700');
+  } catch (e) {}
 
   // Escape hatch: ?blob-off runs the page with the native cursor and no blob
   // at all (debugging / personal preference). Nothing is created or hidden.
   if (new URLSearchParams(location.search).has('blob-off')) return;
 
-  // Touch-only devices: the primary pointer is a finger — nothing to follow.
-  // Laptops that report touch but are mouse-driven still run (hover:hover).
-  if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
+  // Touch-only devices: the desktop cursor-swap must never run here (a
+  // finger has no hover and cursor semantics are meaningless), but the blob
+  // itself SHOULD live here — v19's touch-glow module. It builds its own
+  // DOM, never touches html.blob-live, and hides on every lift.
+  if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
+    initTouchGlow();
+    return;
+  }
 
   // ---- tuning ------------------------------------------------------------
   // v16: the dot has NO position spring — its position IS the pointer's

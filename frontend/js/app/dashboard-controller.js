@@ -4017,7 +4017,11 @@ function updateMobTopbarTitle(page, sub){
   };
   let icon = '';
   if(page==='overview'){
-    el.innerHTML = 'JEE<span>Track</span>';
+    // Brand wordmark (two-tone, same as splash/sidebar/admin brand). Was
+    // 'JEE<span>Track</span>' — upstream branding that survived the
+    // whitelabel rename because it lives in JS, not in the HTML the rename
+    // script covered (user report #11: mobile homepage still showed it).
+    el.innerHTML = 'Jee Adv<span>Osint</span>';
     el.style.cssText = '';
   } else {
     const title = MOB_PAGE_TITLES[page] || page;
