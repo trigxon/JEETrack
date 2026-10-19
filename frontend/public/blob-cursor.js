@@ -1,5 +1,28 @@
-// blob-cursor.js v15 — "pointer never disappears": v14's pop engine and its
-// four hardening fixes are kept exactly as shipped; v15 fixes the ONE defect
+// blob-cursor.js v16 — "aim-true": the dot IS the pointer.
+//
+//  9. AIM MISMATCH — the real "I can't use it to click anything" defect.
+//     v11's spring rebuild put the DOT on a position spring (omega=150): at
+//     real hand speeds the visible dot trailed the true pointer by
+//     ~13px per 1000px/s of hand speed, and the glow by ~190px per 1000px/s
+//     (steady-state trail = 2*zeta/omega * v). The native cursor was hidden
+//     (cursor:none), so the user aimed the PINK MASS at a button and
+//     clicked — but the click lands at the TRUE pointer, dozens of px ahead
+//     of the blob they were looking at. Miss, retry, miss: "the blob is
+//     malfunctioning a lot, I can't click anything". v9 already knew the
+//     law ("dot written synchronously in mousemove — zero lag by
+//     construction"); v16 restores it as the prime directive:
+//
+//       THE DOT'S POSITION IS THE POINTER'S POSITION. ALWAYS. SYNCHRONOUSLY.
+//
+//     pointermove/pointerdown paint the dot stage INLINE in the event (no
+//     rAF round-trip, no spring state to lag). Every drop of liquid feel is
+//     kept: the glow trail spring (tightened omega 11→16 so the pink mass
+//     hugs the aim point instead of lagging a third of the screen behind),
+//     velocity stretch + rotation, and the underdamped pop/press scale
+//     springs. Aim is native-exact; the blob flows around it.
+//
+// v15 — "pointer never disappears": v14's pop engine and its
+// four hardening fixes are kept exactly as shipped; v15 fixed the ONE defect
 // class the live adversarial probe confirmed (the real "malfunction"):
 //
 //  5. INVISIBLE POINTER — v13/v14 added html.blob-live (cursor:none) the
@@ -46,9 +69,13 @@
   if (window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
 
   // ---- tuning ------------------------------------------------------------
-  const DOT_OMEGA   = 150;   // dot spring stiffness (rad/s) — glued, not welded
-  const DOT_ZETA    = 1.0;   // critically damped: fastest settle, zero overshoot
-  const GLOW_OMEGA  = 11;    // glow trail stiffness — the flowing blob feel
+  // v16: the dot has NO position spring — its position IS the pointer's
+  // position, painted synchronously in the event (zero lag by construction,
+  // the v9 law). Only the glow springs.
+  const GLOW_OMEGA  = 16;    // glow trail stiffness — still the flowing blob
+                             // feel, but the mass stays near the aim point
+                             // (steady trail = 2*zeta/omega * speed: ~39px
+                             // at a 300px/s glide, was ~57px at omega=11)
   const GLOW_ZETA   = 1.05;  // hair overdamped: no rubber-band wobble
   const SCALE_OMEGA = 24;    // hover/press scale spring stiffness
   const SCALE_ZETA  = 0.5;   // UNDERDAMPED: ~16% overshoot = the pop
@@ -181,10 +208,11 @@
   // ---- spring integrator (semi-implicit Euler, stability-guaranteed) -----
   // For zeta near 1 symplectic Euler's error eigenvalue crosses |lambda|=1 at
   // omega*h = 0.91. Substep h is DERIVED from omega (omega*h = 0.75,
-  // comfortably inside the stable region) and never capped: at MAX_DT=50ms
-  // and omega=150 that is <=10 substeps of trivial arithmetic. Stability is
-  // a property of the scheme, not of the frame rate — slow frames can never
-  // make the cursor explode. Same integrator for position AND scale springs.
+  // comfortably inside the stable region) and never capped, so even the
+  // stiffest spring here stays within a handful of trivial substeps at
+  // MAX_DT. Stability is a property of the scheme, not of the frame rate —
+  // slow frames can never make the cursor explode. Same integrator for the
+  // glow position AND the scale springs.
   function springStep(pos, vel, target, omega, zeta, dt) {
     let n = Math.ceil((dt * omega) / 0.75);
     if (n < 1) n = 1;
@@ -197,18 +225,31 @@
     return [pos, vel];
   }
 
-  // ---- events: store + wake. NOTHING else happens here. ------------------
+  // ---- THE v16 PRIME DIRECTIVE -------------------------------------------
+  // The dot's position is the pointer's position, painted SYNCHRONOUSLY in
+  // the event — no rAF round-trip, no spring state. A click can never land
+  // anywhere but exactly under the dot the user is aiming with.
+  function paintDot() {
+    dotStage.style.transform =
+      `translate3d(${snap(mx) - DOT_STAGE_HALF}px, ${snap(my) - DOT_STAGE_HALF}px, 0)`;
+  }
+
+  // ---- events: store + paint dot + wake ----------------------------------
   window.addEventListener('pointermove', (e) => {
     if (recentTouch()) return;
     mx = e.clientX; my = e.clientY;
     lastMoveAt = performance.now();
+    // Zero lag BY CONSTRUCTION: dot = pointer, painted inline, every event,
+    // even while the render loop is asleep.
+    dx = mx; dy = my; dvx = dvy = 0;
+    paintDot();
     // First contact OR re-show after any hide path (mouseleave, touch,
-    // recording overlays eating events): snap to the FRESH position and show.
-    // This is what makes "cursor disappeared forever" impossible.
+    // recording overlays eating events): snap the GLOW to the FRESH position
+    // and show. This is what makes "cursor disappeared forever" impossible.
     if (!havePointer || !visible) {
       havePointer = true;
-      dx = gx = mx; dy = gy = my;
-      dvx = dvy = gvx = gvy = 0;
+      gx = mx; gy = my;
+      gvx = gvy = 0;
       pmx = mx; pmy = my;
       wake(true);
     } else {
@@ -222,7 +263,8 @@
     if (recentTouch() || (e.button !== undefined && e.button !== 0)) return;
     press = PRESS_DOT;
     lastMoveAt = performance.now();
-    if (e.clientX || e.clientY) { mx = e.clientX; my = e.clientY; }
+    if (e.clientX || e.clientY) { mx = e.clientX; my = e.clientY; dx = mx; dy = my; }
+    paintDot(); // the dot is EXACTLY under the click point at click time
     wake(false);
   }, { passive: true, capture: true });
   window.addEventListener('pointerup', () => { press = 1; wake(false); }, { passive: true });
@@ -290,7 +332,8 @@
       stopLoop();
     }, { passive: true, capture: true });
   } else {
-    // Lite: dot follows the pointer directly on the event — zero loop cost.
+    // Lite: the main pointermove handler already paints the dot inline
+    // (paintDot) — zero loop cost, zero lag, same code path as full mode.
     document.addEventListener('mouseleave', hideNow);
     document.addEventListener('mouseenter', () => {
       if (recentTouch()) return;
@@ -301,16 +344,10 @@
       havePointer = false;
       hideNow();
     }, { passive: true, capture: true });
-    window.addEventListener('pointermove', liteWrite, { passive: true });
   }
 
   let lastTouchAt = 0;
   function recentTouch() { return Date.now() - lastTouchAt < 1000; }
-
-  function liteWrite() {
-    if (!visible) return;
-    dotStage.style.transform = `translate3d(${snap(mx) - DOT_STAGE_HALF}px, ${snap(my) - DOT_STAGE_HALF}px, 0)`;
-  }
 
   // ---- hover detection: native-OS semantics — hover = pointer AT REST over
   // a target. Re-sense ONLY on real pointer travel (no periodic re-sense:
@@ -356,9 +393,10 @@
 
     hoverSense(now);
 
-    // Dot spring → pointer.
-    [dx, dvx] = springStep(dx, dvx, mx, DOT_OMEGA, DOT_ZETA, dt);
-    [dy, dvy] = springStep(dy, dvy, my, DOT_OMEGA, DOT_ZETA, dt);
+    // Dot: position = pointer (v16 prime directive — painted synchronously
+    // in the event; synced here too so every path stays coherent). Only the
+    // SCALE springs below give the dot its pop.
+    dx = mx; dy = my;
     // Defensive sanity clamp — physically unreachable, but a bad state must
     // never be able to paint the blob off-screen.
     if (Math.abs(dx - mx) > 4000 || Math.abs(dy - my) > 4000) {
