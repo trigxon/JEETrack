@@ -760,7 +760,15 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
 }
 @media(max-width:480px){
   .g3{grid-template-columns:1fr}
-  .g3 .card[style*="grid-column:span 2"]{grid-column:span 1}
+  /* v17 alignment fix: in a 1-column grid NO child may span 2. The inline
+     style="grid-column:span 2" cards (Score Trend / Syllabus Progress) used
+     to create an implicit phantom column that squeezed their companion card
+     exactly one grid-gap (10px) short of the right edge — the mobile
+     "space left on the right" bug. !important is REQUIRED here: the span
+     lives in an inline style attribute, which beats any stylesheet rule
+     that lacks it (the old override silently never applied). */
+  .g3 .card[style*="grid-column:span 2"]{grid-column:span 1 !important}
+  .g3 > *{grid-column:auto !important}
   .g5{grid-template-columns:1fr 1fr}
   .main{padding:.8rem .6rem;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   .mob-topbar{margin:-.8rem -.6rem .8rem -.6rem}

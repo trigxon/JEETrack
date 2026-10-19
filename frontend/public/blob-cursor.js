@@ -1,4 +1,29 @@
-// blob-cursor.js v16 — "aim-true": the dot IS the pointer.
+// blob-cursor.js v17 — "click-first": the native cursor is NEVER hidden.
+//
+//  10. THE USABILITY LAW (5th usability report: "i literally cant click
+//      anything from that blob"). History: v13 hid the native cursor and let
+//      a springy blob replace it; v14-v15 fixed the failure modes users felt
+//      (invisible pointer, phantom pulses); v16 made the dot zero-lag and
+//      PROVED clicks pass through (real CDP click-through test) — yet the
+//      user still cannot aim reliably. The remaining defect is ARCHITECTURAL:
+//      any design where a moving blob REPLACES the pointer makes the user
+//      aim with a visual that can lag, stretch, pop, or sit under a glow —
+//      no amount of tuning removes that on every device/browser/DPI. v17
+//      removes the class of bug by removing the swap:
+//
+//        THE NATIVE CURSOR STAYS VISIBLE. ALWAYS. THE BLOB IS DECORATION.
+//
+//      cursor:none is GONE. The arrow tip is the true pointer — clicks land
+//      exactly where the OS has always put them. The blob keeps everything
+//      that makes it beautiful: zero-lag dot glued to the pointer, flowing
+//      glow trail, velocity stretch, hover pop, press squeeze. If the blob
+//      ever fails to render on some device, the site is 100% usable anyway —
+//      worst case is a missing decoration, never a missing pointer.
+//      Defense in depth: pointer-events:none is now set INLINE on every
+//      blob layer (container + both stages) in addition to CSS, killing any
+//      old-engine composited-layer pointer-events inheritance bug.
+//
+// v16 — "aim-true": the dot IS the pointer.
 //
 //  9. AIM MISMATCH — the real "I can't use it to click anything" defect.
 //     v11's spring rebuild put the DOT on a position spring (omega=150): at
@@ -106,6 +131,8 @@
   const LITE = FORCE_LITE || REDUCED_MOTION;
 
   // ---- DOM: two fixed-size stages, one transform write per layer per frame
+  // v17: pointer-events:none is set INLINE on every layer as well as in CSS —
+  // belt and braces against old-engine composited-layer inheritance bugs.
   const cursor = document.createElement('div');
   cursor.id = 'custom-cursor';
   const dotStage = document.createElement('div');
@@ -121,6 +148,9 @@
   if (!LITE) cursor.appendChild(glowStage);
   cursor.appendChild(dotStage);
   document.body.appendChild(cursor);
+  cursor.style.pointerEvents = 'none';
+  dotStage.style.pointerEvents = 'none';
+  glowStage.style.pointerEvents = 'none';
 
   const style = document.createElement('style');
   style.textContent = `
@@ -169,10 +199,11 @@
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    /* The blob replaces the native cursor ONLY once it is actually visible
-       (html.blob-live). Until the first real pointer move the native cursor
-       stays — the user is never left without a pointer, no matter what. */
-    html.blob-live, html.blob-live * { cursor: none !important; }
+    /* v17 THE USABILITY LAW: the native cursor is NEVER hidden. html.blob-live
+       remains only as a state marker (blob is on screen) for tests/debug —
+       it carries NO cursor styling. The blob is pure decoration flowing
+       around the always-visible native pointer: clicks land where the OS has
+       always put them, on every device, every browser, every DPI. */
   `;
   document.head.appendChild(style);
 
@@ -289,8 +320,8 @@
     if (showNow && !visible) {
       visible = true;
       cursor.classList.add('blob-on');
-      // From this instant on the blob is provably on screen — only now may
-      // we hide the native cursor.
+      // From this instant on the blob is provably on screen (state marker
+      // only — the native cursor was never hidden and stays visible).
       document.documentElement.classList.add('blob-live');
     }
     if (!rafId && visible && !LITE) {
@@ -298,11 +329,10 @@
     }
   }
 
-  // THE v15 CONTRACT: blob-live (cursor:none) may only be on <html> while the
-  // blob is provably visible. Every hide path funnels through here so the
-  // native cursor comes back the instant the blob is gone — the user can
-  // never be left without a pointer, whatever happened (leave, touch,
-  // recorder overlay, tab switch, element removal).
+  // THE v17 CONTRACT: the native cursor is NEVER hidden — cursor:none does
+  // not exist anywhere in this engine. blob-live is a state marker only
+  // (blob provably on screen). Hiding the blob (leave/touch/tab-switch) can
+  // never affect pointing or clicking: worst case is a missing decoration.
   function hideNow() {
     visible = false;
     cursor.classList.remove('blob-on');

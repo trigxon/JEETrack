@@ -396,6 +396,19 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
 .sb-overlay.show{display:block}
 
+/* v17 mobile alignment: tables must read as aligned, not "cut off". Tighter
+   cells fit more columns inside a phone viewport; the wrapper's thin visible
+   scrollbar makes the horizontal swipe discoverable instead of silently
+   clipping mid-word. */
+@media(max-width:640px){
+  th{padding:.55rem .55rem;font-size:.6rem}
+  td{padding:.6rem .5rem;font-size:.74rem}
+  .table-wrap{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
+  .table-wrap::-webkit-scrollbar{height:6px}
+  .table-wrap::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}
+  .table-wrap::-webkit-scrollbar-track{background:transparent}
+}
+
 .fb-msg-cell{cursor:pointer;position:relative;}
 .fb-msg-cell:hover .fb-msg-preview{color:var(--tx);}
 .fb-msg-preview{font-size:.75rem;color:var(--mu);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:color .15s;}
@@ -1130,7 +1143,7 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=16"></script>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=17"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -3161,6 +3174,6 @@ function replyToFeedback(userId, email, subject, name) {
 
 </script>
 
-<script src="/blob-cursor.js?v=16"></script>
+<script src="/blob-cursor.js?v=17"></script>
 </body>
 </html>
