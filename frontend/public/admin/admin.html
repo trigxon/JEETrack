@@ -257,6 +257,11 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
 .pill{display:inline-flex;align-items:center;gap:.25rem;padding:.16rem .55rem;border-radius:99px;font-size:.66rem;font-weight:600;white-space:nowrap}
 .pill-green{background:var(--gd);color:var(--gn)}
 .pill-red{background:var(--rdm);color:var(--rd)}
+.qchip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--bd2);background:var(--sf2);font-size:.72rem;color:var(--mu);white-space:nowrap}
+.qchip b{font-size:.78rem;color:var(--tx)}
+.qchip.qchip-real b{color:var(--gr, #34d399)}
+.qchip.qchip-fake b{color:var(--rd)}
+.fake-badge{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.4px;padding:2px 6px;border-radius:5px;background:var(--rdm);color:var(--rd);margin-left:6px;vertical-align:middle;white-space:nowrap}
 .pill-yellow{background:var(--ad);color:var(--am)}
 .pill-blue{background:var(--bld);color:var(--bl)}
 .pill-purple{background:rgba(124,106,247,.14);color:var(--ac2)}
@@ -852,7 +857,18 @@ tr.fb-expand-row{background:transparent!important;}
           <option value="friend">Friend / Word of Mouth</option>
           <option value="other">Somewhere Else</option>
         </select>
+        <div style="display:flex;background:var(--sf2);border-radius:6px;padding:3px;gap:2px;border:1px solid var(--bd2)">
+          <button class="size-btn active" id="uq-all" onclick="setUserQuality('all')">All</button>
+          <button class="size-btn" id="uq-real" onclick="setUserQuality('real')">Real</button>
+          <button class="size-btn" id="uq-fake" onclick="setUserQuality('fake')">Fake</button>
+        </div>
         <span class="filter-clear" onclick="clearUserFilters()">Clear filters</span>
+      </div>
+      <div id="user-quality-summary" style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px">
+        <span class="qchip">All users <b id="qc-all">–</b></span>
+        <span class="qchip qchip-real">Real <b id="qc-real">–</b></span>
+        <span class="qchip qchip-fake">Fake <b id="qc-fake">–</b></span>
+        <span style="font-size:.7rem;color:var(--mu2);align-self:center">Fake = test / disposable / gibberish / duplicate signups of the same account / never-onboarded no-activity accounts — shown with reasons below.</span>
       </div>
       <div class="card" style="padding:0">
         <div class="table-wrap">
@@ -1226,7 +1242,7 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=23"></script>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=24"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -1490,6 +1506,14 @@ let _userPage = 0;
 let _fbPage   = 0;   
 
 let _userSort = { by: 'created_at', dir: 'desc' };
+let _userQuality = 'all'; // report #16: all | real | fake
+function setUserQuality(q) {
+  _userQuality = q;
+  ['all', 'real', 'fake'].forEach(k => {
+    document.getElementById('uq-' + k)?.classList.toggle('active', k === q);
+  });
+  loadUsers(0);
+}
 let _userSearchTimer = null;
 
 const COACHING_OPTIONS = [
@@ -2078,6 +2102,7 @@ function clearUserFilters() {
   document.getElementById('filter-class').value = '';
   document.getElementById('filter-coaching').value = '';
   document.getElementById('filter-source').value = '';
+  if (_userQuality !== 'all') { setUserQuality('all'); return; }
   loadUsers(0);
 }
 
@@ -2110,8 +2135,13 @@ async function loadUsers(page = 0) {
     const cls = document.getElementById('filter-class')?.value || '';
     const coaching = document.getElementById('filter-coaching')?.value || '';
     const source = document.getElementById('filter-source')?.value || '';
-    const extra = `&page=${page}&pageSize=20&search=${search}&class_year=${cls}&coaching=${coaching}&referral_source=${source}&sort=${_userSort.by}&dir=${_userSort.dir}`;
+    const extra = `&page=${page}&pageSize=20&search=${search}&class_year=${cls}&coaching=${coaching}&referral_source=${source}&sort=${_userSort.by}&dir=${_userSort.dir}&quality=${_userQuality}`;
     const d = await api('users', extra);
+    // report #16: quality counts (whole-table, not just this page)
+    if (d.quality) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('qc-all', d.quality.all); set('qc-real', d.quality.real); set('qc-fake', d.quality.fake);
+    }
     const users = d.users || [];
     if (!users.length) {
       tbody.innerHTML = `<tr><td colspan="9">${emptyState('No users match these filters')}</td></tr>`;
@@ -2126,8 +2156,8 @@ async function loadUsers(page = 0) {
           <div class="user-cell">
             <div class="avatar">${initials(u.name)}</div>
             <div style="min-width:0">
-              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${esc(u.name)}</div>
-              <div style="font-size:.7rem;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">${esc(u.email)}</div>
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(u.name) || '<span style="color:var(--mu2)">—</span>'}${u.fake ? `<span class="fake-badge" title="Flagged as likely fake: ${esc(u.fake_reason)}">FAKE · ${esc(u.fake_reason)}</span>` : ''}</div>
+              <div style="font-size:.7rem;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">${esc(u.email)}</div>
             </div>
           </div>
         </td>
@@ -3322,6 +3352,6 @@ function replyToFeedback(userId, email, subject, name) {
 
 </script>
 
-<script src="/blob-cursor.js?v=23"></script>
+<script src="/blob-cursor.js?v=24"></script>
 </body>
 </html>

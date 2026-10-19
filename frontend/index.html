@@ -2941,6 +2941,18 @@ window.ensureJsPdf=function(){return loadScript(window._jsPdfUrl);};
             </div>
           </div>
         </div>
+
+        <div class="settings-section">
+          <div class="settings-section-hdr"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="10" opacity=".4"/></svg>Cursor</div>
+          <div class="settings-row">
+            <div class="settings-row-l"><div class="settings-row-title">Pink blob cursor</div><div class="settings-row-sub">Turn off if it ever gets in the way — the normal cursor comes back instantly</div></div>
+            <label class="sw-wrap">
+              <input type="checkbox" id="settings-blob-toggle" onchange="applyBlobCursor(this.checked)">
+              <span class="sw-track"></span>
+              <span class="sw-thumb"></span>
+            </label>
+          </div>
+        </div>
         
         <div class="settings-section">
           <div class="settings-section-hdr"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/></svg>Corner Style</div>
@@ -4669,6 +4681,6 @@ function settingsMobileReset(){
     </div>
   </div>
 </div>
-  <script src="/blob-cursor.js?v=23"></script>
+  <script src="/blob-cursor.js?v=24"></script>
 </body>
 </html>

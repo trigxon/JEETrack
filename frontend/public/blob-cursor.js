@@ -218,6 +218,14 @@ function initTouchGlow(){
   wrap.style.pointerEvents = 'none';
   glowStage.style.pointerEvents = 'none';
   dotStage.style.pointerEvents = 'none';
+  // v24: register the live teardown used by the Settings off-switch
+  if (window.__jtBlobStore && window.__jtBlobStore.teardownFns) {
+    window.__jtBlobStore.teardownFns.push(function () {
+      try { clearTimeout(fadeTimer); } catch (e) {}
+      visible = false;
+      try { wrap.remove(); } catch (e) {}
+    });
+  }
 
   // v23 MOBILE PROPORTIONS: on a touch-only device the halo stage is 53% of
   // a 360px viewport — the tap feedback reads as an oversized bloom. Phones
@@ -374,10 +382,12 @@ function initTouchGlow(){
     // future tap — literally "seen but not functioning". The newest finger
     // always wins; a stale pid can never block a tap again.
     window.addEventListener('pointerdown', (e) => {
+      if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
       if (e.pointerType === 'mouse') return;    // a real mouse on a hybrid
       show(e.clientX, e.clientY, e.pointerId);
     }, { passive: true, capture: true });
     window.addEventListener('pointermove', (e) => {
+      if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
       if (e.pointerId !== pid) {
         // v22 ID-DRIFT ADOPTION: some webviews/pens change the pointerId
         // between down and move — the glow would appear at the tap and
@@ -429,9 +439,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v23';
+  window.__BLOB_CURSOR_VERSION = 'v24';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v23 (clean screen, honest watchdog)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v24 (settings toggle, light-touch hover)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -495,9 +505,53 @@ function initTouchGlow(){
   // nothing re-creates it on reload. Engine identity stays available via
   // window.__BLOB_CURSOR_VERSION, the console banner and the admin chip.
 
-  // Escape hatch: ?blob-off runs the page with the native cursor and no blob
+  // Escape hatch 1: ?blob-off runs the page with the native cursor and no blob
   // at all (debugging / personal preference). Nothing is created or hidden.
   if (new URLSearchParams(location.search).has('blob-off')) return;
+
+  // Escape hatch 2 (v24): the owner-facing Settings toggle. localStorage
+  // 'jt_blob' === 'off' behaves exactly like ?blob-off — engine never boots.
+  // The Settings page dispatches window 'jt-blob-change' events; the
+  // jtBlobSettingChange() handler below tears the running engines down live
+  // (no reload needed to turn OFF) and reloads once when turning back ON.
+  const BLOB_OFF = (() => {
+    try { return localStorage.getItem('jt_blob') === 'off'; } catch (e) { return false; }
+  })();
+
+  // Shared runtime store for both engines (touch glow + desktop cursor).
+  // Hot paths check `store.disabled` first, so a live teardown is respected
+  // even by already-registered listeners.
+  window.__jtBlobStore = window.__jtBlobStore || { disabled: false, tornDown: false };
+  const store = window.__jtBlobStore;
+  store.disabled = BLOB_OFF;
+  if (!store.teardownFns) store.teardownFns = [];
+  if (!window.__jtBlobSettingWired) {
+    window.__jtBlobSettingWired = true;
+    window.addEventListener('jt-blob-change', () => jtBlobSettingChange());
+    window.addEventListener('storage', (e) => { if (e.key === 'jt_blob') jtBlobSettingChange(); });
+  }
+  function jtBlobSettingChange() {
+    let off = false;
+    try { off = localStorage.getItem('jt_blob') === 'off'; } catch (e) {}
+    store.disabled = off;
+    if (off && !store.tornDown) {
+      store.teardownFns.forEach(function (fn) { try { fn(); } catch (e) {} });
+      store.tornDown = true;
+      try { console.info('%c\u25C8 cursor engine disabled from Settings', 'color:#f472b6'); } catch (e) {}
+    }
+  }
+  if (!store.offListenerWired) {
+    // Turning it back ON needs a clean boot — one reload, once.
+    store.offListenerWired = true;
+    window.addEventListener('jt-blob-enable', function () {
+      try { location.reload(); } catch (e) {}
+    });
+  }
+
+  if (BLOB_OFF) {
+    try { console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine off (Settings)', 'color:#94a3b8'); } catch (e) {}
+    return;
+  }
 
   // ---- ROUTING (v22): every device with touch gets the tap-glow ----------
   // Touch-ONLY phones: glow only, no cursor engine (a finger has no hover).
@@ -744,6 +798,7 @@ function initTouchGlow(){
     // v23: this engine is the MOUSE cursor. Touch pointers belong to the
     // tap-glow; a finger drag must never drive (or repaint) the desktop dot.
     // (recentTouch alone can't cover the pointerdown-before-touchstart race.)
+    if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
     if (hasPE && e.pointerType === 'touch') return;
     if (recentTouch()) return;
     mx = e.clientX; my = e.clientY;
@@ -775,6 +830,7 @@ function initTouchGlow(){
     // dot moved to the tap point while hidden is exactly the fake
     // "mismatch" evidence the freeze watchdog used to resurrect the blob
     // from (the hybrid ghost).
+    if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
     if (hasPE && e.pointerType === 'touch') return;
     if (recentTouch() || (e.button !== undefined && e.button !== 0)) return;
     press = PRESS_DOT;
@@ -828,6 +884,21 @@ function initTouchGlow(){
     document.documentElement.classList.remove('blob-live');
   }
 
+  // v24: register the live teardown used by the Settings off-switch. It
+  // restores the native cursor the same instant (blob-live stripped) and
+  // removes every element + interval the engine created. The two real
+  // interval ids are captured at their creation sites below.
+  let engineIntervalIds = [];
+  if (window.__jtBlobStore && window.__jtBlobStore.teardownFns) {
+    window.__jtBlobStore.teardownFns.push(function () {
+      hideNow();
+      stopLoop();
+      engineIntervalIds.forEach(function (id) { try { clearInterval(id); } catch (e) {} });
+      try { cursor.remove(); } catch (e) {}
+      try { style.remove(); } catch (e) {}
+    });
+  }
+
   if (!LITE) {
     document.addEventListener('mouseleave', () => {
       hideNow();
@@ -876,11 +947,20 @@ function initTouchGlow(){
   const INTERACTIVE = 'a, button, input, select, textarea, label, summary, [role="button"], [role="radio"], [role="tab"], [role="menuitem"], [role="link"], [role="checkbox"], [onclick], .ob-opt, .btn';
   let lastHoverX = -1, lastHoverY = -1;
   let fastUntil = 0; // pointer is "fast" until this timestamp (hysteresis)
+  let lastHoverEval = 0; // v24: hit-test throttle timestamp
 
   function hoverSense(now) {
     if (!visible) { hoverTarget = 1; return; }
     if (now - lastScrollAt < SCROLL_SUPPRESS_MS) { hoverTarget = 1; return; }
     if (now < fastUntil) { hoverTarget = 1; return; }
+    // v24 LIGHT-TOUCH HOVER: elementFromPoint forces a synchronous style
+    // recalc + layout flush. Run per-frame on a heavy page (the dashboard
+    // mutates DOM constantly) and the ENGINE itself becomes the jank the
+    // user feels while moving the cursor. 10 Hz is imperceptible for a pop
+    // that plays when the pointer STOPS, and cuts worst-case hit-tests
+    // from ~60/s to ~10/s.
+    if (now - lastHoverEval < 100) return;
+    lastHoverEval = now;
     const moved = Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > HOVER_MIN_MOVE;
     if (!moved) return;
     lastHoverX = mx; lastHoverY = my;
@@ -990,7 +1070,7 @@ function initTouchGlow(){
   // tick; relax only popped→flat — a still pointer over a real target can
   // never be pulsed by this.
   let perfMode = false;
-  setInterval(() => {
+  engineIntervalIds.push(setInterval(() => {
     if (document.hidden) return;
     const pm = !!document.querySelector('.mo.open, .auth-modal-scrim.open');
     if (pm !== perfMode) {
@@ -1006,7 +1086,7 @@ function initTouchGlow(){
         wake(false); // loop may be asleep — wake it so the relax animates
       }
     }
-  }, 300);
+  }, 300));
 
   // ---- THE FREEZE WATCHDOG (v22) ------------------------------------------
   // Every 2s: if the pointer has REAL fresh activity (heartbeat) but the
@@ -1022,6 +1102,7 @@ function initTouchGlow(){
   // dismissed by touching the screen (the hybrid ghost).
   setInterval(() => {
     try {
+      if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
       if (document.hidden) return;
       if (Date.now() - lastTouchAt < 1500) return;   // v23: swallow window
       const now = performance.now();

@@ -362,8 +362,23 @@ async function finishOnboarding() {
       const path = `${currentUser.id}/avatar.${ext}`;
       await sb.storage.from('avatars').upload(path, blob, { upsert: true });
       const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
-      if (urlData?.publicUrl) fields.avatar_url = urlData.publicUrl;
-    } catch(e) {}
+      if (urlData?.publicUrl) {
+        // v16r: verify the object actually serves before trusting the URL,
+        // and cache-bust it so replacing the photo later shows everywhere
+        const verify = await fetch(urlData.publicUrl, { method: 'GET', cache: 'no-store' });
+        if (verify.ok) {
+          fields.avatar_url = `${urlData.publicUrl}${urlData.publicUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+        } else {
+          console.warn('[avatar] onboarding upload not served:', verify.status);
+          toast('Photo kept on this device — cloud sync will retry in Settings', 'warning');
+        }
+      }
+    } catch(e) {
+      // v16r: never silent — an un-persisted photo is exactly how users
+      // "lose" their profile photo later (new device, cleared storage)
+      console.warn('[avatar] onboarding upload failed:', e && (e.message || e));
+      toast('Photo kept on this device — cloud sync will retry in Settings', 'warning');
+    }
   }
   await saveUserProfile(fields);
   

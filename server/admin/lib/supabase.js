@@ -64,11 +64,15 @@ export async function sbRpc(fnName, body = {}) {
   return res.json();
 }
 
-export async function sbRosterQuery({ search, classFilter, coachFilter, sourceFilter, sortBy, sortDir, offset, limit }) {
+export async function sbRosterQuery({ search, classFilter, coachFilter, sourceFilter, sortBy, sortDir, offset, limit, ids = null }) {
   const params = ['select=id,email,created_at,name,class_year,coaching,study_mode,referral_source,target_year,email_reports,last_active_at,onboarding_done'];
   if (classFilter)  params.push(`class_year=eq.${encodeURIComponent(classFilter)}`);
   if (coachFilter)  params.push(`coaching=eq.${encodeURIComponent(coachFilter)}`);
   if (sourceFilter) params.push(`referral_source=eq.${encodeURIComponent(sourceFilter)}`);
+  // report #16: quality filter — restrict to an explicit id set
+  if (ids && ids.length) {
+    params.push('id=' + encodeURIComponent(`in.(${ids.map(id => `"${id}"`).join(',')})`));
+  }
   if (search) {
 
     const term = search.replace(/[%_,()*]/g, ' ').trim();

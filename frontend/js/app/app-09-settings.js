@@ -252,10 +252,16 @@ async function selectPresetAvatar(svgUrl, label) {
           await sb.storage.from('avatars').upload(path, imgBlob, { upsert: true, contentType: 'image/svg+xml' });
           const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
           if (urlData?.publicUrl) {
-            await saveUserProfile({ avatar_url: urlData.publicUrl });
-            userProfile.avatar_url = urlData.publicUrl;
+            const verify = await fetch(urlData.publicUrl, { method: 'GET', cache: 'no-store' });
+            if (verify.ok) {
+              const busted = `${urlData.publicUrl}${urlData.publicUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+              await saveUserProfile({ avatar_url: busted });
+              userProfile.avatar_url = busted;
+            } else {
+              console.warn('[avatar] preset uploaded but not served:', verify.status);
+            }
           }
-        } catch(_) {}
+        } catch(e) { console.warn('[avatar] preset cloud sync failed:', e && (e.message || e)); }
       }
       toast(`Avatar "${label}" selected ✓`, 'success');
     };
@@ -303,19 +309,39 @@ function handleSettingsPhoto(input) {
     _applyAvatarImage(dataUrl);
     
     if (sb && currentUser) {
-      try {
+      // v16r: cloud persistence is the part that actually keeps the photo
+      // (localStorage alone dies with storage clears / second devices), so
+      // this path now retries once, VERIFYS the object really serves, and
+      // cache-busts the stored URL so a replaced photo shows up everywhere
+      // immediately. Every failure is visible — never silent again.
+      const uploadAvatar = async () => {
         const res = await fetch(dataUrl);
         const blob = await res.blob();
         const ext = blob.type.includes('png') ? 'png' : 'jpg';
         const path = `${currentUser.id}/avatar.${ext}`;
         await sb.storage.from('avatars').upload(path, blob, { upsert: true });
-        const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
+        return { path, ext };
+      };
+      try {
+        let uploaded = null;
+        try { uploaded = await uploadAvatar(); }
+        catch (e1) { uploaded = await uploadAvatar(); }   // one retry — transient network/policy hiccups
+        const { data: urlData } = sb.storage.from('avatars').getPublicUrl(uploaded.path);
         if (urlData?.publicUrl) {
-          await saveUserProfile({ avatar_url: urlData.publicUrl });
-          userProfile.avatar_url = urlData.publicUrl;
+          // prove the object is really served before we trust it
+          const verify = await fetch(urlData.publicUrl, { method: 'GET', cache: 'no-store' });
+          if (!verify.ok) throw new Error(`object not served (${verify.status})`);
+          // cache-buster: the public URL is stable, so browsers/CDN would
+          // keep showing the PREVIOUS photo after a replace; ?v=<ts> busts it
+          const busted = `${urlData.publicUrl}${urlData.publicUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+          await saveUserProfile({ avatar_url: busted });
+          userProfile.avatar_url = busted;
         }
-        toast('Photo updated ✓', 'success');
-      } catch(e) { toast('Photo shown locally — cloud sync failed', 'error'); }
+        toast('Photo saved — synced to your account ✓', 'success');
+      } catch (e) {
+        console.warn('[avatar] cloud sync failed:', e && (e.message || e));
+        toast('Photo shown locally — cloud sync failed, try again', 'error');
+      }
     } else {
       toast('Photo saved ✓', 'success');
     }
@@ -543,6 +569,26 @@ function loadAppearanceSettings() {
   
   const grad = localStorage.getItem('jt_sbgrad') === '1';
   if (grad) { applySidebarGradient(true); document.getElementById('settings-sidebar-gradient').checked = true; }
+
+  // v24: cursor-blob toggle reflects the stored choice (default ON)
+  const blobOff = localStorage.getItem('jt_blob') === 'off';
+  const blobToggle = document.getElementById('settings-blob-toggle');
+  if (blobToggle) blobToggle.checked = !blobOff;
+}
+
+// v24: the owner-facing pink-blob kill switch. OFF tears both engines
+// (desktop cursor + touch glow) down live — the native cursor is back the
+// same instant, no reload. ON stores the choice and reloads once so the
+// engine boots cleanly.
+function applyBlobCursor(on) {
+  try { localStorage.setItem('jt_blob', on ? 'on' : 'off'); } catch (e) {}
+  if (on) {
+    toast('Blob cursor on — reloading…', 'success');
+    window.dispatchEvent(new Event('jt-blob-enable'));
+  } else {
+    window.dispatchEvent(new Event('jt-blob-change'));
+    toast('Blob cursor off — normal cursor restored', 'success');
+  }
 }
 
 function initSettingsDirtyTracking() {
