@@ -72,6 +72,21 @@
 //      document draws its own cursor and no parent CSS can reach it — the
 //      v25 iframe law steps the blob aside so the aim there is honest.
 //
+//  18. THE v27 BOOT-EVERYWHERE LAW (owner follow-up: "still the blob is not
+//      working"). The v22 routing refused to boot the desktop cursor engine
+//      on matchMedia('(hover: none) and (pointer: coarse)') — but that
+//      query reports the PRIMARY pointer and real devices lie: Windows
+//      tablet mode, 2-in-1s with the keyboard detached, some touchscreen
+//      laptops and DeX/OTG setups all report coarse/no-hover with a REAL
+//      mouse attached. On those the desktop engine never booted — the
+//      mouse moved and nothing followed, invisible to desktop automation
+//      and unfixable by any tracking/watchdog code (there was no engine to
+//      repair). v27: the desktop engine boots on EVERY device. Where no
+//      mouse exists it is self-neutralizing — the v23 pointerType guards
+//      drop every touch event (EV_MOVE/EV_DOWN/heartbeat), so a phone pays
+//      two idle timers and shows nothing new, and the instant ANY mouse/
+//      trackpad/DeX/OTG pointer appears, the blob follows it.
+//
 //      (c) THE TOGGLE TEARDOWN LAW (v24 settings switch hardening). The
 //          cross-tab storage path could leave a tab pointerless: tab A turns
 //          the blob OFF (tab B tears down, tornDown=true), tab A turns it ON
@@ -545,9 +560,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v26';
+  window.__BLOB_CURSOR_VERSION = 'v27';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v26 (solo-cursor law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v27 (boot-everywhere, solo-cursor law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -680,21 +695,26 @@ function initTouchGlow(){
     return;
   }
 
-  // ---- ROUTING (v22): every device with touch gets the tap-glow ----------
-  // Touch-ONLY phones: glow only, no cursor engine (a finger has no hover).
-  // HYBRIDS (touchscreen laptops): BOTH — the tap-glow covers the screen
-  // (it ignores mouse pointers), the desktop engine covers the mouse. The
-  // old routing starved hybrids: touching the laptop screen HID the blob
-  // and nothing ever showed for a tap — "the blob is not functioning" on
-  // exactly the device the owner uses.
-  const TOUCH_ONLY = window.matchMedia
-    && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  // ---- ROUTING (v22, REWRITTEN in v27): the desktop engine boots EVERYWHERE
+  // v22's routing keyed the desktop cursor engine on
+  // matchMedia('(hover: none) and (pointer: coarse)') — "touch-only devices
+  // get glow only". But that media query describes the PRIMARY pointer, and
+  // real devices lie: Windows tablet mode, 2-in-1s with the keyboard
+  // detached, some touchscreen laptops and TV/DeX/OTG setups all report
+  // coarse/no-hover while a REAL mouse exists — on those the desktop engine
+  // never booted at all, the mouse moved and NOTHING followed = literally
+  // "the blob is not working" on the owner's machine, invisible to desktop
+  // automation. The v27 law: boot the desktop engine on EVERY device. It is
+  // self-neutralizing where no mouse exists — touch pointers are dropped by
+  // the v23 pointerType guards (EV_MOVE/EV_DOWN/heartbeat all skip 'touch'),
+  // so on a phone the engine sits dormant at zero visual cost, and the
+  // moment a mouse/trackpad/DeX/OTG pointer appears the blob follows it.
+  // Every device with touch also gets the tap-glow (below); on hybrids both
+  // run and ignore each other's pointers — the proven v23 coexistence.
   const HAS_TOUCH = (navigator.maxTouchPoints || 0) > 0;
   if (HAS_TOUCH) initTouchGlow();
-  if (TOUCH_ONLY) return;
 
-  // Hybrid (touchscreen laptop): the tap-glow already runs above; the
-  // desktop cursor engine below covers the mouse.
+  // The desktop cursor engine — all devices. (Touch-only phones: dormant.)
 
   // ---- tuning ------------------------------------------------------------
   // v16: the dot has NO position spring — its position IS the pointer's
