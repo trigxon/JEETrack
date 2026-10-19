@@ -118,6 +118,7 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .topbar h2{font-size:1.08rem;font-weight:700;font-family:'Syne',sans-serif}
 .topbar-sub{font-size:.74rem;color:var(--mu)}
 .topbar-right{display:flex;align-items:center;gap:.7rem;flex-shrink:0}
+.topbar-actions{display:flex;align-items:center;gap:.7rem}
 .range-btns{display:flex;gap:.25rem;background:var(--sf2);padding:.2rem;border-radius:99px;border:1px solid var(--bd)}
 .rbtn{padding:.32rem .75rem;border-radius:99px;font-size:.74rem;font-weight:600;border:none;background:transparent;color:var(--mu);cursor:pointer;transition:all .16s var(--ease);font-family:inherit}
 .rbtn.active{background:var(--grad);color:#fff;box-shadow:0 2px 10px rgba(124,106,247,.4)}
@@ -149,7 +150,17 @@ nav{flex:1;padding:.9rem .65rem;overflow-y:auto}
 .section-title .line{flex:1;height:1px;background:linear-gradient(90deg,var(--bd),transparent)}
 
 
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:.9rem;margin-bottom:1.75rem}
+.stats-grid{display:flex;flex-wrap:wrap;gap:.9rem;margin-bottom:1.75rem}
+/* report #12: auto-fit grid left 2-3 holes in the LAST ROW whenever the card
+   count didn't divide evenly (overview 8 cards in 5 cols = 3+2 holes on a
+   laptop; 7-card pages = 3 holes) — the "boxes not aligned" complaint.
+   Flex with flex-grow fills every row edge-to-edge at ANY width and ANY
+   card count: full rows get equal widths, a partial last row stretches its
+   cards to the right edge instead of leaving holes. Phones still get 2-up
+   rows (2×168px+gap fits any ≥320px viewport) and a lone last card
+   automatically spans full width — replacing the v18 grid-column patch. */
+.stats-grid > .stat{flex:1 1 168px;min-width:0}
+.stats-grid > .loading{flex:1 1 100%}
 .stat{
   background:linear-gradient(165deg,var(--sf),var(--sf2));border:1px solid var(--bd);border-radius:var(--r);
   padding:1.1rem 1.2rem;position:relative;overflow:hidden;transition:border-color .2s,transform .2s var(--ease),box-shadow .2s;
@@ -406,17 +417,9 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   .mobile-topbar{display:flex}
   .grid-2,.grid-3,.grid-main-side,.podium,.kpi-row{grid-template-columns:1fr}
   .content{padding:1.1rem 1rem 3rem}
-  .stats-grid{grid-template-columns:repeat(2,1fr)}
-  /* v18 mobile alignment: with a 2-column stat grid, any ODD card count
-     leaves the last card alone in column 1 and an empty hole in column 2 —
-     the "space left on the right / boxes not aligned" complaint. The last
-     odd card now spans the full row, so every row ends flush with the
-     right edge. */
-  .stats-grid > .stat:last-child:nth-child(odd){grid-column:1/-1}
-  /* This grid's INLINE repeat(3,1fr) silently beat the 2-col rule above
-     (inline styles outrank stylesheets), squeezing 3 KPI cards onto a
-     phone. !important is required to beat the inline style. */
-  #nu-kpi-grid{grid-template-columns:repeat(2,1fr)!important}
+  /* v20: .stats-grid is flex now (see base rule) — 2-up phone rows come from
+     flex-basis:168px and an odd last card stretches full width by itself, so
+     the v18 grid-column patches below are retired. */
   /* Public-stats field grid (7 fields = odd): last field spans full width. */
   .cfg-grid > .compose-field:last-child:nth-child(odd){grid-column:1/-1}
 }
@@ -437,7 +440,10 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   .topbar-left{flex:1 1 auto}
   .topbar h2{font-size:1.02rem}
   .topbar-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .topbar-right{flex:1 1 100%;justify-content:flex-end;flex-wrap:wrap;gap:.5rem}
+  .topbar-right{flex:1 1 100%;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+  /* v20: pills group hugs the left edge, refresh + engine chip hug the
+     right — no more dead void on one side of the control row. */
+  .topbar-actions{display:flex;align-items:center;gap:.5rem}
   th{padding:.55rem .55rem;font-size:.6rem}
   td{padding:.6rem .5rem;font-size:.74rem}
   .table-wrap{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.16) transparent}
@@ -573,12 +579,14 @@ tr.fb-expand-row{background:transparent!important;}
         <button class="rbtn" onclick="setRange(30,this)">30D</button>
         <button class="rbtn" onclick="setRange(90,this)">90D</button>
       </div>
-      <button class="icon-btn" onclick="loadCurrentPage()" title="Refresh">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
-      </button>
-      <button class="cursor-chip" id="cursor-chip" type="button" onclick="onCursorChip()">
-        <span class="chip-dot"></span><span id="cursor-chip-txt">cursor</span>
-      </button>
+      <div class="topbar-actions">
+        <button class="icon-btn" onclick="loadCurrentPage()" title="Refresh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 4v6h6"/><path d="M3.51 15a9 9 0 1 0 .49-3"/></svg>
+        </button>
+        <button class="cursor-chip" id="cursor-chip" type="button" onclick="onCursorChip()">
+          <span class="chip-dot"></span><span id="cursor-chip-txt">cursor</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -639,8 +647,9 @@ tr.fb-expand-row{background:transparent!important;}
     <div class="page active" id="page-overview">
       <div class="section-title">Key Metrics<span class="line"></span></div>
       <div class="card" style="padding:.85rem 1.05rem;display:flex;align-items:center;flex-wrap:wrap;gap:.45rem .7rem;margin-bottom:1.1rem">
-        <span class="live-pulse"></span>
-        <div style="font-size:.86rem;flex:1 1 auto;min-width:0"><b id="ov-live-now" style="font-size:1.05rem">—</b> <span style="color:var(--mu)">on the platform right now · refreshes every 60s</span></div>
+        <div style="font-size:.86rem;flex:1 1 auto;min-width:0">
+          <span class="live-pulse" style="display:inline-block;vertical-align:middle;margin:-2px .55rem 0 0"></span><b id="ov-live-now" style="font-size:1.05rem">—</b> <span style="color:var(--mu)">on the platform right now · refreshes every 60s</span>
+        </div>
         <span id="ov-live-updated" style="margin-left:auto;font-size:.64rem;color:var(--mu2);white-space:nowrap"></span>
       </div>
       <div class="stats-grid" id="stats-grid">
@@ -733,7 +742,7 @@ tr.fb-expand-row{background:transparent!important;}
       <div class="section-title">New User Signups<span class="line"></span></div>
 
       
-      <div class="stats-grid" id="nu-kpi-grid" style="margin-bottom:1.25rem;grid-template-columns:repeat(3,1fr);">
+      <div class="stats-grid" id="nu-kpi-grid" style="margin-bottom:1.25rem;">
         <div class="stat" style="--stat-bg:rgba(124,106,247,.16)">
           <div class="stat-icon-wrap">🆕</div>
           <div class="stat-label">New Signups</div>
@@ -1183,7 +1192,7 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=19"></script>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=20"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -3279,6 +3288,6 @@ function replyToFeedback(userId, email, subject, name) {
 
 </script>
 
-<script src="/blob-cursor.js?v=19"></script>
+<script src="/blob-cursor.js?v=20"></script>
 </body>
 </html>

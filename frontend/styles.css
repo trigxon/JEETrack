@@ -792,19 +792,7 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
 #landing::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px}
 
 #page-todo,#page-backlog{position:relative;overflow:hidden}
-#page-todo::before,#page-backlog::before{
-  content:'';position:fixed;top:-40%;left:-20%;width:140%;height:140%;
-  pointer-events:none;z-index:0;
-  animation:tdAmbient 10s ease-in-out infinite alternate;
-}
-#page-todo::before{
-  background:radial-gradient(ellipse 50% 40% at 20% 20%,rgba(96,165,250,.055) 0%,transparent 55%),
-             radial-gradient(ellipse 40% 35% at 80% 70%,rgba(124,106,247,.04) 0%,transparent 55%);
-}
-#page-backlog::before{
-  background:radial-gradient(ellipse 50% 40% at 25% 25%,rgba(251,191,36,.04) 0%,transparent 55%),
-             radial-gradient(ellipse 40% 35% at 80% 75%,rgba(52,211,153,.04) 0%,transparent 55%);
-}
+#page-todo::before,#page-backlog::before{ content: none; }
 @keyframes tdAmbient{0%{transform:translate(0,0)}100%{transform:translate(1.5%,2%)}}
 #page-todo .ph,#page-todo .fr,#page-todo #td-stats,#page-todo #td-list,
 #page-backlog .ph,#page-backlog .fr,#page-backlog .g4,#page-backlog #bl-subj-streaks,
@@ -2593,13 +2581,7 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
 #page-overview {
   position: relative;
 }
-#page-overview::before {
-  content: '';
-  position: fixed; top: 0; left: 224px; right: 0; height: 300px;
-  background: radial-gradient(ellipse 60% 100% at 70% 0%, rgba(124,106,247,.07) 0%, transparent 70%),
-              radial-gradient(ellipse 40% 60% at 20% 0%, rgba(244,114,182,.04) 0%, transparent 60%);
-  pointer-events: none; z-index: 0;
-}
+#page-overview::before { content: none; }
 
 .dash-header-wrap {
   position: relative; z-index: 1;
@@ -2797,12 +2779,10 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
 .ql-btn:active { transform: scale(.95); }
 
 .prem-page { position: relative; }
-.prem-page::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background:
-    radial-gradient(ellipse 55% 70% at 85% 0%, rgba(124,106,247,.06) 0%, transparent 65%),
-    radial-gradient(ellipse 35% 50% at 5% 100%, rgba(244,114,182,.04) 0%, transparent 60%);
-}
+/* report #12: the fixed full-screen purple/pink ambience gradients rendered
+   as blotchy "mixed colours" on phone screens (8-bit banding over the
+   near-black body) — removed for a clean, uniform background everywhere. */
+.prem-page::before { content: none; }
 
 .prem-hero {
   position: relative; z-index: 1;
@@ -3202,23 +3182,13 @@ select.fc.adv-fc {
   #page-advanced .prem-hero-sub { font-size: 0; }
 }
 
-#page-hours.prem-page::before {
-  background:
-    radial-gradient(ellipse 55% 70% at 85% 0%, rgba(45,212,191,.07) 0%, transparent 65%),
-    radial-gradient(ellipse 35% 50% at 5% 100%, rgba(96,165,250,.05) 0%, transparent 60%);
-}
+#page-hours.prem-page::before { content: none; }
 
 .hrs-stat-grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
 @media(max-width:900px){ .hrs-stat-grid { grid-template-columns: repeat(2, 1fr); } }
 
 #page-syllabus{position:relative;overflow:hidden}
-#page-syllabus::before{
-  content:'';position:fixed;top:-40%;left:-20%;width:140%;height:140%;
-  pointer-events:none;z-index:0;
-  background:radial-gradient(ellipse 50% 40% at 25% 20%,rgba(124,106,247,.04) 0%,transparent 55%),
-             radial-gradient(ellipse 40% 35% at 80% 75%,rgba(45,212,191,.04) 0%,transparent 55%);
-  animation:tdAmbient 10s ease-in-out infinite alternate;
-}
+#page-syllabus::before{ content: none; }
 #page-syllabus .ph,#page-syllabus #syl-overall-card,
 #page-syllabus #syl-overview,#page-syllabus #syl-list-wrap,
 #page-syllabus #syl-list,#syl-filter-bar,
@@ -3512,17 +3482,7 @@ select.fc.adv-fc {
 
 #page-insights{position:relative;overflow:hidden}
 
-#page-insights::before{
-  content:'';position:fixed;top:-40%;left:-20%;width:140%;height:140%;
-  background:radial-gradient(ellipse 60% 50% at 20% 20%,rgba(124,106,247,.07) 0%,transparent 60%),
-             radial-gradient(ellipse 50% 40% at 80% 80%,rgba(244,114,182,.06) 0%,transparent 55%),
-             radial-gradient(ellipse 40% 35% at 50% 50%,rgba(45,212,191,.04) 0%,transparent 60%);
-  pointer-events:none;z-index:0;animation:aiAmbient 8s ease-in-out infinite alternate;
-}
-@keyframes aiAmbient{
-  0%{transform:translate(0,0) scale(1)}
-  100%{transform:translate(1%,1.5%) scale(1.02)}
-}
+#page-insights::before{ content: none; }
 #page-insights .page-inner,
 #page-insights>*:not(::before){position:relative;z-index:1}
 

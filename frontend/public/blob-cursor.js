@@ -331,9 +331,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v19';
+  window.__BLOB_CURSOR_VERSION = 'v20';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v19 (touch-glow)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v20 (touch-glow)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 

@@ -3297,7 +3297,7 @@ function _renderHours(){
       </div>
       <div class="prem-stat-lbl">Best Day</div>
       <div class="prem-stat-val" style="color:#34d399">${maxDay}<span style="font-size:.9rem;opacity:.7">h</span></div>
-      <div class="prem-stat-sub">${fmt(maxDayDate)}</div>
+      <div class="prem-stat-sub">${dT.length?fmt(maxDayDate):'no sessions yet'}</div>
       <div class="prem-stat-bar"><div class="prem-stat-bar-fill" style="background:linear-gradient(90deg,#34d399,#6ee7b7);width:100%"></div></div>
     </div>
     <div class="prem-stat-card" style="border-color:rgba(251,191,36,.16)">
