@@ -201,33 +201,27 @@ async function registerPushNotifications(){
   if(!('serviceWorker' in navigator) || !('Notification' in window)) return;
   try{
     const reg = await navigator.serviceWorker.register('sw.js');
-    
-    
+
+
     if(Notification.permission !== 'granted') return;
     localStorage.setItem('notif_enabled','1');
     document.getElementById('notif-bell-btn')?.classList.add('active');
-    
+
     const nb2=document.getElementById('notif-toggle-btn');
     const BELL_SVG2='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
     if(nb2){nb2.innerHTML=BELL_SVG2+' Notifications On';nb2.classList.add('notif-btn-on');}
-    
-    const tmr=new Date(); tmr.setDate(tmr.getDate()+1); const tmrStr=tmr.toISOString().split('T')[0];
-    const tmrTests=S.upcoming.filter(t=>t.date===tmrStr);
-    if(tmrTests.length) reg.showNotification('JEE ADV OSINT — Test Tomorrow! 📋',{body:`${tmrTests.length} test${tmrTests.length>1?'s':''} scheduled tomorrow. Be prepared!`,icon:'icon-192.png',tag:'test-reminder',vibrate:[200,100,200]});
-    const pendTodos=S.todos.filter(t=>!t.done).length;
-    if(pendTodos>0) reg.showNotification('JEE ADV OSINT — Tasks Pending ✅',{body:`You have ${pendTodos} to-do task${pendTodos>1?'s':''} pending. Stay on track!`,icon:'icon-192.png',tag:'todo-reminder'});
-    const pendBL=S.backlogs.filter(b=>!b.done).length;
-    if(pendBL>0) reg.showNotification('JEE ADV OSINT — Backlogs Pending 📌',{body:`${pendBL} backlog item${pendBL>1?'s':''} still pending. Clear them today!`,icon:'icon-192.png',tag:'backlog-reminder'});
-    
-    const now2=new Date(), r8=new Date(); r8.setHours(20,0,0,0); if(r8<=now2) r8.setDate(r8.getDate()+1);
-    setTimeout(function remind(){
-      if(localStorage.getItem('notif_enabled')==='1' && Notification.permission==='granted'){
-        const td2=new Date().toISOString().split('T')[0];
-        const h2=S.hours.filter(h=>h.date===td2).reduce((a,b)=>a+b.total,0);
-        new Notification('JEE ADV OSINT 📚',{body:h2<4?`Only ${h2.toFixed(1)}h today. Push for 6h! 💪`:`${h2.toFixed(1)}h today — great work. Stay consistent.`,icon:'icon-192.png',tag:'daily'});
-      }
-      setTimeout(remind, 86400000);
-    }, r8-now2);
+
+    // report #15 — AUTOMATIC NOTIFICATIONS REMOVED AT SOURCE.
+    // This function used to fire a burst of up to three showNotification()
+    // reminders on every app open (test tomorrow / tasks pending / backlogs
+    // pending) plus a self-rescheduling daily 20:00 study nag. Chrome's AI
+    // spam filter (2025) flagged exactly this pattern: users saw the system
+    // warning "Possible spam: Chrome detected possible spam from JEE ADV
+    // OSINT" on both mobile and desktop. The site now posts NO automatic
+    // notifications of any kind, so there is nothing left for the filter to
+    // flag — the warning cannot reappear from this origin. The opt-in
+    // toggle, permission flow and the sw.js push handler (manual/future
+    // pushes only) are intentionally kept working.
   }catch(e){ console.log('Notifications unavailable:', e); }
 }
 

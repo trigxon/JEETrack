@@ -136,7 +136,17 @@ main{max-width:980px;margin:0 auto;padding:3.4rem clamp(1rem,5vw,2.5rem) 5rem;po
   .cta-btn { max-width: 100%; overflow-wrap: anywhere; white-space: normal; }
   /* audit 2026-10-18: comfortable tap targets on footer links (WCAG 2.5.8) */
   .foot-links a, footer .footer-links a, footer p a { display: inline-block; padding: 4px 2px; }
-  </style>
+  /* report #15 — mobile focus-zoom fix: iOS Safari and Android Chrome zoom the
+   whole page when a text field with font-size < 16px is focused, leaving the
+   interface stuck oversized. Every text-entry control now renders at the
+   platform minimum on touch-primary devices; pointer:fine (desktop) is
+   completely untouched. */
+@media (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),
+  select, textarea { font-size: max(16px, 1em) !important; }
+}
+
+</style>
 </head>
 <body>
 
@@ -544,6 +554,6 @@ function observeImpactCard(){
 }
 </script>
 
-  <script src="/blob-cursor.js?v=22"></script>
+  <script src="/blob-cursor.js?v=23"></script>
 </body>
 </html>

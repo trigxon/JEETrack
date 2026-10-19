@@ -500,6 +500,16 @@ tr.fb-expand-row{background:transparent!important;}
   box-shadow:0 0 0 3px rgba(124,106,247,.12);
 }
 .from-addr-opt:hover .from-addr-pill{border-color:var(--bd2);color:var(--tx)}
+/* report #15 — mobile focus-zoom fix: iOS Safari and Android Chrome zoom the
+   whole page when a text field with font-size < 16px is focused, leaving the
+   interface stuck oversized. Every text-entry control now renders at the
+   platform minimum on touch-primary devices; pointer:fine (desktop) is
+   completely untouched. */
+@media (pointer: coarse) {
+  input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]),
+  select, textarea { font-size: max(16px, 1em) !important; }
+}
+
 </style>
 </head>
 <body>
@@ -1216,7 +1226,7 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=22"></script>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=23"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -3312,6 +3322,6 @@ function replyToFeedback(userId, email, subject, name) {
 
 </script>
 
-<script src="/blob-cursor.js?v=22"></script>
+<script src="/blob-cursor.js?v=23"></script>
 </body>
 </html>

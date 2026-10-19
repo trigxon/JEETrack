@@ -1,5 +1,28 @@
-// blob-cursor.js v22 — "tap-glow on every touch screen + can't-be-frozen".
+// blob-cursor.js v23 — "clean screen, honest watchdog".
 //
+//  15. THE v23 LAWS (report #15):
+//      (a) STATUS PILL REMOVED at the owner's request — the bottom-left
+//          'cursor v22' / 'tap glow v22' badge is gone from every page.
+//          The engine still self-identifies via window.__BLOB_CURSOR_VERSION
+//          and the admin engine chip; the SCREEN stays clean.
+//      (b) HYBRID GHOST FIXED — the real v22 regression. On a touchscreen
+//          laptop, Windows TELEPORTS the system cursor to the touch point,
+//          which fires genuine mouse pointermove events inside the engine's
+//          1s post-touch swallow window. The engine correctly ignored them,
+//          but the v22 FREEZE HEARTBEAT recorded them anyway — so 2s later
+//          the watchdog saw "fresh pointer activity, dot elsewhere" and
+//          RESURRECTED the deliberately hidden desktop blob as a frozen
+//          pink dot at the tap point: "a blob seen but not functioning".
+//          The heartbeat now applies the SAME swallow window as the engine,
+//          so it can only ever see events the engine itself accepts — the
+//          watchdog fires exclusively on TRUE engine death again.
+//      (c) TOUCH DRAG RE-SHOW — if the 3s watchdog fades a held-still glow
+//          and the finger then MOVES without lifting (pointermove of the
+//          tracked id = finger demonstrably down), the glow returns
+//          instead of staying invisible for the rest of the drag.
+//      (d) MOBILE PROPORTIONS — on touch-only devices the glow halo and
+//          dot shrink to fit a phone viewport (halo 192→132px, dot 18→15px).
+//          Desktop and hybrid cursor sizes are untouched.
 //  14. THE v22 LAWS (report #14: "the blob is only seen but it is not
 //      functioning" — on BOTH the phone and the laptop). Four real defect
 //      paths found, all closed structurally:
@@ -22,11 +45,11 @@
 //          painted dot and RESURRECTS tracking via __BLOB_REPAINT when they
 //          disagree while activity is fresh. "Seen but frozen" on a laptop
 //          is now structurally impossible.
-//      (d) STATUS PILL: a tiny always-on badge (bottom-left, ?pill-off to
-//          hide) shows green 'cursor v22' / 'tap glow v22' whenever a
-//          HEALTHY v22 engine is running. No pill on a page = that page is
-//          still serving a stale engine (the auto-heal repairs it) — the
-//          owner can finally SEE which engine their device runs.
+//      (d) STATUS PILL (RETIRED in v23): a tiny always-on badge (bottom-left)
+//          that showed green 'cursor v22' / 'tap glow v22' whenever a healthy
+//          engine ran. The owner asked for it to be removed completely — the
+//          engine version remains visible in the console banner, the admin
+//          engine chip and window.__BLOB_CURSOR_VERSION.
 //  12. THE MOBILE LAW (7th usability report: "the blob is still not
 //      functioning, using the blob i cant click anything" — sent from the
 //      phone). On a touch-only device the v18 gate skipped init ENTIRELY:
@@ -196,6 +219,16 @@ function initTouchGlow(){
   glowStage.style.pointerEvents = 'none';
   dotStage.style.pointerEvents = 'none';
 
+  // v23 MOBILE PROPORTIONS: on a touch-only device the halo stage is 53% of
+  // a 360px viewport — the tap feedback reads as an oversized bloom. Phones
+  // get a fitted size; hybrids/desktop keep the exact desktop dimensions.
+  const TG_SMALL = window.matchMedia
+    && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+  const TG_DOT_STAGE = TG_SMALL ? 56 : 76;    // dot stage box
+  const TG_GLOW_STAGE = TG_SMALL ? 132 : 192; // glow stage box
+  const TG_DOT = TG_SMALL ? 15 : 18;          // dot diameter
+  const TG_GLOW = TG_SMALL ? 52 : 64;         // glow core diameter
+
   const style = document.createElement('style');
   style.textContent = `
     #jt-touch-glow {
@@ -205,12 +238,12 @@ function initTouchGlow(){
     }
     #jt-touch-glow.tg-on { opacity: 1; }
     #jt-touch-glow .tg-dot-stage {
-      position: absolute; width: 76px; height: 76px;
-      left: -38px; top: -38px; will-change: transform;
+      position: absolute; width: ${TG_DOT_STAGE}px; height: ${TG_DOT_STAGE}px;
+      left: ${-TG_DOT_STAGE / 2}px; top: ${-TG_DOT_STAGE / 2}px; will-change: transform;
     }
     #jt-touch-glow .tg-dot {
-      position: absolute; width: 18px; height: 18px;
-      left: 29px; top: 29px; border-radius: 50%;
+      position: absolute; width: ${TG_DOT}px; height: ${TG_DOT}px;
+      left: ${(TG_DOT_STAGE - TG_DOT) / 2}px; top: ${(TG_DOT_STAGE - TG_DOT) / 2}px; border-radius: 50%;
       background: rgba(244, 114, 182, 1);
       transform-origin: 50% 50%; will-change: transform;
       box-shadow:
@@ -218,12 +251,12 @@ function initTouchGlow(){
         0 0 26px rgba(244, 114, 182, 0.40);
     }
     #jt-touch-glow .tg-glow-stage {
-      position: absolute; width: 192px; height: 192px;
-      left: -96px; top: -96px; will-change: transform;
+      position: absolute; width: ${TG_GLOW_STAGE}px; height: ${TG_GLOW_STAGE}px;
+      left: ${-TG_GLOW_STAGE / 2}px; top: ${-TG_GLOW_STAGE / 2}px; will-change: transform;
     }
     #jt-touch-glow .tg-glow {
-      position: absolute; width: 64px; height: 64px;
-      left: 64px; top: 64px; border-radius: 50%;
+      position: absolute; width: ${TG_GLOW}px; height: ${TG_GLOW}px;
+      left: ${(TG_GLOW_STAGE - TG_GLOW) / 2}px; top: ${(TG_GLOW_STAGE - TG_GLOW) / 2}px; border-radius: 50%;
       background: radial-gradient(circle,
         rgba(244, 114, 182, 0.50) 0%,
         rgba(244, 114, 182, 0.26) 34%,
@@ -236,7 +269,7 @@ function initTouchGlow(){
 
   const dpr = () => Math.max(1, window.devicePixelRatio || 1);
   const snap = (v) => Math.round(v * dpr()) / dpr();
-  const DOT_HALF = 38, GLOW_HALF = 96;
+  const DOT_HALF = TG_DOT_STAGE / 2, GLOW_HALF = TG_GLOW_STAGE / 2;
   const GLOW_OMEGA = 22, GLOW_ZETA = 1.05;   // same hair-overdamped trail
   const SCALE_OMEGA = 22, SCALE_ZETA = 0.5;  // same underdamped pop
   const PRESS = 0.82, MAX_DT = 0.05;
@@ -284,6 +317,15 @@ function initTouchGlow(){
   function move(x, y) {
     mx = x; my = y;
     lastAct = performance.now();
+    // v23 DRAG RE-SHOW: a pointermove of the tracked id means the finger is
+    // demonstrably still down. If the 3s watchdog faded a held-still glow,
+    // the rest of the drag must not run glow-less — bring it back.
+    if (!visible) {
+      clearTimeout(fadeTimer);
+      visible = true;
+      wrap.classList.add('tg-on');
+      gx = mx; gy = my; gvx = gvy = 0;
+    }
     paintDot();                    // zero lag, the prime directive
     wake();
   }
@@ -387,9 +429,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v22';
+  window.__BLOB_CURSOR_VERSION = 'v23';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v22 (touch-glow + can\'t-be-frozen)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v23 (clean screen, honest watchdog)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -447,34 +489,11 @@ function initTouchGlow(){
     } catch (e) {}
   })();
 
-  // ---- STATUS PILL (v22) ---------------------------------------------------
-  // A tiny always-visible badge (bottom-left) that names the engine build
-  // and kind actually running on THIS page. Purpose: end the support loop —
-  // "the blob is seen but not functioning" could never be disambiguated
-  // remotely. Now: pill present + green = a healthy v22 engine is live;
-  // NO pill at all = the page is still running a stale engine (the
-  // auto-heal above repairs it on the next load). ?pill-off hides it.
-  function installPill(label) {
-    try {
-      if (new URLSearchParams(location.search).has('pill-off')) return;
-      if (document.getElementById('jt-blob-pill')) return;
-      const p = document.createElement('div');
-      p.id = 'jt-blob-pill';
-      p.innerHTML = '<span class="jp-dot"></span>' + label;
-      const st = document.createElement('style');
-      st.textContent = [
-        '#jt-blob-pill{position:fixed;left:10px;bottom:10px;z-index:2147483645;',
-        'display:flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;',
-        'background:rgba(17,24,39,.55);color:#9ca3af;font:600 10px/1.2 system-ui,sans-serif;',
-        'letter-spacing:.02em;pointer-events:none;opacity:.45;transition:opacity .2s}',
-        '#jt-blob-pill .jp-dot{width:6px;height:6px;border-radius:50%;background:#34d399;',
-        'box-shadow:0 0 6px rgba(52,211,153,.9)}',
-        '#jt-blob-pill.jp-warn .jp-dot{background:#fbbf24;box-shadow:0 0 6px rgba(251,191,36,.9)}',
-      ].join('');
-      document.head.appendChild(st);
-      document.body.appendChild(p);
-    } catch (e) {}
-  }
+  // ---- STATUS PILL — REMOVED (v23) -----------------------------------------
+  // The v22 bottom-left engine badge ('cursor v22' / 'tap glow v22') was
+  // retired at the owner's request: no debug overlay renders anywhere, and
+  // nothing re-creates it on reload. Engine identity stays available via
+  // window.__BLOB_CURSOR_VERSION, the console banner and the admin chip.
 
   // Escape hatch: ?blob-off runs the page with the native cursor and no blob
   // at all (debugging / personal preference). Nothing is created or hidden.
@@ -491,13 +510,10 @@ function initTouchGlow(){
     && window.matchMedia('(hover: none) and (pointer: coarse)').matches;
   const HAS_TOUCH = (navigator.maxTouchPoints || 0) > 0;
   if (HAS_TOUCH) initTouchGlow();
-  if (TOUCH_ONLY || !HAS_TOUCH) installPill(TOUCH_ONLY ? 'tap glow v22' : 'cursor v22');
   if (TOUCH_ONLY) return;
 
   // Hybrid (touchscreen laptop): the tap-glow already runs above; the
-  // desktop cursor engine below covers the mouse. Pill says which engine
-  // the user should judge the site by.
-  installPill('cursor v22');
+  // desktop cursor engine below covers the mouse.
 
   // ---- tuning ------------------------------------------------------------
   // v16: the dot has NO position spring — its position IS the pointer's
@@ -569,6 +585,15 @@ function initTouchGlow(){
   window.__BLOB_HB = HB;
   window.addEventListener('pointermove', (e) => {
     if (e.pointerType === 'touch') return; // hybrids: the tap-glow owns fingers
+    // v23: apply the SAME post-touch swallow window as the engine. On a
+    // touchscreen laptop Windows teleports the system cursor to the touch
+    // point, firing REAL mouse pointermove events the engine intentionally
+    // ignores (recentTouch). If this heartbeat recorded them anyway, the
+    // watchdog would "resurrect" the deliberately hidden desktop blob as a
+    // frozen dot at the tap point — the exact "seen but not functioning"
+    // ghost. Heartbeat and engine must agree on what counts as activity:
+    // only events the engine accepts are recorded here.
+    if (Date.now() - lastTouchAt < 1000) return;
     HB.x = e.clientX; HB.y = e.clientY; HB.t = performance.now();
   }, { passive: true, capture: true });
 
@@ -716,6 +741,10 @@ function initTouchGlow(){
   const EV_DOWN = hasPE ? 'pointerdown' : 'mousedown';
   const EV_UP   = hasPE ? 'pointerup' : 'mouseup';
   window.addEventListener(EV_MOVE, (e) => {
+    // v23: this engine is the MOUSE cursor. Touch pointers belong to the
+    // tap-glow; a finger drag must never drive (or repaint) the desktop dot.
+    // (recentTouch alone can't cover the pointerdown-before-touchstart race.)
+    if (hasPE && e.pointerType === 'touch') return;
     if (recentTouch()) return;
     mx = e.clientX; my = e.clientY;
     lastMoveAt = performance.now();
@@ -740,6 +769,13 @@ function initTouchGlow(){
   // Press pop: squeeze on down, springy release on up. Pure state — the
   // loop does the animation; if it is asleep, wake it so the squeeze shows.
   window.addEventListener(EV_DOWN, (e) => {
+    // v23: same law as EV_MOVE — a touch press is tap-glow territory. It
+    // must not paint the desktop dot at the tap point either: pointerdown
+    // fires BEFORE touchstart, so recentTouch() is still false here, and a
+    // dot moved to the tap point while hidden is exactly the fake
+    // "mismatch" evidence the freeze watchdog used to resurrect the blob
+    // from (the hybrid ghost).
+    if (hasPE && e.pointerType === 'touch') return;
     if (recentTouch() || (e.button !== undefined && e.button !== 0)) return;
     press = PRESS_DOT;
     lastMoveAt = performance.now();
@@ -979,9 +1015,15 @@ function initTouchGlow(){
   // "blob seen but not functioning" path on desktop: dead listeners,
   // spurious mouseleave, a loop that never woke, any stuck state. A healthy
   // engine matches the heartbeat to the pixel and the check is a no-op.
+  // v23: the check is SKIPPED inside the post-touch swallow window (+0.5s
+  // margin). During that window the engine is intentionally idle — every
+  // dot/heartbeat disagreement there is self-inflicted by the tap sequence,
+  // never engine death, and "repairing" it resurrects a blob the user just
+  // dismissed by touching the screen (the hybrid ghost).
   setInterval(() => {
     try {
       if (document.hidden) return;
+      if (Date.now() - lastTouchAt < 1500) return;   // v23: swallow window
       const now = performance.now();
       if (HB.t <= 0 || now - HB.t > 3000) return;  // no fresh pointer activity
       const tf = getComputedStyle(dotStage).transform;
