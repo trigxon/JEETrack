@@ -33,7 +33,7 @@ export const schemas = {
     referral_source: z.string().max(50).optional().default(''),
     sort: z.enum(['name', 'last_active', 'created_at']).optional().default('created_at'),
     dir: z.enum(['asc', 'desc']).optional().default('desc'),
-    quality: z.enum(['', 'real', 'fake']).optional().default(''),
+    quality: z.enum(['', 'real', 'fake', 'all']).optional().default('').transform(s => (s === 'all' ? '' : s)),
   }),
   // distinct_id is always a Supabase auth user id (uuid) — every call site
   // in admin.html passes a roster row's own id straight through.

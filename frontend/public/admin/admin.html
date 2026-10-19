@@ -2135,7 +2135,7 @@ async function loadUsers(page = 0) {
     const cls = document.getElementById('filter-class')?.value || '';
     const coaching = document.getElementById('filter-coaching')?.value || '';
     const source = document.getElementById('filter-source')?.value || '';
-    const extra = `&page=${page}&pageSize=20&search=${search}&class_year=${cls}&coaching=${coaching}&referral_source=${source}&sort=${_userSort.by}&dir=${_userSort.dir}&quality=${_userQuality}`;
+    const extra = `&page=${page}&pageSize=20&search=${search}&class_year=${cls}&coaching=${coaching}&referral_source=${source}&sort=${_userSort.by}&dir=${_userSort.dir}&quality=${_userQuality === 'all' ? '' : _userQuality}`;
     const d = await api('users', extra);
     // report #16: quality counts (whole-table, not just this page)
     if (d.quality) {
