@@ -1,27 +1,43 @@
-// blob-cursor.js v17 — "click-first": the native cursor is NEVER hidden.
+// blob-cursor.js v18 — "true-cursor, proven-alive".
 //
-//  10. THE USABILITY LAW (5th usability report: "i literally cant click
-//      anything from that blob"). History: v13 hid the native cursor and let
-//      a springy blob replace it; v14-v15 fixed the failure modes users felt
-//      (invisible pointer, phantom pulses); v16 made the dot zero-lag and
-//      PROVED clicks pass through (real CDP click-through test) — yet the
-//      user still cannot aim reliably. The remaining defect is ARCHITECTURAL:
-//      any design where a moving blob REPLACES the pointer makes the user
-//      aim with a visual that can lag, stretch, pop, or sit under a glow —
-//      no amount of tuning removes that on every device/browser/DPI. v17
-//      removes the class of bug by removing the swap:
+//  11. THE OWNERSHIP LAW (6th usability report: "the blob is only seen but
+//      not functioning, as the old desktop mouse is also coming with it").
+//      v17's always-visible arrow made the blob decoration — the owner
+//      rejected that: the blob IS the cursor of this site. The aim failures
+//      of v13-v15 were real, but v16's fix (dot = pointer, painted
+//      synchronously in the event) already removes their cause — and the
+//      timeline shows the user never actually received v16 (their reports
+//      #8/#9 arrived on stale engines; #10's visible arrow proves they
+//      finally got v17). So v18 restores the swap, but EARNS it:
 //
-//        THE NATIVE CURSOR STAYS VISIBLE. ALWAYS. THE BLOB IS DECORATION.
+//        THE BLOB IS THE CURSOR — BUT ONLY WHILE THE ENGINE IS PROVABLY
+//        ALIVE ON THIS DEVICE. THE MOMENT ANYTHING IS ANOMALOUS, THE
+//        NATIVE CURSOR RETURNS. IF THE ENGINE NEVER PROVES ALIVE, THE
+//        NATIVE CURSOR IS NEVER HIDDEN AT ALL.
 //
-//      cursor:none is GONE. The arrow tip is the true pointer — clicks land
-//      exactly where the OS has always put them. The blob keeps everything
-//      that makes it beautiful: zero-lag dot glued to the pointer, flowing
-//      glow trail, velocity stretch, hover pop, press squeeze. If the blob
-//      ever fails to render on some device, the site is 100% usable anyway —
-//      worst case is a missing decoration, never a missing pointer.
-//      Defense in depth: pointer-events:none is now set INLINE on every
-//      blob layer (container + both stages) in addition to CSS, killing any
-//      old-engine composited-layer pointer-events inheritance bug.
+//      The gate is the proof-of-life mechanism that already exists:
+//      html.blob-live is added ONLY inside wake(true) — i.e. after a real
+//      pointermove has painted the dot — and hideNow() removes it on every
+//      hide path (mouseleave, touchstart, tab switch). cursor:none is now
+//      scoped to `html.blob-live *` with !important so NO element-level
+//      cursor style (buttons, links, inputs — "the old desktop mouse is
+//      also coming with it") can resurrect the arrow over the very things
+//      the user is trying to click. A device where pointer events never
+//      fire never gets blob-live, so it keeps its native cursor forever;
+//      ancient browsers without PointerEvent fall back to mouse events so
+//      the gate can still open there. Worst case on ANY device is a
+//      missing decoration, never a missing pointer.
+//      Also: GLOW_OMEGA 16→24 — the pink mass hugs the aim point tighter
+//      (steady trail at a 300px/s glide: ~26px, was ~39px), so even a user
+//      who aims the mass rather than the bright dot lands their click.
+//
+//  10. THE USABILITY LAW (5th usability report). v17 removed the swap
+//      entirely (native cursor always visible, blob = decoration) after
+//      v16's zero-lag dot still drew a "can't click" report. Superseded
+//      by law 11, but its defense-in-depth is kept: pointer-events:none is
+//      set INLINE on every blob layer (container + both stages) in
+//      addition to CSS, killing any old-engine composited-layer
+//      pointer-events inheritance bug.
 //
 // v16 — "aim-true": the dot IS the pointer.
 //
@@ -97,10 +113,10 @@
   // v16: the dot has NO position spring — its position IS the pointer's
   // position, painted synchronously in the event (zero lag by construction,
   // the v9 law). Only the glow springs.
-  const GLOW_OMEGA  = 16;    // glow trail stiffness — still the flowing blob
-                             // feel, but the mass stays near the aim point
-                             // (steady trail = 2*zeta/omega * speed: ~39px
-                             // at a 300px/s glide, was ~57px at omega=11)
+  const GLOW_OMEGA  = 24;    // glow trail stiffness — still the flowing blob
+                             // feel, but the mass hugs the aim point (steady
+                             // trail = 2*zeta/omega * speed: ~26px at a
+                             // 300px/s glide, was ~39px at omega=16)
   const GLOW_ZETA   = 1.05;  // hair overdamped: no rubber-band wobble
   const SCALE_OMEGA = 24;    // hover/press scale spring stiffness
   const SCALE_ZETA  = 0.5;   // UNDERDAMPED: ~16% overshoot = the pop
@@ -199,11 +215,19 @@
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    /* v17 THE USABILITY LAW: the native cursor is NEVER hidden. html.blob-live
-       remains only as a state marker (blob is on screen) for tests/debug —
-       it carries NO cursor styling. The blob is pure decoration flowing
-       around the always-visible native pointer: clicks land where the OS has
-       always put them, on every device, every browser, every DPI. */
+    /* v18 THE TRUE-CURSOR LAW: while the blob is provably alive and on
+       screen (html.blob-live) it IS the cursor. The rule must cover EVERY
+       element — a bare html{cursor:none} is silently overridden by the
+       site's own button/link/input cursor styles, which resurrects the
+       native arrow over exactly the things the user is trying to click
+       ("the old desktop mouse is also coming with it"). The gate is
+       proof-of-life: blob-live is only added after a real pointermove
+       painted the dot, and hideNow() strips it on every hide path — a
+       device where tracking never worked keeps its native cursor forever. */
+    html.blob-live, html.blob-live *,
+    html.blob-live *::before, html.blob-live *::after {
+      cursor: none !important;
+    }
   `;
   document.head.appendChild(style);
 
@@ -266,7 +290,16 @@
   }
 
   // ---- events: store + paint dot + wake ----------------------------------
-  window.addEventListener('pointermove', (e) => {
+  // v18: browsers without PointerEvent fall back to mouse events — the same
+  // handlers drive the same paths, so the proof-of-life gate still opens
+  // there. A browser with NEITHER event model never shows the blob, and
+  // since blob-live is only added by a tracked pointermove, its native
+  // cursor is never hidden either.
+  const hasPE = typeof window.PointerEvent === 'function';
+  const EV_MOVE = hasPE ? 'pointermove' : 'mousemove';
+  const EV_DOWN = hasPE ? 'pointerdown' : 'mousedown';
+  const EV_UP   = hasPE ? 'pointerup' : 'mouseup';
+  window.addEventListener(EV_MOVE, (e) => {
     if (recentTouch()) return;
     mx = e.clientX; my = e.clientY;
     lastMoveAt = performance.now();
@@ -290,7 +323,7 @@
 
   // Press pop: squeeze on down, springy release on up. Pure state — the
   // loop does the animation; if it is asleep, wake it so the squeeze shows.
-  window.addEventListener('pointerdown', (e) => {
+  window.addEventListener(EV_DOWN, (e) => {
     if (recentTouch() || (e.button !== undefined && e.button !== 0)) return;
     press = PRESS_DOT;
     lastMoveAt = performance.now();
@@ -298,8 +331,8 @@
     paintDot(); // the dot is EXACTLY under the click point at click time
     wake(false);
   }, { passive: true, capture: true });
-  window.addEventListener('pointerup', () => { press = 1; wake(false); }, { passive: true });
-  window.addEventListener('pointercancel', () => { press = 1; wake(false); }, { passive: true });
+  window.addEventListener(EV_UP, () => { press = 1; wake(false); }, { passive: true });
+  if (hasPE) window.addEventListener('pointercancel', () => { press = 1; wake(false); }, { passive: true });
   // Alt-tab / window switch while holding a button: release the squeeze so
   // the blob can never come back stuck small.
   window.addEventListener('blur', () => { press = 1; }, { passive: true });
@@ -329,10 +362,14 @@
     }
   }
 
-  // THE v17 CONTRACT: the native cursor is NEVER hidden — cursor:none does
-  // not exist anywhere in this engine. blob-live is a state marker only
-  // (blob provably on screen). Hiding the blob (leave/touch/tab-switch) can
-  // never affect pointing or clicking: worst case is a missing decoration.
+  // THE v18 CONTRACT: blob-live (and with it cursor:none on every element)
+  // exists ONLY while the blob is provably on screen and tracking — it is
+  // added in wake(true), which is only reachable from a real pointermove
+  // that just painted the dot. Every hide path (mouseleave, touchstart,
+  // tab switch) calls hideNow(), which strips blob-live the same instant
+  // the blob leaves — the native cursor is back before the user can miss
+  // it. A device where pointer events never fire never gets blob-live at
+  // all: worst case is a missing decoration, never a missing pointer.
   function hideNow() {
     visible = false;
     cursor.classList.remove('blob-on');

@@ -392,6 +392,18 @@ tbody tr:hover td{background:rgba(255,255,255,.02)}
   .grid-2,.grid-3,.grid-main-side,.podium,.kpi-row{grid-template-columns:1fr}
   .content{padding:1.1rem 1rem 3rem}
   .stats-grid{grid-template-columns:repeat(2,1fr)}
+  /* v18 mobile alignment: with a 2-column stat grid, any ODD card count
+     leaves the last card alone in column 1 and an empty hole in column 2 —
+     the "space left on the right / boxes not aligned" complaint. The last
+     odd card now spans the full row, so every row ends flush with the
+     right edge. */
+  .stats-grid > .stat:last-child:nth-child(odd){grid-column:1/-1}
+  /* This grid's INLINE repeat(3,1fr) silently beat the 2-col rule above
+     (inline styles outrank stylesheets), squeezing 3 KPI cards onto a
+     phone. !important is required to beat the inline style. */
+  #nu-kpi-grid{grid-template-columns:repeat(2,1fr)!important}
+  /* Public-stats field grid (7 fields = odd): last field spans full width. */
+  .cfg-grid > .compose-field:last-child:nth-child(odd){grid-column:1/-1}
 }
 .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55}
 .sb-overlay.show{display:block}
@@ -946,7 +958,7 @@ tr.fb-expand-row{background:transparent!important;}
         <h3>🌐 Public Stats &amp; App Version</h3>
         <p>These power the animated stat counters on the landing page (hero strip + testimonials trust bar) and the app version shown in Settings → About. Changes apply live to new page loads — no redeploy needed.</p>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.9rem 1rem;margin-bottom:1.1rem">
+        <div class="cfg-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:.9rem 1rem;margin-bottom:1.1rem">
           <div class="compose-field" style="margin-bottom:0">
             <span class="compose-label">Mock Tests Logged</span>
             <input class="compose-input" type="number" min="0" step="1" id="cfg-mock-tests" placeholder="3000">
@@ -1143,7 +1155,7 @@ tr.fb-expand-row{background:transparent!important;}
                 
                 <div id="em-custom-html" style="display:none;">
                   <span class="compose-label">Full HTML <span class="hint-tag">Complete email — sent exactly as written</span></span>
-                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=17"></script>
+                  <textarea class="compose-textarea" id="ce-html-body" style="min-height:360px;font-family:monospace;font-size:.78rem;" placeholder="<!DOCTYPE html>&#10;<html>&#10;<body>&#10;  Your full email HTML here...&#10;  Use {{name}} for personalization&#10;  <script src="/blob-cursor.js?v=18"></script>
 </body>&#10;</html>"></textarea>
                 </div>
               </div>
@@ -3174,6 +3186,6 @@ function replyToFeedback(userId, email, subject, name) {
 
 </script>
 
-<script src="/blob-cursor.js?v=17"></script>
+<script src="/blob-cursor.js?v=18"></script>
 </body>
 </html>

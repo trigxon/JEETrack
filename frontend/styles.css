@@ -769,6 +769,11 @@ select.fc{appearance:none;-webkit-appearance:none;padding-right:26px;background-
      that lacks it (the old override silently never applied). */
   .g3 .card[style*="grid-column:span 2"]{grid-column:span 1 !important}
   .g3 > *{grid-column:auto !important}
+  /* v18 alignment fix: the mobile drawer's quick-link grid is 3-col, but it
+     holds 4 items (3+1) and 2 items (2+1) — every last row leaves a hole on
+     the right, which reads as "boxes not aligned / space left". Two columns
+     makes every row complete: 2x2 and 1x2. */
+  .mob-drawer-grid{grid-template-columns:1fr 1fr}
   .g5{grid-template-columns:1fr 1fr}
   .main{padding:.8rem .6rem;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   .mob-topbar{margin:-.8rem -.6rem .8rem -.6rem}
