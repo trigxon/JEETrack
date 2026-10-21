@@ -81,6 +81,23 @@ function initHeroDemo() {
   let _currentFilter = 'all';
   let _insLoadTimer = null;
 
+  // v28 DEMO-PAUSE LAW: while the user's REAL pointer (mouse/pen) is over
+  // the demo card the auto-pilot freezes — no scripted view switches, no
+  // self-clicked filters, no wandering demo cursor. Before this, the demo
+  // re-armed itself 2.2-4.6s after every user click and kept fighting the
+  // pointer: buttons changed under it, the active filter flipped itself
+  // back, the fake cursor crossed the user's aim — on the landing page
+  // this reads as "I click and things move by themselves / can't click
+  // anything". Touch pointers are ignored (a tap must not freeze the
+  // showcase); the demo resumes by itself the moment the pointer leaves.
+  let demoHovered = false;
+  function demoDelay(fn, ms) {
+    setTimeout(function tick() {
+      if (demoHovered || document.hidden) { setTimeout(tick, 600); return; }
+      fn();
+    }, ms);
+  }
+
   
   
   
@@ -477,13 +494,13 @@ function initHeroDemo() {
     
     moveCursorTo(partial, () => {
       setFilter('partial', true, { syncZoomOut: true });
-      setTimeout(goToInsightsAndGenerate, 1700);
+      demoDelay(goToInsightsAndGenerate, 1700);
     }, { slow: true, cinematic: true });
   }
 
   function loop() {
     const landingEl = document.getElementById('landing');
-    if (document.hidden || (landingEl && landingEl.classList.contains('hidden'))) {
+    if (document.hidden || (landingEl && landingEl.classList.contains('hidden')) || demoHovered) {
       _heroDemoTimer = setTimeout(loop, 800);
       return;
     }
@@ -493,14 +510,25 @@ function initHeroDemo() {
     moveCursorTo(tabEl, () => {
       activateView(name);
       if (name === 'tests') {
-        setTimeout(toggleFilterDemo, 1100);
-        
-        
-        
-        
+        demoDelay(toggleFilterDemo, 1100);
       } else {
         _heroDemoTimer = setTimeout(loop, 2600);
       }
+    });
+  }
+
+  if (!card._demoHoverBound) {
+    card._demoHoverBound = true;
+    card.addEventListener('pointerenter', (e) => {
+      if (e.pointerType === 'touch') return; // taps never freeze the demo
+      demoHovered = true;
+      clearTimeout(_heroDemoTimer);
+      _heroDemoTimer = setTimeout(loop, 800); // loop idles while hovered
+    });
+    card.addEventListener('pointerleave', () => {
+      demoHovered = false;
+      clearTimeout(_heroDemoTimer);
+      _heroDemoTimer = setTimeout(loop, 500); // quick, smooth resume
     });
   }
 
@@ -525,7 +553,7 @@ function initHeroDemo() {
         setTimeout(() => cursor.classList.remove('clicking'), 460);
         activateView(name);
         if (name === 'tests') {
-          setTimeout(toggleFilterDemo, 900);
+          demoDelay(toggleFilterDemo, 900);
           
           
           

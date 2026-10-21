@@ -1,6 +1,6 @@
 
 
-const CACHE_VERSION = 'JEE ADV OSINT-vb4fabbcaf648';
+const CACHE_VERSION = 'JEE ADV OSINT-ve2c9e65bc78a';
 const CACHE_NAME = CACHE_VERSION;
 
 const STATIC_ASSETS = [
@@ -197,4 +197,15 @@ self.addEventListener('notificationclick', e => {
       if (clients.openWindow) return clients.openWindow('/');
     })
   );
+});
+
+// v28 PARACHUTE: the blob engine's parachute law posts SKIP_WAITING when it
+// finds a worker stuck in the "waiting" state (this tab is then controlled
+// by an older worker by definition). Activating immediately lets the
+// parachute's single reload land on the fresh engine instead of waiting for
+// every tab of the site to close first.
+self.addEventListener('message', e => {
+  if (e.data && (e.data === 'SKIP_WAITING' || e.data.type === 'SKIP_WAITING')) {
+    self.skipWaiting();
+  }
 });

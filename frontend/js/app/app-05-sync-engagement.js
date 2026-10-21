@@ -200,7 +200,7 @@ async function exportPDF(){
 async function registerPushNotifications(){
   if(!('serviceWorker' in navigator) || !('Notification' in window)) return;
   try{
-    const reg = await navigator.serviceWorker.register('sw.js');
+    const reg = await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
 
 
     if(Notification.permission !== 'granted') return;
@@ -264,7 +264,7 @@ async function toggleNotifications(){
     if(perm === 'granted'){
       localStorage.setItem('notif_enabled', '1');
       
-      try { await navigator.serviceWorker.register('sw.js'); } catch(e) {}
+      try { await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }); } catch(e) {}
       document.getElementById('notif-bell-btn')?.classList.add('active');
       if(nb){nb.innerHTML=BELL_ON;nb.classList.add('notif-btn-on');}
       if(snt) snt.checked = true;
@@ -439,7 +439,7 @@ async function welcomeEnableNotif() {
     localStorage.setItem('notif_enabled', '1');
     
     try {
-      await navigator.serviceWorker.register('sw.js');
+      await navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' });
     } catch(e) {}
     document.getElementById('notif-bell-btn')?.classList.add('active');
     const nb2 = document.getElementById('notif-toggle-btn');

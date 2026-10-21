@@ -99,6 +99,39 @@
 //          never booted reloads that tab ONCE for a clean boot. The heartbeat
 //          and the freeze watchdog also refuse to paint into a detached DOM.
 //
+//  19. THE v28 PARACHUTE LAW (owner directive: "diagnose the blob issue
+//      and make it as functional as u can"). The v27 boot-everywhere fix
+//      is only as good as its DELIVERY: a device still running an old-era
+//      service worker (or a waiting worker behind one) can keep executing
+//      a coherent old engine forever, because the auto-heal compares the
+//      SERVED file against the ?v= the page itself asked for — and a fully
+//      cached old page asks for the old version. Three additions close the
+//      remaining delivery gaps, all strictly self-limited:
+//
+//      (a) WAITING-WORKER ACTIVATION. If any registration holds a worker in
+//          the "waiting" state, THIS tab is by definition controlled by an
+//          older worker (since v27's sw.js calls skipWaiting() in install,
+//          a waiting worker can only be a leftover from an older era).
+//          The parachute posts SKIP_WAITING to it (new sw.js listens for
+//          the message), purges every CacheStorage bucket, nudges every
+//          registration to update, and reloads once — session-guarded.
+//
+//      (b) FOCUS RE-PROBE. The boot probe runs once per page load; a deploy
+//          that lands while the tab is open would go unnoticed until the
+//          next navigation. When the tab becomes visible again after being
+//          hidden for >= 60s, the served-version probe re-runs ONCE per
+//          session (its own sessionStorage guard, reload-loop impossible).
+//
+//      (c) The SW registration call sites now pass updateViaCache:'none'
+//          so the browser's sw.js update checks can never be satisfied
+//          from the HTTP cache, whatever headers a CDN adds later.
+//
+//      Same landing DEMO-PAUSE LAW (app-06-landing.js): the hero dashboard
+//      demo no longer auto-clicks filters / switches views / moves its own
+//      fake cursor while the user's real pointer hovers the demo card —
+//      on the landing page that auto-pilot read as "things move by
+//      themselves when I try to click", which the blob took the blame for.
+//
 //  15. THE v23 LAWS (report #15):
 //      (a) STATUS PILL REMOVED at the owner's request — the bottom-left
 //          'cursor v22' / 'tap glow v22' badge is gone from every page.
@@ -560,9 +593,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v27';
+  window.__BLOB_CURSOR_VERSION = 'v28';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v27 (boot-everywhere, solo-cursor law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v28 (boot-everywhere, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -617,6 +650,84 @@ function initTouchGlow(){
             .then(function () { location.reload(); });
         })
         .catch(function () {});                   // never let heal break the page
+    } catch (e) {}
+  })();
+
+  // ---- v28 PARACHUTE (waiting worker + focus re-probe) ---------------------
+  // See header note 19. Both paths are session-guarded so a reload loop is
+  // structurally impossible; neither runs anything when the cache chain is
+  // already current.
+  (function parachuteCheck() {
+    try {
+      if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
+      var GUARD = 'blobParachute:28';
+      try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
+      navigator.serviceWorker.getRegistrations().then(function (regs) {
+        var waiting = null;
+        for (var i = 0; i < regs.length; i++) { if (regs[i].waiting) { waiting = regs[i].waiting; break; } }
+        if (!waiting) return;
+        try { sessionStorage.setItem(GUARD, '1'); } catch (e1) {}
+        console.warn('[blob] waiting service worker detected \u2014 activating it and repairing caches');
+        try { waiting.postMessage({ type: 'SKIP_WAITING' }); } catch (e2) {}
+        var purge = (window.caches && caches.keys)
+          ? caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            })
+          : Promise.resolve();
+        var upd = navigator.serviceWorker.getRegistrations().then(function (rs) {
+          rs.forEach(function (r) { try { r.update(); } catch (e3) {} });
+        });
+        Promise.allSettled([purge, upd]).then(function () {
+          setTimeout(function () { location.reload(); }, 350);
+        });
+      }).catch(function () {});
+    } catch (e) {}
+  })();
+  (function focusReprobe() {
+    try {
+      if (!window.fetch) return;
+      var GUARD2 = 'blobProbe2:28';
+      var expected2 = null;
+      try { expected2 = document.currentScript
+        ? new URL(document.currentScript.src).searchParams.get('v') : null;
+      } catch (e0) {}
+      if (!expected2 || !window.caches) return;
+      try { if (sessionStorage.getItem(GUARD2)) return; } catch (e1) {}
+      var hiddenAt = 0;
+      document.addEventListener('visibilitychange', function () {
+        try {
+          if (document.hidden) { hiddenAt = Date.now(); return; }
+          if (!hiddenAt || Date.now() - hiddenAt < 60000) return;
+          hiddenAt = 0;
+          if (sessionStorage.getItem(GUARD2)) return;
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            navigator.serviceWorker.getRegistrations().then(function (rs) {
+              rs.forEach(function (r) { try { r.update(); } catch (e2) {} });
+            }).catch(function () {});
+          }
+          fetch('/blob-cursor.js?v=' + expected2 + '&probe2=' + Date.now(),
+                { cache: 'no-store' })
+            .then(function (r) { return r && r.ok ? r.text() : null; })
+            .then(function (txt) {
+              if (!txt) return;
+              var m = txt.match(/__BLOB_CURSOR_VERSION\s*=\s*['"]([^'"]+)['"]/);
+              var served = m && m[1];
+              if (served === 'v' + expected2) return; // healthy
+              try { sessionStorage.setItem(GUARD2, '1'); } catch (e3) {}
+              console.warn('[blob] stale engine on re-focus (served ' + served +
+                ', page wants v' + expected2 + ') \u2014 purging caches and reloading once');
+              var purge = (window.caches && caches.keys)
+                ? caches.keys().then(function (keys) {
+                    return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+                  })
+                : Promise.resolve();
+              Promise.allSettled([purge]).then(function () {
+                setTimeout(function () { location.reload(); }, 350);
+              });
+            })
+            .catch(function () {});
+        } catch (e4) {}
+      });
     } catch (e) {}
   })();
 
