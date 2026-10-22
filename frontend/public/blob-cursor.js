@@ -132,6 +132,47 @@
 //      on the landing page that auto-pilot read as "things move by
 //      themselves when I try to click", which the blob took the blame for.
 //
+//  20. THE v29 POINTER-CLASS LAWS (owner follow-up: "i can see double
+//      cursor and blob click failing" — PROVEN on the v28 engine with
+//      scripts/jt_v29_owner_scenario_smoke.mjs, a lying-coarse hybrid with
+//      a real mouse + touchscreen + CDP PEN: 9 rAF frames recorded with
+//      the desktop blob AND the tap glow visible at the same time).
+//
+//      (a) POINTER-CLASS LAW. The tap glow ignored only pointerType 'mouse'
+//          and the desktop engine only 'touch' — a PEN pointer (stylus on
+//          the exact 2-in-1 the owner uses) drove BOTH engines at once: the
+//          blob followed the pen AND the glow bloomed under it, and since a
+//          pen never fires touchstart the desktop blob was never hidden.
+//          Two pink pointers, literally. Now every pointer class has EXACTLY
+//          one owner: the desktop cursor follows 'mouse' and 'pen' (a
+//          stylus is a mouse-shaped pointer — hover + tip clicks), the tap
+//          glow serves 'touch' — and the unknown '' (old webviews,
+//          synthetic events) is tiered by hardware: on a touch-capable
+//          device it goes to the glow, on touchless hardware it can only
+//          be the mouse and drives the blob. One pointer class, one visual
+//          pointer, always.
+//
+//      (b) GLOW-ACTIVE LAW. recentTouch() swallows teleport-mouse-moves for
+//          only 1s after a touch — a drag longer than that let real mouse
+//          pointermoves re-show the desktop blob NEXT TO the active glow.
+//          The glow module now publishes window.__jtTouchGlowActive for the
+//          exact lifetime of the glow (show/re-show set it, hide strips it),
+//          and while it is true the desktop engine stands down completely:
+//          EV_MOVE/EV_DOWN/heartbeat/watchdog all skip, and the 300ms tick
+//          repairs any blob that slipped through (touch owns the screen;
+//          the next real mouse move re-shows the blob afterwards).
+//
+//      (c) POINTEROUT RE-VERIFICATION. A DOM mutation under a still pointer
+//          makes Chromium fire mouseout with relatedTarget null — the v25
+//          law read that as "the pointer left this document" and hid the
+//          blob mid-page (the arrow flashed back while the user aimed, on
+//          the constantly-mutating dashboard). A null relatedTarget is now
+//          decided by ONE deferred hit-test at the last pointer position:
+//          a live non-iframe element there means the pointer never left
+//          (mutation flicker — ignored); an iframe or nothing means it did
+//          (hide exactly like before). Truthy relatedTargets (another
+//          document, the iframe element) still hide synchronously.
+//
 //  15. THE v23 LAWS (report #15):
 //      (a) STATUS PILL REMOVED at the owner's request — the bottom-left
 //          'cursor v22' / 'tap glow v22' badge is gone from every page.
@@ -324,6 +365,11 @@ function initTouchGlow(){
   'use strict';
   if (window.__jtTouchGlow) return;
   window.__jtTouchGlow = true;
+  // v29 GLOW-ACTIVE LAW: published for the desktop engine. True for the
+  // EXACT lifetime of the glow (show/re-show set it, hide strips it) —
+  // while true, the desktop cursor engine stands down (one pointer on
+  // screen, always), however long the touch lasts.
+  window.__jtTouchGlowActive = false;
   if (!document.body) {
     document.addEventListener('DOMContentLoaded', initTouchGlow, { once: true });
     return;
@@ -464,6 +510,7 @@ function initTouchGlow(){
     clearTimeout(fadeTimer);
     if (!visible) {
       visible = true;
+      window.__jtTouchGlowActive = true; // v29: the glow owns the pointer now
       // v26 SOLO-CURSOR LAW: the glow is about to be the only pointer on
       // screen — hide the native arrow for exactly its lifetime.
       document.documentElement.classList.add('blob-touch-live');
@@ -481,6 +528,7 @@ function initTouchGlow(){
     if (!visible) {
       clearTimeout(fadeTimer);
       visible = true;
+      window.__jtTouchGlowActive = true; // v29 law
       document.documentElement.classList.add('blob-touch-live'); // v26 law
       wrap.classList.add('tg-on');
       gx = mx; gy = my; gvx = gvy = 0;
@@ -498,6 +546,7 @@ function initTouchGlow(){
   function hide() {
     // v26: strip the cursor law FIRST — if anything below throws, the worst
     // state is the old one (glow + arrow), never the pointerless inverse.
+    window.__jtTouchGlowActive = false; // v29: hand the pointer back
     document.documentElement.classList.remove('blob-touch-live');
     visible = false;
     wrap.classList.remove('tg-on');
@@ -537,7 +586,11 @@ function initTouchGlow(){
     // always wins; a stale pid can never block a tap again.
     window.addEventListener('pointerdown', (e) => {
       if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
-      if (e.pointerType === 'mouse') return;    // a real mouse on a hybrid
+      // v29 POINTER-CLASS LAW: the glow is for FINGERS. A mouse press is the
+      // desktop engine's (as before) — and a PEN press is too (v28 let the
+      // pen drive BOTH engines: blob + glow, two pink pointers on every
+      // stylus device — the exact "double cursor" report).
+      if (e.pointerType && e.pointerType !== 'touch') return;
       show(e.clientX, e.clientY, e.pointerId);
     }, { passive: true, capture: true });
     window.addEventListener('pointermove', (e) => {
@@ -593,9 +646,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v28';
+  window.__BLOB_CURSOR_VERSION = 'v29';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v28 (boot-everywhere, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v29 (pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -660,7 +713,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:28';
+      var GUARD = 'blobParachute:29';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -686,7 +739,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:28';
+      var GUARD2 = 'blobProbe2:29';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
@@ -860,6 +913,13 @@ function initTouchGlow(){
 
   const REDUCED_MOTION = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // v29 GLOW-ACTIVE LAW: while the tap glow owns the screen (a finger is
+  // down / its fade is playing), this engine stands down COMPLETELY — a
+  // real mouse move arriving during a long touch drag (the 1s recentTouch
+  // swallow has expired) must never paint a SECOND pointer next to the
+  // glow. One pointer per device, always. Undefined on mouse-only devices
+  // (the glow module never booted) — falsy, zero impact.
+  function glowOwnsPointer() { return window.__jtTouchGlowActive === true; }
   const FORCE_LITE = new URLSearchParams(location.search).has('blob-lite');
   // Lite / reduced: dot glued to the pointer (event-driven), no glow, no loop.
   const LITE = FORCE_LITE || REDUCED_MOTION;
@@ -897,7 +957,15 @@ function initTouchGlow(){
   window.__BLOB_HB = HB;
   window.addEventListener('pointermove', (e) => {
     if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v25: a torn-down engine records nothing
-    if (e.pointerType === 'touch') return; // hybrids: the tap-glow owns fingers
+    // v29 POINTER-CLASS LAW: this engine is the cursor for PRECISE pointers
+    // — 'mouse' and 'pen' (a stylus is a mouse-shaped pointer: hover + tip
+    // clicks). Every other class belongs to the tap glow — EXCEPT the
+    // unknown '' (old webviews, synthetic events): on a device with NO
+    // touch there is no glow module, so '' can only be the mouse; on a
+    // touch-capable device '' is ambiguous and goes to the glow.
+    if (hasPE && e.pointerType !== 'mouse' && e.pointerType !== 'pen'
+        && !(e.pointerType === '' && !HAS_TOUCH)) return;
+    if (glowOwnsPointer()) return; // v29: the glow owns the screen right now
     // v23: apply the SAME post-touch swallow window as the engine. On a
     // touchscreen laptop Windows teleports the system cursor to the touch
     // point, firing REAL mouse pointermove events the engine intentionally
@@ -1058,7 +1126,11 @@ function initTouchGlow(){
     // tap-glow; a finger drag must never drive (or repaint) the desktop dot.
     // (recentTouch alone can't cover the pointerdown-before-touchstart race.)
     if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
-    if (hasPE && e.pointerType === 'touch') return;
+    // v29 POINTER-CLASS LAW: mouse and pen only — see the heartbeat above
+    // ('' counts as the mouse on touchless devices, as touch elsewhere).
+    if (hasPE && e.pointerType !== 'mouse' && e.pointerType !== 'pen'
+        && !(e.pointerType === '' && !HAS_TOUCH)) return;
+    if (glowOwnsPointer()) return; // v29: one pointer on screen, always
     if (recentTouch()) return;
     mx = e.clientX; my = e.clientY;
     lastMoveAt = performance.now();
@@ -1090,7 +1162,12 @@ function initTouchGlow(){
     // "mismatch" evidence the freeze watchdog used to resurrect the blob
     // from (the hybrid ghost).
     if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
-    if (hasPE && e.pointerType === 'touch') return;
+    // v29 POINTER-CLASS LAW: same as EV_MOVE — mouse and pen only (plus ''
+    // on touchless devices), and the glow owns the screen while a finger
+    // is down.
+    if (hasPE && e.pointerType !== 'mouse' && e.pointerType !== 'pen'
+        && !(e.pointerType === '' && !HAS_TOUCH)) return;
+    if (glowOwnsPointer()) return;
     if (recentTouch() || (e.button !== undefined && e.button !== 0)) return;
     press = PRESS_DOT;
     lastMoveAt = performance.now();
@@ -1214,12 +1291,37 @@ function initTouchGlow(){
     if (window.__jtBlobStore && window.__jtBlobStore.disabled) return;
     const rt = e.relatedTarget;
     if (rt && rt.nodeType === 1 && rt.ownerDocument === document && rt.tagName !== 'IFRAME') return;
-    // The pointer is gone — into the OS, or into a child frame. Same
-    // contract as mouseleave on the document: hide, stop the loop, re-arm,
-    // and let the next REAL parent-side pointermove re-show at its position.
-    havePointer = false;
-    hideNow();
-    stopLoop();
+    if (rt) {
+      // The pointer crossed into another document (or the iframe element
+      // itself announced the crossing) — same contract as before: hide,
+      // stop the loop, re-arm, and let the next REAL parent-side pointermove
+      // re-show at its position.
+      havePointer = false;
+      hideNow();
+      stopLoop();
+      return;
+    }
+    // relatedTarget null — THREE shapes share it: (1) the pointer left the
+    // window (document mouseleave fires and hides us anyway); (2) a DOM
+    // mutation under the STILL pointer — Chromium fires mouseout on the
+    // removed node with relatedTarget null, and v25 read that as an exit,
+    // hiding the blob mid-page (the arrow flashed back while the user
+    // aimed — the constantly-mutating dashboard was full of these); (3) an
+    // iframe crossing via the null shape. ONE deferred hit-test decides:
+    // a live non-iframe element at the last pointer position means the
+    // pointer never left (ignore the flicker); an iframe or nothing means
+    // it did (hide exactly like the synchronous paths).
+    setTimeout(function () {
+      if (window.__jtBlobStore && window.__jtBlobStore.disabled) return;
+      if (!visible) return; // mouseleave already handled a genuine window exit
+      try {
+        var el = document.elementFromPoint(mx, my);
+        if (el && el.ownerDocument === document && el.tagName !== 'IFRAME') return;
+      } catch (err) {}
+      havePointer = false;
+      hideNow();
+      stopLoop();
+    }, 80);
   }
   if (hasPE) window.addEventListener('pointerout', pointerLeftOurDocument, { passive: true, capture: true });
   window.addEventListener('mouseout', pointerLeftOurDocument, { passive: true, capture: true });
@@ -1411,6 +1513,16 @@ function initTouchGlow(){
         document.documentElement.classList.toggle('blob-touch-live', tglowOn);
       }
     } catch (e) {}
+    // v29 GLOW-ACTIVE INVARIANT: while the tap glow owns the screen the
+    // desktop blob must NOT be visible — a pointer that slipped through
+    // (or any external resurrection) gets repaired within one tick. The
+    // next real mouse move after the glow fades re-shows it (havePointer
+    // is re-armed so it re-shows at the FRESH position).
+    if (window.__jtTouchGlowActive === true && visible) {
+      havePointer = false;
+      hideNow();
+      stopLoop();
+    }
     if (visible && hoverTarget > 1
         && performance.now() - lastMoveAt > 500
         && performance.now() - lastScrollAt > SCROLL_SUPPRESS_MS) {
@@ -1438,6 +1550,7 @@ function initTouchGlow(){
     try {
       if (window.__jtBlobStore && window.__jtBlobStore.disabled) return; // v24 settings off
       if (document.hidden) return;
+      if (glowOwnsPointer()) return;               // v29: the glow owns the pointer
       if (Date.now() - lastTouchAt < 1500) return;   // v23: swallow window
       if (!document.body || !document.body.contains(dotStage)) return; // v25: never repaint into a detached DOM
       const now = performance.now();
