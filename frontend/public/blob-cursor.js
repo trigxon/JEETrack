@@ -427,7 +427,10 @@ function initTouchGlow(){
     #jt-touch-glow.tg-on { opacity: 1; }
     #jt-touch-glow .tg-dot-stage {
       position: absolute; width: ${TG_DOT_STAGE}px; height: ${TG_DOT_STAGE}px;
-      left: ${-TG_DOT_STAGE / 2}px; top: ${-TG_DOT_STAGE / 2}px; will-change: transform;
+      /* v31: static offset REMOVED (was -half) — the glow dot painted
+         half a stage up-left of the tap point. Same double-subtraction
+         bug as the desktop engine, fixed the same way. */
+      left: 0; top: 0; will-change: transform;
     }
     #jt-touch-glow .tg-dot {
       position: absolute; width: ${TG_DOT}px; height: ${TG_DOT}px;
@@ -440,7 +443,9 @@ function initTouchGlow(){
     }
     #jt-touch-glow .tg-glow-stage {
       position: absolute; width: ${TG_GLOW_STAGE}px; height: ${TG_GLOW_STAGE}px;
-      left: ${-TG_GLOW_STAGE / 2}px; top: ${-TG_GLOW_STAGE / 2}px; will-change: transform;
+      /* v31: static offset REMOVED (was -half) — halo trailed the tap
+         point by half a stage. Centering is the transform's job alone. */
+      left: 0; top: 0; will-change: transform;
     }
     #jt-touch-glow .tg-glow {
       position: absolute; width: ${TG_GLOW}px; height: ${TG_GLOW}px;
@@ -646,9 +651,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v30';
+  window.__BLOB_CURSOR_VERSION = 'v31';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v30 (coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v31 (visual-truth: the painted blob IS the pointer; coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -713,7 +718,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:30';
+      var GUARD = 'blobParachute:31';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -739,7 +744,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:30';
+      var GUARD2 = 'blobProbe2:31';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
@@ -1066,14 +1071,29 @@ function initTouchGlow(){
     #custom-cursor {
       position: fixed; top: 0; left: 0; width: 0; height: 0;
       pointer-events: none; z-index: 2147483647;
-      transform: translate3d(-200px, -200px, 0);
+      /* v31 VISUAL-TRUTH FIX: this root used to carry the boot park
+         transform translate3d(-200px,-200px,0) FOREVER — it was never
+         updated after boot, so every painted coordinate landed exactly
+         236px up-left of the real pointer (root -200 + stage static -36
+         + transform -half + dot-in-stage +half). The user saw the blob
+         trailing the true pointer at a FIXED DIAGONAL offset: aiming the
+         blob clicked into empty space ("the distance between blob and
+         cursor is fixed diagonally ... blob is visible but it is not
+         functioning" — report #18 round 4). The stages now own ALL
+         positioning (transform = pointer - half); the root is a plain
+         fixed 0x0 anchor at the viewport origin. */
+      transform: translate3d(0, 0, 0);
       opacity: 0; transition: opacity 0.2s ease;
     }
     #custom-cursor.blob-on { opacity: 1; }
     /* Fixed-size compositor stages — constant layer bounds, transform-only. */
     #custom-cursor .jt-dot-stage {
       position: absolute; width: 72px; height: 72px;
-      left: -36px; top: -36px; will-change: transform;
+      /* v31: static offset REMOVED (was -36px/-36px — it double-subtracted
+         the half against the transform below, shoving the dot 36px further
+         up-left). transform = pointer - half + dot-in-stage +half => the
+         dot's PAINTED CENTER is the pointer, verifiably so by rect. */
+      left: 0; top: 0; will-change: transform;
     }
     /* 17px dot, NO outline/ring (user request). Visibility comes from size
        plus layered soft glow shadows — soft edges never read as an outline
@@ -1089,7 +1109,9 @@ function initTouchGlow(){
     }
     #custom-cursor .jt-glow-stage {
       position: absolute; width: 192px; height: 192px;
-      left: -96px; top: -96px; will-change: transform;
+      /* v31: static offset REMOVED (was -96px/-96px — halo trailed at
+         pointer - 296px). Centering is entirely the transform's job now. */
+      left: 0; top: 0; will-change: transform;
     }
     #custom-cursor .jt-glow {
       position: absolute; width: 56px; height: 56px;
