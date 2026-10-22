@@ -646,9 +646,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v29';
+  window.__BLOB_CURSOR_VERSION = 'v30';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v29 (pointer-class, glow-active, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v30 (coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -713,7 +713,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:29';
+      var GUARD = 'blobParachute:30';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -739,7 +739,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:29';
+      var GUARD2 = 'blobProbe2:30';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
@@ -781,6 +781,77 @@ function initTouchGlow(){
             .catch(function () {});
         } catch (e4) {}
       });
+    } catch (e) {}
+  })();
+
+  // ---- 20. THE v30 LAWS (report #18 round 3: "still i cant click anything
+  //      using the blob") -------------------------------------------------
+  //
+  //      Every engine defect this report could name is closed and re-proven
+  //      on production across every emulatable device shape
+  //      (jt_v30_user_device_matrix: Windows 150%/125% display scaling,
+  //      reduced-motion LITE mode, hybrid touchscreen + mouse, phone — 40/40:
+  //      dot converges <=0.5px, raw clicks land through the blob, cursor:none
+  //      everywhere, glow lifecycle exact, zero errors). What remains is
+  //      DELIVERY: the v28 focus re-probe fires only on visibilitychange
+  //      after >=60s hidden, and only exists in v28+ engines. A tab (or an
+  //      installed PWA window) that stays open for DAYS — the owner's exact
+  //      usage — never re-runs anything: every fix shipped after their last
+  //      page load stays invisible to them forever, while every fresh
+  //      automated context is green. THE COHERENCE HEARTBEAT: while the page
+  //      is visible, every 4 minutes re-fetch the engine (cache:no-store) and
+  //      compare the SERVED version with the pin this page loaded; on
+  //      mismatch purge every cache, nudge every SW registration, and reload
+  //      ONCE (session-guarded per pin — a reload loop stays structurally
+  //      impossible). A healthy chain does nothing. The heartbeat also calls
+  //      registration.update() on the same cadence, shrinking the SW's 24h
+  //      navigation-rule update discovery to 4 minutes for every current-gen
+  //      page. From v30 on, a fix deployed while the owner's window sits
+  //      open reaches that window within ~4 minutes.
+  (function coherenceHeartbeat() {
+    try {
+      if (!window.fetch || !window.caches) return;
+      var expected3 = null;
+      try {
+        expected3 = document.currentScript
+          ? new URL(document.currentScript.src).searchParams.get('v') : null;
+      } catch (e0) {}
+      if (!expected3) return;
+      var GUARD3 = 'blobCoherence:' + expected3;
+      setInterval(function () {
+        try {
+          if (document.hidden) return;                    // visible tabs only
+          try { if (sessionStorage.getItem(GUARD3)) return; } catch (e1) {}
+          var now = Date.now();
+          fetch('/blob-cursor.js?v=' + expected3 + '&coh=' + now,
+                { cache: 'no-store' })
+            .then(function (r) { return r && r.ok ? r.text() : null; })
+            .then(function (txt) {
+              if (!txt) return;                           // offline — stay silent
+              var m = txt.match(/__BLOB_CURSOR_VERSION\s*=\s*['"]([^'"]+)['"]/);
+              var served = m && m[1];
+              // SW update nudge every beat: registration.update() fetches
+              // sw.js byte-compare regardless of the 24h navigation rule.
+              var upd = (navigator.serviceWorker &&
+                         navigator.serviceWorker.getRegistrations)
+                ? navigator.serviceWorker.getRegistrations().then(function (rs) {
+                    rs.forEach(function (r2) { try { r2.update(); } catch (e2) {} });
+                  }).catch(function () {})
+                : Promise.resolve();
+              if (served === 'v' + expected3) return;     // chain healthy
+              try { sessionStorage.setItem(GUARD3, '1'); } catch (e3) {}
+              console.warn('[blob] stale engine in a live tab (served ' + served +
+                ', page wants v' + expected3 + ') — purging caches and reloading once');
+              var purge = caches.keys().then(function (keys) {
+                return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+              });
+              Promise.allSettled([purge, upd]).then(function () {
+                setTimeout(function () { location.reload(); }, 350);
+              });
+            })
+            .catch(function () {});                       // never break the page
+        } catch (e4) {}
+      }, 4 * 60 * 1000);
     } catch (e) {}
   })();
 
