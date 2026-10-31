@@ -1,4 +1,99 @@
-// blob-cursor.js v32 — "the demo solo-cursor law".
+// blob-cursor.js v33 — "the butter-everywhere law".
+//
+//  22. THE v33 BUTTER-EVERYWHERE LAW (owner report #19: "the blob should
+//      come everywhere in the whole website, and it is lagging a lot, so
+//      make it buttery smooth on every stack and every popup also, and in
+//      mobile phones, the blob should work like a smooth touch response
+//      taps, make sure everything is smooth in both"). v31 pinned the
+//      painted blob to the true pointer and v32 made it the only cursor —
+//      this round is about FEEL (frame pacing) and REACH (every surface).
+//
+//      (a) THE TRAIL-TIGHTNESS LAW. The halo spring (omega 24, zeta 1.05)
+//          trailed the dot by 2*zeta/omega * speed: ~88px at a casual
+//          1000px/s glide, ~175px at a real hand flick. The 17px dot IS
+//          the pointer, but the 192px halo is the pink mass the user
+//          LOOKS at — a mass trailing a third of the screen behind the
+//          pointer reads as "the blob is lagging a lot". Desktop springs:
+//          omega 24→64, zeta 1.05→1.10 (trail at 1000px/s: 88px→34px; at
+//          300px/s: 26px→10px; time constant ~14ms — still liquid, now
+//          hugging). STRETCH_GAIN 0.00016→0.00022 and STRETCH_ON 90→60
+//          keep the velocity-elongation visible at the tighter spring
+//          (lower spring velocity for the same pointer speed would else
+//          flatten the flow). Touch glow: omega 22→56 (halo glued to the
+//          finger during swipes: at a 1500px/s flick the trail falls
+//          143px→59px), scale springs 22→34 — the tap pop blooms in ~2/3
+//          the time ("smooth touch response taps").
+//
+//      (b) THE MOTION-RELIEF LAW. The landing page burns GPU EVERY FRAME
+//          by design: four 300-700px aura circles on filter:blur(100px)
+//          with infinite drift/scale animations, a star field twinkling
+//          on animated drop-shadow filters, all BEHIND the hero card's
+//          backdrop-filter:blur(24px) — the card must re-filter its
+//          backdrop every frame any of that moves. The blob's 60fps glide
+//          competed with that for the compositor and lost = "lagging a
+//          lot" on exactly the page every visitor sees first. While the
+//          page is in VISIBLE MOTION (a pointer glide, a scroll, a touch
+//          drag — html.blob-motion, ref-counted + debounced so it toggles
+//          at most once per gesture, never mid-gesture): the aura/star
+//          animations PAUSE and the motion-blur-heavy backdrop-filters
+//          strip (hero card, sidebar blur setting, testi bar, scrim).
+//          200ms after the last motion event everything fades back. At
+//          rest the landing stays alive; in motion the frames belong to
+//          the pointer. Butter.
+//
+//      (c) THE REST-ONLY HOVER LAW. elementFromPoint forces a synchronous
+//          style+layout flush; the old hover path hit-tested up to 10x/s
+//          while the pointer TRAVELLED (and the 300ms tick another 3.3x/s
+//          even at rest) — on the constantly-mutating dashboard the
+//          ENGINE became part of the jank it was blamed for. Hover is now
+//          sensed ONLY when the pointer has been at rest >= 70ms (the
+//          pop plays when you LAND on a button, which is what a pop is
+//          for), a >24px glide off a target relaxes the pop with pure
+//          arithmetic (no hit-test), and the 300ms tick hit-tests only
+//          when the DOM actually MUTATED or the pointer MOVED since the
+//          last tick (a MutationObserver counter — a frozen page at rest
+//          does ZERO forced layouts, engine-included: the observer's
+//          attributeFilter is ['class'] so the engine's own transform
+//          writes never dirty the gate).
+//
+//      (d) THE TAP-RESPONSE LAW (phones). Engine CSS on touch-capable
+//          hardware: touch-action: manipulation on <html> — kills the
+//          legacy double-tap-zoom wait so every tap LANDS instantly, pan
+//          + pinch untouched; -webkit-tap-highlight-color: transparent —
+//          the pink glow IS the tap feedback now, no gray OS flash under
+//          it. Plus the COARSE-POINTER GPU RELIEF: phones pay a per-frame
+//          blur tax on sticky chrome (the app's topbar re-blurs
+//          everything scrolling under it; the hero card re-filters the
+//          twinkles) — on (hover:none)+(pointer:coarse) hardware the
+//          glass goes flat (backdrop-filter:none on the topbar, toasts,
+//          undo bar, hero card, testi bar); the dark translucent
+//          backgrounds read the same at 85-98% opacity and the scroll
+//          gets its frames back. Desktop glass is untouched.
+//
+//      (e) THE POPUP-PERF SPECIFICITY FIX. #modal-welcome's own rule
+//          (backdrop-filter: blur(32px) saturate(160%) !important) is an
+//          ID selector — it outranked the blob-perf law's
+//          `html.blob-perf .mo` (two classes + element), so the welcome
+//          popup kept a fullscreen 32px blur the WHOLE time it was open
+//          with the dashboard animating behind it. The perf law now
+//          carries the ID level itself, and .sb-overlay.open joined the
+//          detector (the mobile drawer scrim blur(4px) was never
+//          covered). Every full-screen scrim goes flat while open.
+//
+//      (f) THE SAME-ORIGIN FRAME LAW ("everywhere" includes frames this
+//          document controls). The v25 law hid the blob over ANY iframe —
+//          correct for cross-origin frames (Turnstile, Razorpay: the
+//          frame's document is a separate origin, no parent CSS or event
+//          can reach it — the frame's own native cursor stays, a
+//          documented physical limit) but needlessly blind for SAME-origin
+//          frames (the admin email composer's live preview). The engine
+//          now BRIDGES into same-origin frames: instead of hiding, it
+//          attaches passive listeners to the child document, translates
+//          the child's clientX/Y by the frame's viewport rect, and keeps
+//          painting THE PARENT BLOB over it — with the cursor:none law
+//          injected into the child doc so the blob stays the one visible
+//          pointer inside the frame too. Cross-origin access throws and
+//          falls back to the v25 hide exactly as before.
 //
 //  21. THE v32 DEMO SOLO-CURSOR LAW (owner, report #18 round 5: "i am
 //      getting both blob and that cursor, make sure only blob is
@@ -382,6 +477,39 @@
 // only), underdamped scale spring (omega=24, zeta=0.5, ~16% overshoot) for
 // hover + press, cursor:none gated on html.blob-live (never pointerless).
 
+// ---- v33 MOTION-RELIEF (shared by both engines, header note 22b) --------
+// html.blob-motion is ON while the page is in VISIBLE MOTION — a pointer
+// glide, a scroll, a touch drag. Engine CSS pauses the expensive decorative
+// animations (aura drift, star twinkle) and strips motion-heavy backdrop
+// blurs for exactly that window, so the compositor's frame budget goes to
+// the POINTER instead of a 100px blur over a 700px circle. Ref-counted:
+// each motion source (desktop glide, scroll, touch glow) takes a ref and
+// releases it debounced (180-220ms after its last event), so the class
+// toggles at most ONCE per gesture — a full-document style invalidation
+// (it is a class on <html>) can never itself become the jank it prevents.
+var __jtMotion = { refs: 0, timer: 0 };
+function __jtMotionOn() {
+  __jtMotion.refs++;
+  if (__jtMotion.timer) { clearTimeout(__jtMotion.timer); __jtMotion.timer = 0; }
+  try { document.documentElement.classList.add('blob-motion'); } catch (e) {}
+}
+function __jtMotionOff() {
+  if (__jtMotion.refs > 0) __jtMotion.refs--;
+  if (__jtMotion.refs > 0) return; // another motion source still owns it
+  if (__jtMotion.timer) clearTimeout(__jtMotion.timer);
+  __jtMotion.timer = setTimeout(function () {
+    __jtMotion.timer = 0;
+    if (__jtMotion.refs === 0) {
+      try { document.documentElement.classList.remove('blob-motion'); } catch (e) {}
+    }
+  }, 200);
+}
+function __jtMotionKill() { // teardown only: strip instantly, drop every ref
+  __jtMotion.refs = 0;
+  if (__jtMotion.timer) { clearTimeout(__jtMotion.timer); __jtMotion.timer = 0; }
+  try { document.documentElement.classList.remove('blob-motion'); } catch (e) {}
+}
+
 // ---- v19 TOUCH-GLOW ------------------------------------------------------
 // The mobile blob (header note 12). Appears at the finger on contact, tracks
 // it synchronously while it moves (zero lag by construction — the same law
@@ -435,6 +563,7 @@ function initTouchGlow(){
       // v26: hide() strips blob-touch-live — the Settings kill-switch must
       // never leave cursor:none behind with the glow gone (pointerless).
       try { hide(); } catch (e) {}
+      try { if (motionOn) { motionOn = false; __jtMotionOff(); } } catch (e) {} // v33
       try { wrap.remove(); } catch (e) {}
     });
   }
@@ -505,13 +634,21 @@ function initTouchGlow(){
   const dpr = () => Math.max(1, window.devicePixelRatio || 1);
   const snap = (v) => Math.round(v * dpr()) / dpr();
   const DOT_HALF = TG_DOT_STAGE / 2, GLOW_HALF = TG_GLOW_STAGE / 2;
-  const GLOW_OMEGA = 22, GLOW_ZETA = 1.05;   // same hair-overdamped trail
-  const SCALE_OMEGA = 22, SCALE_ZETA = 0.5;  // same underdamped pop
+  // v33 TRAIL-TIGHTNESS: omega 22→56, zeta 1.05→1.10 — the halo GLUES to the
+  // finger during swipes (steady trail = 2*zeta/omega * speed: at a 1500px/s
+  // flick it fell from ~143px to ~59px; at a casual 400px/s drag from ~38px
+  // to ~16px). A trailing mass under a moving finger reads as "lag"; the
+  // dot was always instant (the v16 law), now the halo is too.
+  const GLOW_OMEGA = 56, GLOW_ZETA = 1.10;
+  // v33: scale springs 22→34 — the tap pop blooms ~1/3 faster ("smooth touch
+  // response taps"), same underdamped overshoot character.
+  const SCALE_OMEGA = 34, SCALE_ZETA = 0.5;  // underdamped pop
   const PRESS = 0.82, MAX_DT = 0.05;
 
   let pid = null;                    // tracked pointer/touch id
   let visible = false, fadeTimer = 0;
   let lastAct = 0;                   // last real down/move (the v22 freeze law)
+  let motionOn = false;              // v33: this module's blob-motion ref
   let mx = -300, my = -300;
   let gx = -300, gy = -300, gvx = 0, gvy = 0;
   let scale = 1, scaleVel = 0, target = 1;
@@ -553,6 +690,9 @@ function initTouchGlow(){
       document.documentElement.classList.add('blob-touch-live');
       wrap.classList.add('tg-on');
     }
+    // v33 MOTION-RELIEF: a touch drag is visible motion — take the ref for
+    // the glow's whole lifetime (released in hide()).
+    if (!motionOn) { motionOn = true; __jtMotionOn(); }
     paintDot(); paintGlow();
     wake();
   }
@@ -587,6 +727,7 @@ function initTouchGlow(){
     document.documentElement.classList.remove('blob-touch-live');
     visible = false;
     wrap.classList.remove('tg-on');
+    if (motionOn) { motionOn = false; __jtMotionOff(); } // v33: motion ref outlives the fade (~200ms debounce) — close enough
   }
   function wake() {
     if (!rafId && visible && !REDUCED) {
@@ -683,9 +824,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v32';
+  window.__BLOB_CURSOR_VERSION = 'v33';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v32 (demo solo-cursor: one cursor visual site-wide, showcase = the blob, taps on mobile; visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v33 (butter-everywhere: trail-tight springs, motion-relief, rest-only hover, tap-response, popup-perf specificity, same-origin frame bridge; visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -750,7 +891,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:32';
+      var GUARD = 'blobParachute:33';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -776,7 +917,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:32';
+      var GUARD2 = 'blobProbe2:33';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
@@ -992,18 +1133,24 @@ function initTouchGlow(){
   // v16: the dot has NO position spring — its position IS the pointer's
   // position, painted synchronously in the event (zero lag by construction,
   // the v9 law). Only the glow springs.
-  const GLOW_OMEGA  = 24;    // glow trail stiffness — still the flowing blob
-                             // feel, but the mass hugs the aim point (steady
-                             // trail = 2*zeta/omega * speed: ~26px at a
-                             // 300px/s glide, was ~39px at omega=16)
-  const GLOW_ZETA   = 1.05;  // hair overdamped: no rubber-band wobble
+  // v33 TRAIL-TIGHTNESS: omega 24→64, zeta 1.05→1.10. The old spring's
+  // steady-state trail (2*zeta/omega * speed) left the 192px halo ~88px
+  // behind the pointer at a casual 1000px/s glide and ~175px at a real hand
+  // flick — the pink mass the user aims with read as "the blob is lagging
+  // a lot". Now: ~34px at 1000px/s, ~10px at 300px/s (time constant ~14ms
+  // — still liquid, now hugging the dot).
+  const GLOW_OMEGA  = 64;    // glow trail stiffness — the mass hugs the aim point
+  const GLOW_ZETA   = 1.10;  // hair overdamped: no rubber-band wobble
   const SCALE_OMEGA = 24;    // hover/press scale spring stiffness
   const SCALE_ZETA  = 0.5;   // UNDERDAMPED: ~16% overshoot = the pop
   const GLOW_SCALE_ZETA = 0.6; // glow pops slightly calmer
   const MAX_DT      = 0.05;  // clamp frame delta (50ms) — stalls never explode
   const STRETCH_MAX = 0.42;  // max elongation (+42% along motion)
-  const STRETCH_GAIN = 0.00016; // px/s of glow velocity → stretch amount
-  const STRETCH_ON  = 90;    // px/s: glow speed above which stretch engages
+  // v33: tighter spring => lower glow velocity for the same pointer speed;
+  // stretch engages earlier (60 vs 90 px/s) and gains harder so the liquid
+  // elongation survives the tightening.
+  const STRETCH_GAIN = 0.00022; // px/s of glow velocity → stretch amount
+  const STRETCH_ON  = 60;    // px/s: glow speed above which stretch engages
   const ANGLE_RATE  = 14;    // 1/s — velocity-angle smoothing
   const VEL_SMOOTH  = 10;    // 1/s — glow-velocity smoothing for stretch
   const IDLE_MS     = 1200;  // at rest this long → sleep rAF
@@ -1018,6 +1165,14 @@ function initTouchGlow(){
   const HOVER_GLOW  = 1.40;  // glow scale target while hovering
   const PRESS_DOT   = 0.82;  // dot scale while pointer is down
   const PRESS_GLOW  = 0.90;  // glow scale while pointer is down
+  // v33 REST-ONLY HOVER: hover is sensed ONLY after the pointer has been at
+  // rest this long — elementFromPoint forces a synchronous style+layout
+  // flush, and hit-testing mid-glide on the mutating dashboard made the
+  // ENGINE part of the jank ("lagging a lot"). The pop plays when you LAND
+  // on a button, which is what a pop is for.
+  const REST_MS     = 70;    // pointer still for this long → hover may sense
+  const TRAVEL_RELAX_PX = 24; // glided this far off the last target → relax NOW
+                             // (pure arithmetic — no hit-test mid-travel)
 
   const REDUCED_MOTION = window.matchMedia
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1156,12 +1311,68 @@ function initTouchGlow(){
       transform-origin: 50% 50%; will-change: transform;
     }
     /* Full-screen scrim perf mode: strip the blur for the whole time a
-       modal/auth sheet is open. Static state — no toggling while open. */
+       modal/auth sheet is open. Static state — no toggling while open.
+       v33 POPUP-PERF SPECIFICITY FIX: #modal-welcome's own ID-level
+       "backdrop-filter: blur(32px) saturate(160%) !important" outranked
+       the old html.blob-perf .mo rule (ID beats two classes + element),
+       so the welcome popup kept a fullscreen 32px blur the WHOLE time it
+       was open. The law now carries the ID level itself, and the mobile
+       drawer scrim (.sb-overlay, blur 4px) joined the detector. Every
+       full-screen scrim goes flat while open — popup or not. */
     html.blob-perf .mo, html.blob-perf .mo.open,
-    html.blob-perf .auth-modal-scrim, html.blob-perf .auth-modal-scrim.open {
+    html.blob-perf #modal-welcome,
+    html.blob-perf .auth-modal-scrim, html.blob-perf .auth-modal-scrim.open,
+    html.blob-perf .sb-overlay, html.blob-perf .sb-overlay.open {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
+    /* v33 MOTION-RELIEF LAW (header note 22b): while the page is in VISIBLE
+       MOTION (html.blob-motion — a pointer glide, a scroll, a touch drag;
+       ref-counted + debounced, never toggled mid-gesture) the expensive
+       decorative layers step aside so the compositor's frame budget goes to
+       the pointer. The landing burns GPU every frame by design: four
+       300-700px aura circles on filter:blur(100px) with infinite
+       drift/scale animations + a star field twinkling on animated
+       drop-shadow filters, ALL BEHIND the hero card's
+       backdrop-filter:blur(24px) — the card re-filters its backdrop every
+       frame any of that moves, and the blob's glide competed with that for
+       the GPU = "lagging a lot". During motion: the animations pause, the
+       motion-heavy backdrop blurs strip. 200ms after the last motion event
+       everything returns. At rest the landing stays alive; in motion the
+       frames belong to the pointer. */
+    html.blob-motion .land-dash-card, html.blob-motion .land-dash-card *,
+    html.blob-motion .sb.blur-on, html.blob-motion .sb-overlay.open,
+    html.blob-motion .ls-testi-trustbar {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    html.blob-motion .land-star, html.blob-motion .land-aura {
+      animation-play-state: paused !important;
+    }
+    /* v33 COARSE-POINTER GPU RELIEF (header note 22d): phones pay a
+       per-frame blur tax on sticky chrome — the app's topbar re-blurs
+       everything scrolling under it, the hero card re-filters the twinkles.
+       On touch-primary hardware the glass goes flat; the dark translucent
+       backgrounds (85-98% opaque) read the same and the scroll gets its
+       frames back. Desktop glass is untouched. */
+    @media (hover: none) and (pointer: coarse) {
+      .mob-topbar, .toast, .toast-top-warn, .undobar,
+      .land-dash-card, .land-dash-card *, .ls-testi-trustbar {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+      }
+    }
+    /* v33 TAP-RESPONSE LAW (header note 22d): touch-action: manipulation on
+       <html> kills the legacy double-tap-zoom wait — every tap LANDS
+       instantly ("smooth touch response taps"); pan + pinch stay untouched.
+       any-pointer:coarse covers hybrids (touchscreen laptops) too. The OS
+       tap flash dies as well — the pink glow IS the tap feedback now.
+       Applies only while the engine runs (this whole <style> is engine DOM:
+       Settings off / ?blob-off removes it and the site reverts). */
+    @media (any-pointer: coarse) {
+      html { touch-action: manipulation; }
+    }
+    html { -webkit-tap-highlight-color: rgba(0, 0, 0, 0); }
     /* v18 THE TRUE-CURSOR LAW: while the blob is provably alive and on
        screen (html.blob-live) it IS the cursor. The rule must cover EVERY
        element — a bare html{cursor:none} is silently overridden by the
@@ -1192,6 +1403,21 @@ function initTouchGlow(){
   let havePointer = false;
   let visible = false;
   let rafId = 0, lastT = 0, lastMoveAt = 0;
+  // v33 MOTION-RELIEF state: one ref for the pointer glide, one for scrolls.
+  // Each is taken ONCE per gesture and released debounced (180/220ms after
+  // its last event) — html.blob-motion toggles at most twice per gesture.
+  let ptrMotion = false, ptrMotionT = 0;
+  let scrollMotion = false, scrollMotionT = 0;
+  function motionTake() {
+    if (!ptrMotion) { ptrMotion = true; __jtMotionOn(); }
+    clearTimeout(ptrMotionT);
+    ptrMotionT = setTimeout(function () {
+      if (ptrMotion) { ptrMotion = false; __jtMotionOff(); }
+    }, 180);
+  }
+  function motionDrop() {
+    if (ptrMotion) { ptrMotion = false; clearTimeout(ptrMotionT); __jtMotionOff(); }
+  }
 
   // dot spring
   let dx = -200, dy = -200, dvx = 0, dvy = 0;
@@ -1259,6 +1485,7 @@ function initTouchGlow(){
     if (recentTouch()) return;
     mx = e.clientX; my = e.clientY;
     lastMoveAt = performance.now();
+    motionTake(); // v33: a glide is visible motion — relief for its duration
     // Zero lag BY CONSTRUCTION: dot = pointer, painted inline, every event,
     // even while the render loop is asleep.
     dx = mx; dy = my; dvx = dvy = 0;
@@ -1316,6 +1543,13 @@ function initTouchGlow(){
     lastScrollAt = performance.now();
     hoverTarget = 1;
     wake(false);
+    // v33: scrolling is visible motion — pause the decorative burn while
+    // the page moves, hand it back 220ms after the last scroll event.
+    if (!scrollMotion) { scrollMotion = true; __jtMotionOn(); }
+    clearTimeout(scrollMotionT);
+    scrollMotionT = setTimeout(function () {
+      if (scrollMotion) { scrollMotion = false; __jtMotionOff(); }
+    }, 220);
   }, { passive: true, capture: true });
 
   function wake(showNow) {
@@ -1343,6 +1577,7 @@ function initTouchGlow(){
     visible = false;
     cursor.classList.remove('blob-on');
     document.documentElement.classList.remove('blob-live');
+    motionDrop(); // v33: the pointer's motion ref dies with the blob (scroll keeps its own)
   }
 
   // v24: register the live teardown used by the Settings off-switch. It
@@ -1354,6 +1589,8 @@ function initTouchGlow(){
     window.__jtBlobStore.teardownFns.push(function () {
       hideNow();
       stopLoop();
+      detachBridge(); // v33: never leave listeners in a child frame
+      __jtMotionKill(); // v33: strip blob-motion + every ref
       engineIntervalIds.forEach(function (id) { try { clearInterval(id); } catch (e) {} });
       try { cursor.remove(); } catch (e) {}
       try { style.remove(); } catch (e) {}
@@ -1412,15 +1649,22 @@ function initTouchGlow(){
   // element target and never triggers the law. Capture phase is REQUIRED:
   // mouseleave/out do not bubble, so the engine's bubble-phase document
   // listeners never saw these events (that was the whole bug).
+  // v33 FRAME BRIDGE AMENDMENT: an IFRAME hit is now TRIED AS A BRIDGE
+  // first — if the frame is same-origin (this document controls it) the
+  // blob stays and follows the pointer INTO the child document; only a
+  // cross-origin frame (Turnstile, Razorpay) still hides the blob.
   function pointerLeftOurDocument(e) {
     if (window.__jtBlobStore && window.__jtBlobStore.disabled) return;
     const rt = e.relatedTarget;
     if (rt && rt.nodeType === 1 && rt.ownerDocument === document && rt.tagName !== 'IFRAME') return;
     if (rt) {
-      // The pointer crossed into another document (or the iframe element
-      // itself announced the crossing) — same contract as before: hide,
-      // stop the loop, re-arm, and let the next REAL parent-side pointermove
-      // re-show at its position.
+      // v33: crossing INTO an iframe element — same-origin frames bridge
+      // (the blob keeps painting, driven by the child doc's own events);
+      // cross-origin frames keep the v25 contract: hide, stop the loop,
+      // re-arm, and let the next REAL parent-side pointermove re-show at
+      // its position (the frame's own native cursor is the honest pointer
+      // there — a separate origin no parent listener can ever reach).
+      if (rt.nodeType === 1 && rt.tagName === 'IFRAME' && bridgeFrame(rt)) return;
       havePointer = false;
       hideNow();
       stopLoop();
@@ -1442,6 +1686,9 @@ function initTouchGlow(){
       try {
         var el = document.elementFromPoint(mx, my);
         if (el && el.ownerDocument === document && el.tagName !== 'IFRAME') return;
+        // v33: the pointer is over an iframe (or nothing). Same-origin →
+        // bridge and keep painting; cross-origin → the v25 hide.
+        if (el && el.tagName === 'IFRAME' && bridgeFrame(el)) return;
       } catch (err) {}
       havePointer = false;
       hideNow();
@@ -1450,6 +1697,100 @@ function initTouchGlow(){
   }
   if (hasPE) window.addEventListener('pointerout', pointerLeftOurDocument, { passive: true, capture: true });
   window.addEventListener('mouseout', pointerLeftOurDocument, { passive: true, capture: true });
+
+  // ---- v33 SAME-ORIGIN FRAME BRIDGE (header note 22f) ---------------------
+  // "Everywhere" includes frames this document controls. Over a cross-origin
+  // frame (Turnstile, Razorpay) the v25 law still hides the blob — that
+  // document is a separate origin, no parent listener can ever see its
+  // pointer events, so a painted blob there would be a frozen lie. But a
+  // SAME-origin frame (the admin email composer's live preview) is
+  // reachable: instead of hiding, attach passive listeners to the child
+  // document, translate its clientX/Y by the frame's viewport rect, and
+  // keep painting THE PARENT blob over it — with the cursor:none law
+  // injected into the child so the blob stays the one visible pointer
+  // inside the frame too. contentDocument access throws on cross-origin
+  // frames; that try/catch IS the origin test.
+  var bridge = null; // { frame, doc, move, up, out, style }
+  function bridgeFrame(el) {
+    try {
+      if (!el || el.tagName !== 'IFRAME') return false;
+      const doc = el.contentDocument;
+      if (!doc || !doc.documentElement) return false;
+      if (bridge && bridge.doc === doc) return true; // already bridged here
+      detachBridge();
+      const move = function (ev) {
+        try {
+          if (window.__jtBlobStore && window.__jtBlobStore.disabled) return;
+          // fresh rect each event: the frame can move/scroll under us.
+          // clientLeft/clientTop = the frame's BORDER width — the child's
+          // clientX/Y are relative to the CONTENT box (inside the border),
+          // while getBoundingClientRect spans the border box; without this
+          // the translated blob sits border-width up-left of the pointer
+          // (proven: a 2px border = a 2.83px diagonal offset).
+          const r = el.getBoundingClientRect();
+          const ox = r.left + (el.clientLeft || 0);
+          const oy = r.top + (el.clientTop || 0);
+          mx = ox + ev.clientX; my = oy + ev.clientY;
+          lastMoveAt = performance.now();
+          dx = mx; dy = my;
+          if (ev.type === 'pointerdown') press = PRESS_DOT;
+          if (!havePointer || !visible) {
+            havePointer = true;
+            gx = mx; gy = my; gvx = gvy = 0; pmx = mx; pmy = my;
+            wake(true);
+          }
+          paintDot();
+          motionTake(); // v33: motion inside the frame is motion too
+          // hover pop inside the child doc (its elements, its own closest)
+          const t = ev.target && ev.target.closest ? ev.target.closest(INTERACTIVE) : null;
+          hoverTarget = t ? HOVER_DOT : 1;
+          wake(false);
+        } catch (e) {}
+      };
+      const up = function () { press = 1; wake(false); };
+      const out = function (ev) {
+        // Crossings INSIDE the child doc are ignored (relatedTarget from
+        // the same doc). The bridge ends when the pointer leaves the child
+        // document entirely — the next parent-side pointermove re-shows
+        // the blob at its fresh position (havePointer re-armed here).
+        const rt = ev.relatedTarget;
+        if (rt && rt.ownerDocument === doc) return;
+        detachBridge();
+        havePointer = false;
+        hideNow();
+        stopLoop();
+      };
+      doc.addEventListener('pointermove', move, { passive: true, capture: true });
+      doc.addEventListener('pointerdown', move, { passive: true, capture: true });
+      doc.addEventListener('pointerup', up, { passive: true, capture: true });
+      doc.addEventListener('pointerout', out, { passive: true, capture: true });
+      // The child doc must not draw its own native cursor next to our blob.
+      let st = null;
+      try {
+        st = doc.createElement('style');
+        st.id = 'jt-blob-frame-cursor';
+        st.textContent = 'html.blob-live, html.blob-live *, html.blob-live *::before, html.blob-live *::after { cursor: none !important; }';
+        (doc.head || doc.documentElement).appendChild(st);
+        doc.documentElement.classList.add('blob-live');
+      } catch (e) { st = null; }
+      bridge = { frame: el, doc: doc, move: move, up: up, out: out, style: st };
+      return true;
+    } catch (e) {
+      return false; // cross-origin — contentDocument access threw
+    }
+  }
+  function detachBridge() {
+    if (!bridge) return;
+    try {
+      bridge.doc.removeEventListener('pointermove', bridge.move, { capture: true });
+      bridge.doc.removeEventListener('pointerdown', bridge.move, { capture: true });
+      bridge.doc.removeEventListener('pointerup', bridge.up, { capture: true });
+      bridge.doc.removeEventListener('pointerout', bridge.out, { capture: true });
+      try { bridge.doc.documentElement.classList.remove('blob-live'); } catch (e2) {}
+      if (bridge.style) { try { bridge.style.remove(); } catch (e3) {} }
+    } catch (e) {}
+    bridge = null;
+  }
 
   let lastTouchAt = 0;
   function recentTouch() { return Date.now() - lastTouchAt < 1000; }
@@ -1466,14 +1807,26 @@ function initTouchGlow(){
 
   function hoverSense(now) {
     if (!visible) { hoverTarget = 1; return; }
+    if (bridge) return; // v33: the frame bridge owns hover while the pointer is inside it
     if (now - lastScrollAt < SCROLL_SUPPRESS_MS) { hoverTarget = 1; return; }
     if (now < fastUntil) { hoverTarget = 1; return; }
-    // v24 LIGHT-TOUCH HOVER: elementFromPoint forces a synchronous style
-    // recalc + layout flush. Run per-frame on a heavy page (the dashboard
-    // mutates DOM constantly) and the ENGINE itself becomes the jank the
-    // user feels while moving the cursor. 10 Hz is imperceptible for a pop
-    // that plays when the pointer STOPS, and cuts worst-case hit-tests
-    // from ~60/s to ~10/s.
+    // v33 REST-ONLY HOVER LAW: elementFromPoint forces a synchronous
+    // style+layout flush. Hit-testing mid-glide on the mutating dashboard
+    // made the ENGINE part of the jank the user feels while moving the
+    // cursor ("lagging a lot"). A pop is a LANDED state — sense it only
+    // once the pointer has actually stopped. While still settling, a long
+    // glide off the last target relaxes with pure arithmetic (no hit-test),
+    // so the dot never stays popped during a slow traverse.
+    if (now - lastMoveAt < REST_MS) {
+      if (hoverTarget > 1
+          && Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > TRAVEL_RELAX_PX) {
+        hoverTarget = 1;
+      }
+      return;
+    }
+    // v24 LIGHT-TOUCH HOVER: 10 Hz is imperceptible for a pop that plays
+    // when the pointer STOPS; with the rest gate above, this now bounds
+    // hit-tests to a couple per landing instead of a 10 Hz stream.
     if (now - lastHoverEval < 100) return;
     lastHoverEval = now;
     const moved = Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > HOVER_MIN_MOVE;
@@ -1585,28 +1938,59 @@ function initTouchGlow(){
   // tick; relax only popped→flat — a still pointer over a real target can
   // never be pulsed by this.
   let perfMode = false;
+  // v33 MUTATION GATE: the tick's hit-tests (iframe fallback + stale-pop)
+  // only matter if something CHANGED since the last tick — the DOM mutated
+  // (childList anywhere, or a class flip — modals open/close by class) or
+  // the pointer moved. attributeFilter ['class'] keeps the engine's own
+  // per-frame transform writes (a style attribute) from dirtying the gate,
+  // so a quiet page at rest runs ZERO hit-tests where v32 ran 3.3 every
+  // second forever.
+  let mutCount = 0, lastMutCount = -1, lastTickX = -1e9, lastTickY = -1e9;
+  try {
+    new MutationObserver(function () { mutCount++; })
+      .observe(document.documentElement, {
+        childList: true, subtree: true, attributes: true, attributeFilter: ['class']
+      });
+  } catch (e) {}
   engineIntervalIds.push(setInterval(() => {
     if (document.hidden) return;
-    const pm = !!document.querySelector('.mo.open, .auth-modal-scrim.open');
+    // v33: .sb-overlay.open joined the detector — the mobile drawer scrim
+    // was the one full-screen overlay the perf law never saw.
+    const pm = !!document.querySelector('.mo.open, .auth-modal-scrim.open, .sb-overlay.open');
     if (pm !== perfMode) {
       perfMode = pm;
       document.documentElement.classList.toggle('blob-perf', pm);
     }
+    const domChanged = mutCount !== lastMutCount;
+    lastMutCount = mutCount;
+    const ptrMoved = mx !== lastTickX || my !== lastTickY;
+    lastTickX = mx; lastTickY = my;
     // v25 IFRAME LAW, fallback hook: an overlay iframe that APPEARS under a
     // still pointer (the Razorpay checkout opening at the click point) never
     // produces a boundary event — there was no pointer movement. ONE cheap
-    // hit-test per tick (shared with the stale-pop check below so the total
-    // stays inside the 15/s perf budget: ~10Hz hover + ~3.3Hz here): if the
-    // pointer's last position now resolves to an IFRAME, the pointer is
-    // effectively in that document — hide exactly like the capture hooks do.
+    // hit-test per tick, and only when something actually changed (v33):
+    // if the pointer's last position now resolves to an IFRAME, the pointer
+    // is effectively in that document — same-origin frames BRIDGE (the blob
+    // follows the pointer INTO the frame), cross-origin frames hide exactly
+    // like the capture hooks do.
     let tickEl = null;
-    if (visible && havePointer) {
+    if (visible && havePointer && (domChanged || ptrMoved)) {
       try {
         tickEl = document.elementFromPoint(mx, my);
         if (tickEl && tickEl.tagName === 'IFRAME') {
-          havePointer = false;
-          hideNow();
-          stopLoop();
+          if (!bridgeFrame(tickEl)) {
+            havePointer = false;
+            hideNow();
+            stopLoop();
+          }
+        } else if (bridge && tickEl && tickEl !== bridge.frame) {
+          // v33 BRIDGE LIVENESS: the hit-test resolves to ordinary parent
+          // content — the pointer is no longer over the bridged frame, so
+          // the bridge ends here (hover sensing resumes in the parent).
+          // NOT detached on parent pointermove: some input pipelines
+          // deliver moves to the parent while the pointer is visually
+          // inside a frame; the hit-test is the only position truth.
+          detachBridge();
         }
       } catch (e) {}
     }
@@ -1649,6 +2033,7 @@ function initTouchGlow(){
       stopLoop();
     }
     if (visible && hoverTarget > 1
+        && (domChanged || ptrMoved)
         && performance.now() - lastMoveAt > 500
         && performance.now() - lastScrollAt > SCROLL_SUPPRESS_MS) {
       const el = tickEl || document.elementFromPoint(mx, my); // v25: reuse the tick's hit-test
