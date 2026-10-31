@@ -98,6 +98,58 @@ function initHeroDemo() {
     }, ms);
   }
 
+  // v32 DEMO SOLO-CURSOR LAW (owner: "i am getting both blob and that
+  // cursor ... make sure only blob is functioning in the whole website,
+  // and in mobiles, it should work like a tap touch"). The landing
+  // showcase used to drive a macOS-style ARROW around this card — an
+  // OS-shaped second pointer that visibly "functioned" next to the
+  // user's real pink blob. It was the only remaining cursor-shaped visual
+  // on the site, and on phones it drew a mouse metaphor on a touch
+  // device. Now:
+  //   - the showcase pointer IS the site cursor: a pink blob (see
+  //     #landDemoCursor + .land-dash-blob-dot/.land-dash-blob-halo);
+  //   - TAP-MODE (touch-primary: pointer:coarse / hover:none): the pointer
+  //     BODY never renders at all — scripted interactions read as TAPS
+  //     (ripple bursts at the touch point, no traveling pointer), exactly
+  //     how the real site behaves on mobiles. Self-healing: the first real
+  //     mouse/pen pointermove (2-in-1 with a mouse, DeX, OTG) lifts
+  //     tap-mode, because a device that HAS a fine pointer deserves the
+  //     blob showcase;
+  //   - DEMO-YIELD (fine pointers): while the user's REAL pointer hovers
+  //     the card the showcase cursor hides completely (not just freezes)
+  //     — at most ONE cursor visual is ever on screen, and it is THEIRS;
+  //   - REAL clicks never animate the showcase cursor — feedback belongs
+  //     to the REAL pointer (the blob's pulse on fine pointers, the tap
+  //     glow on touch), never to a second cursor.
+  const demoTapMode = (function () {
+    try {
+      const mm = window.matchMedia;
+      if (!mm) return false;
+      return mm('(pointer: coarse)').matches || mm('(hover: none)').matches;
+    } catch (e) { return false; }
+  })();
+  if (cursor) {
+    if (demoTapMode) {
+      cursor.classList.add('tap-mode');
+      const fineSeen = function (e) {
+        if (e && (e.pointerType === 'mouse' || e.pointerType === 'pen')) {
+          cursor.classList.remove('tap-mode');
+          window.removeEventListener('pointermove', fineSeen, true);
+        }
+      };
+      window.addEventListener('pointermove', fineSeen, true);
+    }
+    // A tab switched away mid-hover can miss pointerleave — reconcile on
+    // return against the LIVE :hover state so the showcase can neither
+    // run under a resting pointer nor stay dead after it left.
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden && demoHovered && !card.matches(':hover')) {
+        demoHovered = false;
+        cursor.classList.remove('demo-yield');
+      }
+    });
+  }
+
   
   
   
@@ -186,21 +238,39 @@ function initHeroDemo() {
   const CINEMATIC_HOLD_MS = 170;
   const CINEMATIC_OUT_MS = 780;
 
+  const CURSOR_BOX = 34; // px — matches .land-dash-cursor's width/height (v32)
+
   function moveCursorTo(el, onArrive, opts) {
     opts = opts || {};
     if (!el) { if (onArrive) onArrive(); return; }
     const cardRect = card.getBoundingClientRect();
     const elRect = el.getBoundingClientRect();
-    const x = elRect.left - cardRect.left + elRect.width / 2 - 10;
-    const y = elRect.top - cardRect.top + elRect.height / 2 - 6;
+    // v32: the blob points from its CENTER (the arrow's tip hotspot is gone)
+    const x = elRect.left - cardRect.left + elRect.width / 2 - CURSOR_BOX / 2;
+    const y = elRect.top - cardRect.top + elRect.height / 2 - CURSOR_BOX / 2;
     const slow = !!opts.slow;
     const travelMs = slow ? CURSOR_SLOW_MS : CURSOR_MS;
 
-    setTiltFromPoint(x + 3, y + 3);
+    setTiltFromPoint(x + CURSOR_BOX / 2, y + CURSOR_BOX / 2);
 
     cursor.style.opacity = '1';
-    
-    
+
+    // v32 TAP-MODE: no pointer body, no travel — the interaction reads as
+    // a TAP: teleport the (invisible) box, then bloom the ripple.
+    if (cursor.classList.contains('tap-mode')) {
+      cursor.style.transition = '';
+      cursor.classList.remove('traveling');
+      cursor.style.transform = `translate(${x}px,${y}px)`;
+      setTimeout(() => {
+        cursor.classList.add('clicking');
+        spawnClickBurst();
+        if (!opts.cinematic) punchZoomAt(x + CURSOR_BOX / 2, y + CURSOR_BOX / 2);
+        setTimeout(() => cursor.classList.remove('clicking'), 460);
+        if (onArrive) onArrive();
+      }, 60);
+      return;
+    }
+
     cursor.style.transition = slow
       ? `transform ${CURSOR_SLOW_MS}ms cubic-bezier(.45,0,.15,1), opacity .3s ease`
       : '';
@@ -208,16 +278,14 @@ function initHeroDemo() {
     cursor.style.transform = `translate(${x}px,${y}px)`;
 
     if (opts.cinematic) {
-      
-      
-      zoomCinematicIn(x + 3, y + 3, travelMs);
+      zoomCinematicIn(x + CURSOR_BOX / 2, y + CURSOR_BOX / 2, travelMs);
     }
 
     setTimeout(() => {
       cursor.classList.remove('traveling');
       cursor.classList.add('clicking');
       spawnClickBurst();
-      if (!opts.cinematic) punchZoomAt(x + 3, y + 3);
+      if (!opts.cinematic) punchZoomAt(x + CURSOR_BOX / 2, y + CURSOR_BOX / 2);
       setTimeout(() => cursor.classList.remove('clicking'), 460);
       cursor.style.transition = '';
       if (onArrive) onArrive();
@@ -499,6 +567,11 @@ function initHeroDemo() {
   }
 
   function loop() {
+    // v32 yield repair: if the pointer is NOT on the card any more but the
+    // showcase cursor is still yielded (a pointerleave some path could
+    // miss), the very next idle beat lifts it — a hidden showcase cursor
+    // can never outlive the hover that hid it.
+    if (!demoHovered && cursor) cursor.classList.remove('demo-yield');
     const landingEl = document.getElementById('landing');
     if (document.hidden || (landingEl && landingEl.classList.contains('hidden')) || demoHovered) {
       _heroDemoTimer = setTimeout(loop, 800);
@@ -522,11 +595,15 @@ function initHeroDemo() {
     card.addEventListener('pointerenter', (e) => {
       if (e.pointerType === 'touch') return; // taps never freeze the demo
       demoHovered = true;
+      // v32: the showcase cursor YIELDS completely — the user's real
+      // pointer is the only cursor allowed on the card while it is there.
+      if (cursor) cursor.classList.add('demo-yield');
       clearTimeout(_heroDemoTimer);
       _heroDemoTimer = setTimeout(loop, 800); // loop idles while hovered
     });
     card.addEventListener('pointerleave', () => {
       demoHovered = false;
+      if (cursor) cursor.classList.remove('demo-yield');
       clearTimeout(_heroDemoTimer);
       _heroDemoTimer = setTimeout(loop, 500); // quick, smooth resume
     });
@@ -539,24 +616,12 @@ function initHeroDemo() {
         clearTimeout(_heroDemoTimer);
         const name = t.dataset.view;
         idx = order.indexOf(name);
-        const cardRect = card.getBoundingClientRect();
-        const btnRect = t.getBoundingClientRect();
-        const x = btnRect.left - cardRect.left + btnRect.width / 2 - 10;
-        const y = btnRect.top - cardRect.top + btnRect.height / 2 - 6;
-        cursor.style.transition = '';
-        cursor.style.opacity = '1';
-        cursor.classList.remove('traveling');
-        cursor.style.transform = `translate(${x}px,${y}px)`;
-        cursor.classList.add('clicking');
-        spawnClickBurst();
-        punchZoomAt(x + 3, y + 3);
-        setTimeout(() => cursor.classList.remove('clicking'), 460);
+        // v32: a REAL click never animates the showcase cursor — feedback
+        // belongs to the REAL pointer (the blob's pulse on fine pointers,
+        // the tap glow on touch), never to a second cursor.
         activateView(name);
         if (name === 'tests') {
           demoDelay(toggleFilterDemo, 900);
-          
-          
-          
         } else {
           const resumeDelay = name === 'insights' ? 3000 : 2200;
           _heroDemoTimer = setTimeout(loop, resumeDelay);
@@ -567,17 +632,7 @@ function initHeroDemo() {
       f.addEventListener('click', (e) => {
         e.stopPropagation();
         clearTimeout(_heroDemoTimer);
-        const cardRect = card.getBoundingClientRect();
-        const btnRect = f.getBoundingClientRect();
-        const x = btnRect.left - cardRect.left + btnRect.width / 2 - 10;
-        const y = btnRect.top - cardRect.top + btnRect.height / 2 - 6;
-        cursor.style.transition = '';
-        cursor.style.opacity = '1';
-        cursor.style.transform = `translate(${x}px,${y}px)`;
-        cursor.classList.add('clicking');
-        spawnClickBurst();
-        punchZoomAt(x + 3, y + 3);
-        setTimeout(() => cursor.classList.remove('clicking'), 460);
+        // v32: real taps/clicks drive the REAL pointer's feedback only.
         setFilter(f.dataset.filter, true);
         _heroDemoTimer = setTimeout(loop, 4600);
       });
@@ -588,17 +643,7 @@ function initHeroDemo() {
         clearTimeout(_heroDemoTimer);
         clearInterval(_insLoadTimer);
         insGenBtn.disabled = true;
-        const cardRect = card.getBoundingClientRect();
-        const btnRect = insGenBtn.getBoundingClientRect();
-        const x = btnRect.left - cardRect.left + btnRect.width / 2 - 10;
-        const y = btnRect.top - cardRect.top + btnRect.height / 2 - 6;
-        cursor.style.transition = '';
-        cursor.style.opacity = '1';
-        cursor.style.transform = `translate(${x}px,${y}px)`;
-        cursor.classList.add('clicking');
-        spawnClickBurst();
-        punchZoomAt(x + 3, y + 3);
-        setTimeout(() => cursor.classList.remove('clicking'), 460);
+        // v32: real clicks never animate the showcase cursor.
         playInsightsLoading(() => {
           showInsightsResults();
           _heroDemoTimer = setTimeout(loop, 3400);
@@ -610,17 +655,7 @@ function initHeroDemo() {
         e.stopPropagation();
         clearTimeout(_heroDemoTimer);
         clearInterval(_insLoadTimer);
-        const cardRect = card.getBoundingClientRect();
-        const btnRect = insRefreshBtn.getBoundingClientRect();
-        const x = btnRect.left - cardRect.left + btnRect.width / 2 - 10;
-        const y = btnRect.top - cardRect.top + btnRect.height / 2 - 6;
-        cursor.style.transition = '';
-        cursor.style.opacity = '1';
-        cursor.style.transform = `translate(${x}px,${y}px)`;
-        cursor.classList.add('clicking');
-        spawnClickBurst();
-        punchZoomAt(x + 3, y + 3);
-        setTimeout(() => cursor.classList.remove('clicking'), 460);
+        // v32: real clicks never animate the showcase cursor.
         playInsightsLoading(() => {
           showInsightsResults();
           _heroDemoTimer = setTimeout(loop, 3400);

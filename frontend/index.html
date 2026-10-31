@@ -624,16 +624,18 @@ window.ensureJsPdf=function(){return loadScript(window._jsPdfUrl);};
           </div>
 
           <div class="land-dash-cursor" id="landDemoCursor">
-            <!-- macOS pointer, light-background variant: near-black fill with
-                 a clean white outline (exactly how macOS stays readable on
-                 light surfaces — the demo card is bright glass, where a white
-                 arrow vanished). 30px + drop-shadow so the demo's clicks read
-                 at card scale. -->
-            <svg width="30" height="30" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M5.4 2.6 L5.4 18.1 L9.05 14.85 L11.42 20.72 L14.32 19.5 L11.95 13.72 L17.05 13.72 Z"
-                    fill="#0b0b14" stroke="#ffffff" stroke-width="1.7"
-                    stroke-linejoin="round" stroke-linecap="round"/>
-            </svg>
+            <!-- v32 DEMO SOLO-CURSOR LAW: the showcase pointer IS the site
+                 cursor — a pink blob (dot + halo, the same visual DNA as the
+                 real #custom-cursor), never an OS-style arrow. The old macOS
+                 pointer here animated and clicked next to the user's real
+                 blob, reading as a second, "functioning" cursor — the exact
+                 "i am getting both blob and that cursor" report. The demo
+                 blob also yields completely while a real pointer hovers the
+                 card (demo-yield) and never renders a pointer body at all
+                 on touch-primary devices (tap-mode), where the showcase
+                 taps instead of pointing. -->
+            <span class="land-dash-blob-halo" aria-hidden="true"></span>
+            <span class="land-dash-blob-dot" aria-hidden="true"></span>
           </div>
         </div>
     </div>
@@ -4681,6 +4683,6 @@ function settingsMobileReset(){
     </div>
   </div>
 </div>
-  <script src="/blob-cursor.js?v=31"></script>
+  <script src="/blob-cursor.js?v=32"></script>
 </body>
 </html>

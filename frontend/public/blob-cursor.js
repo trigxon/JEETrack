@@ -1,4 +1,36 @@
-// blob-cursor.js v25 — "the iframe law".
+// blob-cursor.js v32 — "the demo solo-cursor law".
+//
+//  21. THE v32 DEMO SOLO-CURSOR LAW (owner, report #18 round 5: "i am
+//      getting both blob and that cursor, make sure only blob is
+//      functioning in the whole website, and in mobiles, it should work
+//      like a tap touch" — Windows + Chrome). After v31 pinned the painted
+//      blob to the true pointer (0.00px, every device shape), exactly ONE
+//      cursor-shaped visual remained on the site: the landing hero demo's
+//      autopilot drove a macOS-STYLE ARROW (#landDemoCursor) around the
+//      dashboard card, visibly "functioning" (it clicks tabs, flips
+//      filters, switches views) right next to the user's real pink blob —
+//      the literal "both blob and that cursor". On phones the same arrow
+//      drew a mouse metaphor on a touch device. The fix lives in the
+//      landing layer (index.html + styles.css + app-06-landing.js) and is
+//      carried to already-open windows by this engine's version bump
+//      (the v30 coherence heartbeat reloads any current-gen tab within
+//      ~4 minutes of the mismatch):
+//        (a) the showcase pointer IS the site cursor now — a pink blob
+//            (dot + halo, the real #custom-cursor's visual DNA), never an
+//            OS-style arrow;
+//        (b) TAP-MODE (touch-primary: pointer:coarse / hover:none): the
+//            showcase pointer BODY never renders — scripted interactions
+//            read as TAPS (ripple bursts at the touch point), and the
+//            first real mouse/pen pointermove lifts tap-mode on hybrid
+//            hardware (2-in-1 + mouse, DeX, OTG);
+//        (c) DEMO-YIELD: while the user's real pointer hovers the card
+//            the showcase cursor hides completely (v28 only froze it) —
+//            at most ONE cursor visual is ever on screen, and it is the
+//            user's own; a visibilitychange reconciliation un-sticks a
+//            hover state missed by a tab switch;
+//        (d) REAL user clicks never animate the showcase cursor — the
+//            feedback belongs to the REAL pointer (blob pulse on fine
+//            pointers, tap glow on touch) and to nothing else.
 //
 //  16. THE v25 LAWS (report #17: "the blob and the native mouse both are
 //      coming and i cant click anything using the blob" — PROVEN on
@@ -651,9 +683,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v31';
+  window.__BLOB_CURSOR_VERSION = 'v32';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v31 (visual-truth: the painted blob IS the pointer; coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v32 (demo solo-cursor: one cursor visual site-wide, showcase = the blob, taps on mobile; visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -718,7 +750,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:31';
+      var GUARD = 'blobParachute:32';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -744,7 +776,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:31';
+      var GUARD2 = 'blobProbe2:32';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
