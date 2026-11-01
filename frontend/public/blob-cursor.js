@@ -1,4 +1,72 @@
-// blob-cursor.js v34 — "the zero-latency glide law".
+// blob-cursor.js v35 — "the premium-feel law".
+//
+//  24. THE v35 PREMIUM-FEEL LAW (owner report #22: "remember what i said to
+//      do with the blob in mobile and laptop, it still didn't happen, it is
+//      not smooth and i am not getting that hover pop effect and that smooth
+//      touch response in mobile — work on that until it works flawlessly").
+//      v34 measured PERFECT GEOMETRY (0.00px trail everywhere) yet the owner
+//      feels NOTHING changed. Distance-based probes cannot see FEEL; five
+//      real feel defects were found in the v34 engine:
+//
+//      (a) THE REDUCED-MOTION OVER-KILL — the likely "it still didn't
+//          happen" ROOT CAUSE. v22 wired prefers-reduced-motion to LITE
+//          mode: a user with Windows "Show animations" OFF (a common
+//          performance tweak) got a BARE 17px dot — no halo, no stretch,
+//          NO HOVER POP, and on touch NO BLOOM at all (the glow's rAF was
+//          REDUCED-gated too). That is exactly "not smooth + no hover pop +
+//          no smooth touch response" ON BOTH DEVICES AT ONCE. The blob is
+//          the site's CURSOR — functional, not decorative. v35 decouples:
+//          reduced motion keeps the full premium cursor (halo, hover pop,
+//          tap bloom — short bounded INTERACTION feedback, the same class
+//          Windows itself keeps for cursors) and drops only the
+//          motion-for-motion's-sake bits: the glide stretch and the
+//          one-shot rings/ripples. ?blob-lite still forces the bare dot.
+//
+//      (b) THE TAP-FEEDBACK LATENCY — #jt-touch-glow carried
+//          `transition: opacity 0.3s ease` on BOTH directions: the tap glow
+//          FADED IN over 300ms, i.e. during a typical 80-150ms press it
+//          never passed ~50% opacity — the feedback arrived AFTER the tap,
+//          the literal opposite of "smooth touch response taps". Premium
+//          touch feedback is INSTANT on contact, soft only on departure:
+//          the shown state now transitions in 0s (same-frame visibility),
+//          the hidden state keeps a .38s ease-out fade. Plus a one-shot
+//          expanding RIPPLE ring on contact (WAAPI, compositor-only), a
+//          bigger faster press swell (born .55 → .95, omega 44, zeta .42)
+//          and a full release bloom (target 1.8 held 260ms, was 1.45/140).
+//
+//      (c) THE INVISIBLE POP — the hover pop was a 17px dot scaling to 1.65
+//          with no other event: easy to not register, and the owner
+//          explicitly wants to SEE it. v35: HOVER_DOT 1.65→1.9, HOVER_GLOW
+//          1.40→1.55, SCALE_OMEGA 24→34 (zeta .45, snappier with ~18%
+//          overshoot), the hover-eval throttle 100→60ms and the sweep
+//          hysteresis 90→60ms so the pop lands within ~1 frame of the rest
+//          gate opening — PLUS a one-shot RING BURST (WAAPI scale .7→2.15,
+//          440ms) fired at the exact engage moment, and a smaller click
+//          burst on pointerdown. window.__BLOB_STATS counts every
+//          pop/ring/ripple/tap/glide for live verification.
+//
+//      (d) THE GLIDE'S RIGIDITY — v34 deleted the halo spring (correctly —
+//          88px of trail IS lag) but left the replacement stretch at gain
+//          0.00022/max 0.42: at a casual 400px/s that is 8% elongation,
+//          invisible — the cursor reads as a rigid puck, "not smooth". The
+//          liquid character now comes from the deformation being
+//          UNMISSABLE while the position stays glued: STRETCH_GAIN
+//          0.00022→0.00048, STRETCH_MAX 0.42→0.85, STRETCH_ON 60→40,
+//          ANGLE_RATE 14→20. 400px/s → 19%, 1000px/s → 46%, a hand flick
+//          → the full 85% — elongation without a single pixel of lag.
+//
+//      (e) THE RELIEF HITCH — v33's motion-relief toggled a class on <html>:
+//          a FULL-DOCUMENT style invalidation at every gesture start AND
+//          end — on weak GPUs a hitch at exactly the moment the eye is most
+//          sensitive (motion onset), the engine causing a stutter of its
+//          own. v35 delivers the relief INLINE on the handful of burning
+//          elements only (scoped invalidation): inline `!important` beats
+//          every author rule including ID-level !important (cascade
+//          origins), and nothing outside those elements recalcs. Elements
+//          appearing mid-gesture are covered by the 300ms tick's
+//          blob-perf modal detector (the static case), which stays
+//          class-based (a modal open/close is rare and masked by its own
+//          animation).
 //
 //  23. THE v34 ZERO-LATENCY GLIDE LAW (owner report #20: "the blob is not
 //      smooth and glidy in both, make it glide smoothly with 0 latency and
@@ -512,21 +580,66 @@
 // only), underdamped scale spring (omega=24, zeta=0.5, ~16% overshoot) for
 // hover + press, cursor:none gated on html.blob-live (never pointerless).
 
-// ---- v33 MOTION-RELIEF (shared by both engines, header note 22b) --------
-// html.blob-motion is ON while the page is in VISIBLE MOTION — a pointer
-// glide, a scroll, a touch drag. Engine CSS pauses the expensive decorative
-// animations (aura drift, star twinkle) and strips motion-heavy backdrop
-// blurs for exactly that window, so the compositor's frame budget goes to
-// the POINTER instead of a 100px blur over a 700px circle. Ref-counted:
-// each motion source (desktop glide, scroll, touch glow) takes a ref and
-// releases it debounced (180-220ms after its last event), so the class
-// toggles at most ONCE per gesture — a full-document style invalidation
-// (it is a class on <html>) can never itself become the jank it prevents.
-var __jtMotion = { refs: 0, timer: 0 };
+// ---- v35 MOTION-RELIEF (scoped inline, header note 24e) -------------------
+// While the page is in VISIBLE MOTION (a pointer glide, a scroll, a touch
+// drag) the expensive decorative layers step aside so the compositor's frame
+// budget goes to the POINTER: the landing page burns GPU every frame by
+// design (four 300-700px aura circles on filter:blur(100px) with infinite
+// drift/scale animations + a star field twinkling on animated drop-shadow
+// filters, all BEHIND the hero card's backdrop-filter:blur(24px)).
+// v33 delivered this by toggling `blob-motion` on <html> — a FULL-DOCUMENT
+// style invalidation at every gesture start AND end, which on weak GPUs was
+// itself a hitch at exactly the moment the eye is most sensitive (motion
+// onset). v35 writes the relief INLINE on the burning elements only:
+//   - inline `style="... !important"` outranks EVERY author rule in the
+//     cascade, including ID-level `!important` (inline style origin sits
+//     above all author declarations, important or not) — same coverage as
+//     the old class law without the specificity arms race;
+//   - the invalidation is scoped to those elements alone — nothing else in
+//     the document recalcs, so the relief can never itself become jank;
+//   - stashed cssText is restored verbatim on release (elements that had no
+//     inline style get their empty style back, not a residue).
+// Ref-counted exactly as before: each motion source (desktop glide, scroll,
+// touch glow) takes a ref and releases it debounced (180-220ms after its
+// last event), so relief applies at most ONCE per gesture. Elements that
+// APPEAR mid-gesture (a modal opening mid-glide) fall to the 300ms tick's
+// blob-perf detector — the STATIC case, rare and masked by the modal's own
+// animation, which stays class-based on purpose.
+var __jtMotion = { refs: 0, timer: 0, on: false, stash: [] };
+var __JT_RELIEF_BLUR = '.land-dash-card, .land-dash-card *, .sb.blur-on, .sb-overlay.open, .ls-testi-trustbar';
+var __JT_RELIEF_ANIM = '.land-star, .land-aura';
+function __jtMotionApply(on) {
+  if (on === __jtMotion.on) return;
+  __jtMotion.on = on;
+  try {
+    if (on) {
+      var stash = [], seen = new Set();
+      document.querySelectorAll(__JT_RELIEF_BLUR).forEach(function (el) {
+        if (seen.has(el)) return; seen.add(el);
+        stash.push({ el: el, css: el.style.cssText });
+        try {
+          el.style.setProperty('backdrop-filter', 'none', 'important');
+          el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+        } catch (e0) {}
+      });
+      document.querySelectorAll(__JT_RELIEF_ANIM).forEach(function (el) {
+        if (seen.has(el)) return; seen.add(el);
+        stash.push({ el: el, css: el.style.cssText });
+        try { el.style.setProperty('animation-play-state', 'paused', 'important'); } catch (e1) {}
+      });
+      __jtMotion.stash = stash;
+    } else {
+      __jtMotion.stash.forEach(function (s) {
+        try { s.el.style.cssText = s.css; } catch (e2) {}
+      });
+      __jtMotion.stash = [];
+    }
+  } catch (e) {}
+}
 function __jtMotionOn() {
   __jtMotion.refs++;
   if (__jtMotion.timer) { clearTimeout(__jtMotion.timer); __jtMotion.timer = 0; }
-  try { document.documentElement.classList.add('blob-motion'); } catch (e) {}
+  __jtMotionApply(true);
 }
 function __jtMotionOff() {
   if (__jtMotion.refs > 0) __jtMotion.refs--;
@@ -534,22 +647,20 @@ function __jtMotionOff() {
   if (__jtMotion.timer) clearTimeout(__jtMotion.timer);
   __jtMotion.timer = setTimeout(function () {
     __jtMotion.timer = 0;
-    if (__jtMotion.refs === 0) {
-      try { document.documentElement.classList.remove('blob-motion'); } catch (e) {}
-    }
+    if (__jtMotion.refs === 0) __jtMotionApply(false);
   }, 200);
 }
-function __jtMotionKill() { // teardown only: strip instantly, drop every ref
+function __jtMotionKill() { // teardown only: restore instantly, drop every ref
   __jtMotion.refs = 0;
   if (__jtMotion.timer) { clearTimeout(__jtMotion.timer); __jtMotion.timer = 0; }
-  try { document.documentElement.classList.remove('blob-motion'); } catch (e) {}
+  __jtMotionApply(false);
 }
 
 // ---- v19 TOUCH-GLOW ------------------------------------------------------
 // The mobile blob (header note 12). Appears at the finger on contact, tracks
 // it synchronously while it moves (zero lag by construction — the same law
-// as the desktop dot), squeezes on press, springs back with a small pop on
-// release, and dissolves ~140ms after lift. Guarantees:
+// as the desktop dot), squeezes on press, springs back with a pop on
+// release, and dissolves after lift. Guarantees:
 //   - pointer-events:none inline on every layer; listeners passive — it can
 //     never intercept or delay a tap;
 //   - no html.blob-live, no cursor styles — the desktop cursor-swap can
@@ -580,6 +691,12 @@ function initTouchGlow(){
   const glow = document.createElement('div');
   glow.className = 'tg-glow';
   glowStage.appendChild(glow);
+  // v35 TAP RIPPLE: a one-shot expanding ring fired at the exact contact
+  // point (WAAPI, compositor-only — transform + opacity, zero layout). The
+  // signature "smooth touch response" visual: instant, elastic, gone.
+  const ripple = document.createElement('div');
+  ripple.className = 'tg-ripple';
+  glowStage.appendChild(ripple);
   const dotStage = document.createElement('div');
   dotStage.className = 'tg-dot-stage';
   const dot = document.createElement('div');
@@ -612,15 +729,24 @@ function initTouchGlow(){
   const TG_GLOW_STAGE = TG_SMALL ? 132 : 192; // glow stage box
   const TG_DOT = TG_SMALL ? 15 : 18;          // dot diameter
   const TG_GLOW = TG_SMALL ? 52 : 64;         // glow core diameter
+  const TG_RIPPLE = TG_SMALL ? 46 : 60;       // v35: tap ripple ring diameter
 
   const style = document.createElement('style');
   style.textContent = `
     #jt-touch-glow {
       position: fixed; top: 0; left: 0; width: 0; height: 0;
       pointer-events: none; z-index: 2147483646;
-      opacity: 0; transition: opacity 0.3s ease;
+      /* v35 INSTANT-FEEDBACK LAW (header note 24b): the fade used to run on
+         BOTH directions — the glow reached only ~50% opacity during a
+         typical 80-150ms press, so the feedback arrived AFTER the tap
+         ("no smooth touch response"). The transition now lives on the HIDDEN
+         state only: entering .tg-on is a 0s jump (same-frame visibility,
+         the OS-tap-flash class of immediacy), leaving it is a soft .38s
+         ease-out fade. The transition that runs is the one on the element's
+         POST-change state, so this one rule pair does both. */
+      opacity: 0; transition: opacity 0.38s cubic-bezier(0.22, 0.61, 0.36, 1);
     }
-    #jt-touch-glow.tg-on { opacity: 1; }
+    #jt-touch-glow.tg-on { opacity: 1; transition: opacity 0s; }
     #jt-touch-glow .tg-dot-stage {
       position: absolute; width: ${TG_DOT_STAGE}px; height: ${TG_DOT_STAGE}px;
       /* v31: static offset REMOVED (was -half) — the glow dot painted
@@ -653,6 +779,17 @@ function initTouchGlow(){
         rgba(244, 114, 182, 0) 72%);
       transform-origin: 50% 50%; will-change: transform;
     }
+    /* v35 TAP RIPPLE — 60px ring centered in the glow stage (i.e. AT the
+       touch point); the WAAPI burst scales it to ~2.6x (156px, inside the
+       192px stage) while fading out. Pure compositor animation. */
+    #jt-touch-glow .tg-ripple {
+      position: absolute; width: ${TG_RIPPLE}px; height: ${TG_RIPPLE}px;
+      left: ${(TG_GLOW_STAGE - TG_RIPPLE) / 2}px; top: ${(TG_GLOW_STAGE - TG_RIPPLE) / 2}px;
+      border-radius: 50%;
+      border: 2px solid rgba(244, 114, 182, 0.75);
+      opacity: 0; transform: scale(0.55);
+      pointer-events: none; will-change: transform, opacity;
+    }
     /* v26 SOLO-CURSOR LAW (touch path): while the tap glow is on screen it
        IS the pointer — the native arrow (teleported to the tap point on
        touchscreen laptops, nonexistent on phones) must step aside for
@@ -674,11 +811,17 @@ function initTouchGlow(){
   // trail at a casual 400px/s drag, ~59px at a 1500px/s flick — any trail
   // reads as lag under a finger that is PHYSICALLY on the glass). 0.00px
   // at any swipe speed, painted synchronously in the event.
-  // v33: scale springs 22→34 — the tap pop blooms ~1/3 faster ("smooth touch
-  // response taps"), same underdamped overshoot character. The bloom (the
-  // premium feel) is temporal, never positional.
-  const SCALE_OMEGA = 34, SCALE_ZETA = 0.5;  // underdamped pop
-  const PRESS = 0.82, MAX_DT = 0.05;
+  // v35 PREMIUM BLOOM (header note 24b): the scale springs got the confidence
+  // the owner asked for — born .55, swells to .95 while held (a press-FEEL
+  // swell, not the old .82 squeeze — the finger already covers the screen,
+  // the glow should BREATHE OUT to meet it), omega 34→44 / zeta .5→.42 so
+  // the swell lands in ~70ms with a visible overshoot bounce; the release
+  // bloom springs to 1.8 (was 1.45) and the fade waits 260ms (was 140) so
+  // the whole overshoot plays before the soft .38s fade. The bloom (the
+  // premium feel) is temporal, never positional. Reduced motion keeps the
+  // bloom (short bounded interaction feedback) and drops only the ripple.
+  const SCALE_OMEGA = 44, SCALE_ZETA = 0.42;  // underdamped press/release bloom
+  const PRESS = 0.95, MAX_DT = 0.05;
 
   let pid = null;                    // tracked pointer/touch id
   let visible = false, fadeTimer = 0;
@@ -711,11 +854,27 @@ function initTouchGlow(){
       `translate3d(${snap(gx) - GLOW_HALF}px, ${snap(gy) - GLOW_HALF}px, 0)`;
   }
 
+  function fireRipple() {
+    // v35: one-shot expanding ring at the contact point. WAAPI keeps it on
+    // the compositor (transform + opacity only) and self-cleans; skipped for
+    // reduced-motion users (the bloom spring stays — bounded feedback) and
+    // on engines without Element.animate.
+    if (REDUCED) return;
+    try {
+      if (typeof ripple.animate !== 'function') return;
+      if (window.__BLOB_STATS) window.__BLOB_STATS.ripples++;
+      ripple.animate([
+        { transform: 'scale(0.55)', opacity: 0.85 },
+        { transform: 'scale(2.6)', opacity: 0 }
+      ], { duration: 520, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' });
+    } catch (e) {}
+  }
+
   function show(x, y, id) {
     pid = id;
     lastAct = performance.now();
     mx = gx = x; my = gy = y; gvx = gvy = 0;
-    scale = 0.6; scaleVel = 0; target = PRESS;  // born small, pops in
+    scale = 0.55; scaleVel = 0; target = PRESS;  // born small, blooms out
     clearTimeout(fadeTimer);
     if (!visible) {
       visible = true;
@@ -723,8 +882,12 @@ function initTouchGlow(){
       // v26 SOLO-CURSOR LAW: the glow is about to be the only pointer on
       // screen — hide the native arrow for exactly its lifetime.
       document.documentElement.classList.add('blob-touch-live');
-      wrap.classList.add('tg-on');
+      wrap.classList.add('tg-on'); // v35: 0s transition — same-frame visibility
     }
+    // v35: every real contact counts + gets its ripple (even a re-targeting
+    // second finger — that is a new tap as far as the user is concerned).
+    if (window.__BLOB_STATS) window.__BLOB_STATS.taps++;
+    fireRipple();
     // v33 MOTION-RELIEF: a touch drag is visible motion — take the ref for
     // the glow's whole lifetime (released in hide()).
     if (!motionOn) { motionOn = true; __jtMotionOn(); }
@@ -751,9 +914,10 @@ function initTouchGlow(){
   }
   function lift() {
     pid = null;
-    target = 1.45;                 // release pop (springs over, fades out)
+    target = 1.8;                   // v35: full release bloom (was 1.45) …
     clearTimeout(fadeTimer);
-    fadeTimer = setTimeout(hide, 140);
+    fadeTimer = setTimeout(hide, 260); // … and hold it 260ms (was 140) so the
+    // overshoot actually plays before the soft .38s fade takes it away.
     wake();
   }
   function hide() {
@@ -766,7 +930,11 @@ function initTouchGlow(){
     if (motionOn) { motionOn = false; __jtMotionOff(); } // v33: motion ref outlives the fade (~200ms debounce) — close enough
   }
   function wake() {
-    if (!rafId && visible && !REDUCED) {
+    // v35 REDUCED-MOTION DECOUPLING (header note 24a): the bloom spring RUNS
+    // for reduced-motion users — it is short, bounded INTERACTION feedback
+    // (the same class of motion OS cursors keep), not decorative motion. The
+    // old !REDUCED gate left touch users with no feedback animation at all.
+    if (!rafId && visible) {
       lastT = 0;
       rafId = requestAnimationFrame(render);
     }
@@ -861,9 +1029,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v34';
+  window.__BLOB_CURSOR_VERSION = 'v35';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v34 (zero-latency glide: glued halo, pointer-velocity stretch, premium touch, pop preserved; butter-everywhere: motion-relief, rest-only hover, tap-response, popup-perf, frame bridge; visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v35 (premium-feel: reduced-motion keeps the full cursor, instant tap feedback + ripple, unmissable hover pop + ring burst, expressive glued glide, scoped inline motion-relief; zero-latency glide, butter-everywhere, visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -928,7 +1096,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:34';
+      var GUARD = 'blobParachute:35';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -954,7 +1122,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:34';
+      var GUARD2 = 'blobProbe2:35';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
@@ -1164,6 +1332,16 @@ function initTouchGlow(){
   const HAS_TOUCH = (navigator.maxTouchPoints || 0) > 0;
   if (HAS_TOUCH) initTouchGlow();
 
+  // ---- v35 LIVE FEEL-STATS -------------------------------------------------
+  // Every owner-visible feel event is counted here (zero cost, plain
+  // increments) so live probes can PROVE the pop/ring/ripple/tap machinery
+  // actually fired on the served page — geometry probes cannot see feel.
+  // Defined after initTouchGlow only for readability — the whole engine
+  // executes synchronously at load, before any user event can fire; the
+  // glow module's writes are guarded anyway.
+  window.__BLOB_STATS = window.__BLOB_STATS ||
+    { pops: 0, rings: 0, taps: 0, ripples: 0, glides: 0, maxStretch: 0 };
+
   // The desktop cursor engine — all devices. (Touch-only phones: dormant.)
 
   // ---- tuning ------------------------------------------------------------
@@ -1178,29 +1356,37 @@ function initTouchGlow(){
   // lives in the velocity STRETCH (pointer-velocity driven since v34):
   // elongation without positional lag.
   // v34: the glow position constants are GONE — the halo is glued.
-  const SCALE_OMEGA = 24;    // hover/press scale spring stiffness
-  const SCALE_ZETA  = 0.5;   // UNDERDAMPED: ~16% overshoot = the pop
-  const GLOW_SCALE_ZETA = 0.6; // glow pops slightly calmer
+  const SCALE_OMEGA = 34;    // v35 hover/press scale spring (was 24) — the pop
+                             // lands in ~80ms instead of ~150ms
+  const SCALE_ZETA  = 0.45;  // UNDERDAMPED: ~20% overshoot = a VISIBLE pop
+  const GLOW_SCALE_ZETA = 0.5; // glow pops with its own, slightly calmer bounce
   const MAX_DT      = 0.05;  // clamp frame delta (50ms) — stalls never explode
-  const STRETCH_MAX = 0.42;  // max elongation (+42% along motion)
-  // v34: stretch is driven by the smoothed POINTER velocity (the position
-  // spring is gone — its velocity no longer exists to measure). Same gain
-  // and threshold as v33: at a 1000px/s glide the halo elongates ~22%
-  // along the motion vector and relaxes on landing.
-  const STRETCH_GAIN = 0.00022; // px/s of pointer velocity → stretch amount
-  const STRETCH_ON  = 60;    // px/s: pointer speed above which stretch engages
-  const ANGLE_RATE  = 14;    // 1/s — velocity-angle smoothing
-  const VEL_SMOOTH  = 10;    // 1/s — pointer-velocity smoothing for stretch
+  // v35 EXPRESSIVE-GLIDE: v34's gain (0.00022/max 0.42) yielded ≤8% elongation
+  // at a casual 400px/s — invisible, so the glued cursor read as a RIGID
+  // puck ("not smooth"). The liquid character is deformation, never
+  // positional lag: gain 0.00048, max 0.85, engage at 40px/s. 400px/s → 19%,
+  // 1000px/s → 46%, a hand flick saturates at 85% — unmissable elasticity
+  // while the halo stays glued to the pointer (0.00px, the v34 law).
+  const STRETCH_MAX = 0.85;  // max elongation (+85% along motion) at a flick
+  const STRETCH_GAIN = 0.00048; // px/s of pointer velocity → stretch amount
+  const STRETCH_ON  = 40;    // px/s: pointer speed above which stretch engages
+  const ANGLE_RATE  = 20;    // 1/s — stretch/angle smoothing (was 14)
+  const VEL_SMOOTH  = 12;    // 1/s — pointer-velocity smoothing for stretch
   const IDLE_MS     = 1200;  // at rest this long → sleep rAF
   const HOVER_MIN_MOVE = 2;  // px pointer travel before hover re-evaluation
   const HOVER_SLOW_PXMS = 1.5; // px/ms — pointer faster than this relaxes, no pops
-  const FAST_HOLD_MS = 90;   // hysteresis: once fast, gate stays shut 90ms — a
-                             // momentary zero-delta frame mid-sweep (hand
-                             // hesitation, discrete event bursts) can never
-                             // flash a pop; only a REAL stop opens the gate
+  const FAST_HOLD_MS = 60;   // v35 (was 90): hysteresis — a momentary zero-delta
+                             // frame mid-sweep can never flash a pop, but the
+                             // gate now opens within ~1 frame of a REAL stop
+                             // so the pop lands the instant the pointer does
   const SCROLL_SUPPRESS_MS = 250; // ms after any scroll: hover stays relaxed
-  const HOVER_DOT   = 1.65;  // dot scale target while on interactive elements
-  const HOVER_GLOW  = 1.40;  // glow scale target while hovering
+  // v35 UNMISSABLE POP (header note 24c): "i am not getting that hover pop
+  // effect" — a 17px dot scaling to 1.65 was too easy to miss. The dot now
+  // scales to 1.9, the halo to 1.55, and a one-shot RING BURST fires at the
+  // engage moment (see fireRing below) — the pop is an EVENT you see from
+  // across the room, still capped, still bounded, still a landing state.
+  const HOVER_DOT   = 1.9;   // dot scale target while on interactive elements
+  const HOVER_GLOW  = 1.55;  // glow scale target while hovering
   const PRESS_DOT   = 0.82;  // dot scale while pointer is down
   const PRESS_GLOW  = 0.90;  // glow scale while pointer is down
   // v33 REST-ONLY HOVER: hover is sensed ONLY after the pointer has been at
@@ -1225,8 +1411,18 @@ function initTouchGlow(){
   // (the glow module never booted) — falsy, zero impact.
   function glowOwnsPointer() { return window.__jtTouchGlowActive === true; }
   const FORCE_LITE = new URLSearchParams(location.search).has('blob-lite');
-  // Lite / reduced: dot glued to the pointer (event-driven), no glow, no loop.
-  const LITE = FORCE_LITE || REDUCED_MOTION;
+  // v35 REDUCED-MOTION DECOUPLING (header note 24a): reduced motion NO
+  // LONGER implies LITE. The old coupling handed anyone with Windows "Show
+  // animations" OFF a bare 17px dot — no halo, no stretch, NO HOVER POP on
+  // the laptop and NO BLOOM on touch — the exact "it still didn't happen /
+  // not smooth / no hover pop / no smooth touch response" report shape on
+  // BOTH devices at once. The blob is the site's CURSOR (functional, not
+  // decorative): reduced motion keeps the full premium cursor — halo, pop,
+  // press, bloom, all short bounded INTERACTION feedback — and drops only
+  // the motion-for-motion's-sake layer (glide stretch + one-shot rings).
+  // LITE (bare dot, event-painted, no loop) remains reachable via ?blob-lite
+  // for debugging and true low-power escapes.
+  const LITE = FORCE_LITE;
 
   // ---- DOM: two fixed-size stages, one transform write per layer per frame
   // v17: pointer-events:none is set INLINE on every layer as well as in CSS —
@@ -1238,6 +1434,13 @@ function initTouchGlow(){
   const dot = document.createElement('div');
   dot.className = 'jt-dot';
   dotStage.appendChild(dot);
+  // v35 RING BURST (header note 24c): a one-shot expanding ring fired at
+  // the hover-engage moment and on clicks (WAAPI, compositor-only —
+  // transform + opacity, zero layout, self-cleaning). This is the "hover
+  // pop effect" the owner can SEE: the dot scales up AND a ring blooms out
+  // from under it. Not created in LITE mode (bare dot is the LITE contract).
+  const ring = !LITE ? document.createElement('div') : null;
+  if (ring) { ring.className = 'jt-ring'; dotStage.appendChild(ring); }
   const glowStage = document.createElement('div');
   glowStage.className = 'jt-glow-stage';
   const glow = document.createElement('div');
@@ -1351,6 +1554,21 @@ function initTouchGlow(){
         rgba(244, 114, 182, 0) 72%);
       transform-origin: 50% 50%; will-change: transform;
     }
+    /* v35 RING BURST — 30px ring centered on the dot inside the 72px dot
+       stage; the WAAPI burst scales it to ~2.15x (65px, inside the stage)
+       while fading. Lives at rest opacity 0 (invisible until fired). */
+    #custom-cursor .jt-ring {
+      position: absolute; width: 30px; height: 30px;
+      left: 21px; top: 21px; border-radius: 50%;
+      border: 1.5px solid rgba(244, 114, 182, 0.9);
+      opacity: 0; transform: scale(0.7);
+      pointer-events: none; will-change: transform, opacity;
+    }
+    /* v35: the old html.blob-motion rules are GONE — motion-relief is now
+        delivered INLINE on the burning elements only (see __jtMotionApply,
+        header note 24e). A class flip on <html> was a full-document style
+        invalidation at every gesture boundary — a hitch at motion onset,
+        the engine causing the very stutter it was preventing. */
     /* Full-screen scrim perf mode: strip the blur for the whole time a
        modal/auth sheet is open. Static state — no toggling while open.
        v33 POPUP-PERF SPECIFICITY FIX: #modal-welcome's own ID-level
@@ -1367,29 +1585,7 @@ function initTouchGlow(){
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-    /* v33 MOTION-RELIEF LAW (header note 22b): while the page is in VISIBLE
-       MOTION (html.blob-motion — a pointer glide, a scroll, a touch drag;
-       ref-counted + debounced, never toggled mid-gesture) the expensive
-       decorative layers step aside so the compositor's frame budget goes to
-       the pointer. The landing burns GPU every frame by design: four
-       300-700px aura circles on filter:blur(100px) with infinite
-       drift/scale animations + a star field twinkling on animated
-       drop-shadow filters, ALL BEHIND the hero card's
-       backdrop-filter:blur(24px) — the card re-filters its backdrop every
-       frame any of that moves, and the blob's glide competed with that for
-       the GPU = "lagging a lot". During motion: the animations pause, the
-       motion-heavy backdrop blurs strip. 200ms after the last motion event
-       everything returns. At rest the landing stays alive; in motion the
-       frames belong to the pointer. */
-    html.blob-motion .land-dash-card, html.blob-motion .land-dash-card *,
-    html.blob-motion .sb.blur-on, html.blob-motion .sb-overlay.open,
-    html.blob-motion .ls-testi-trustbar {
-      backdrop-filter: none !important;
-      -webkit-backdrop-filter: none !important;
-    }
-    html.blob-motion .land-star, html.blob-motion .land-aura {
-      animation-play-state: paused !important;
-    }
+    /* v33 MOTION-RELIEF was here — v35 delivers it inline (no class). */
     /* v33 COARSE-POINTER GPU RELIEF (header note 22d): phones pay a
        per-frame blur tax on sticky chrome — the app's topbar re-blurs
        everything scrolling under it, the hero card re-filters the twinkles.
@@ -1444,13 +1640,14 @@ function initTouchGlow(){
   let havePointer = false;
   let visible = false;
   let rafId = 0, lastT = 0, lastMoveAt = 0;
-  // v33 MOTION-RELIEF state: one ref for the pointer glide, one for scrolls.
-  // Each is taken ONCE per gesture and released debounced (180/220ms after
-  // its last event) — html.blob-motion toggles at most twice per gesture.
+  // v33/v35 MOTION-RELIEF state: one ref for the pointer glide, one for
+  // scrolls. Each is taken ONCE per gesture and released debounced (180/220ms
+  // after its last event); the shared helper applies/relieves the INLINE
+  // element-level relief at most once per gesture (v35 — see __jtMotionApply).
   let ptrMotion = false, ptrMotionT = 0;
   let scrollMotion = false, scrollMotionT = 0;
   function motionTake() {
-    if (!ptrMotion) { ptrMotion = true; __jtMotionOn(); }
+    if (!ptrMotion) { ptrMotion = true; __jtMotionOn(); window.__BLOB_STATS.glides++; }
     clearTimeout(ptrMotionT);
     ptrMotionT = setTimeout(function () {
       if (ptrMotion) { ptrMotion = false; __jtMotionOff(); }
@@ -1508,6 +1705,24 @@ function initTouchGlow(){
   function paintGlow() {
     glowStage.style.transform =
       `translate3d(${snap(gx) - GLOW_STAGE_HALF}px, ${snap(gy) - GLOW_STAGE_HALF}px, 0)`;
+  }
+
+  // ---- v35 RING BURST (header note 24c) -----------------------------------
+  // One-shot expanding ring — the visible half of the hover pop. WAAPI
+  // (transform + opacity only) runs on the compositor and self-cleans, so
+  // it can never fight the CSS or leak a stuck visual. Skipped for
+  // reduced-motion users (the scale-spring pop itself stays — bounded
+  // interaction feedback) and in LITE mode (no ring element exists).
+  function fireRing(from, to, dur) {
+    if (!ring || REDUCED_MOTION) return;
+    try {
+      if (typeof ring.animate !== 'function') return;
+      window.__BLOB_STATS.rings++;
+      ring.animate([
+        { transform: 'scale(' + from + ')', opacity: 0.8 },
+        { transform: 'scale(' + to + ')', opacity: 0 }
+      ], { duration: dur, easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)' });
+    } catch (e) {}
   }
 
   // ---- events: store + paint dot + wake ----------------------------------
@@ -1575,6 +1790,7 @@ function initTouchGlow(){
     lastMoveAt = performance.now();
     if (e.clientX || e.clientY) { mx = e.clientX; my = e.clientY; dx = mx; dy = my; }
     paintDot(); // the dot is EXACTLY under the click point at click time
+    fireRing(0.55, 1.75, 300); // v35: the click burst — press squeeze + ring
     wake(false);
   }, { passive: true, capture: true });
   window.addEventListener(EV_UP, () => { press = 1; wake(false); }, { passive: true });
@@ -1874,17 +2090,27 @@ function initTouchGlow(){
       }
       return;
     }
-    // v24 LIGHT-TOUCH HOVER: 10 Hz is imperceptible for a pop that plays
-    // when the pointer STOPS; with the rest gate above, this now bounds
-    // hit-tests to a couple per landing instead of a 10 Hz stream.
-    if (now - lastHoverEval < 100) return;
+    // v24 LIGHT-TOUCH HOVER, v35-tightened: with the rest gate above this
+    // bounds hit-tests to a couple per landing; the 60ms throttle (was 100)
+    // means the pop eval fires within ~1 frame of the rest gate opening,
+    // so the pop lands the moment the pointer does.
+    if (now - lastHoverEval < 60) return;
     lastHoverEval = now;
     const moved = Math.abs(mx - lastHoverX) + Math.abs(my - lastHoverY) > HOVER_MIN_MOVE;
     if (!moved) return;
     lastHoverX = mx; lastHoverY = my;
     const el = document.elementFromPoint(mx, my);
-    const hit = el && el.closest && el.closest(INTERACTIVE);
+    const hit = !!(el && el.closest && el.closest(INTERACTIVE));
+    const wasPopped = hoverTarget > 1;
     hoverTarget = hit ? HOVER_DOT : 1;
+    if (hit && !wasPopped) {
+      // v35 THE ENGAGE MOMENT: flat → popped on a target. Count it and make
+      // it VISIBLE — the ring burst is the "hover pop effect" the owner
+      // asked to keep, now unmissable (dot 1.9x + halo 1.55x + ring bloom).
+      window.__BLOB_STATS.pops++;
+      fireRing(0.7, 2.15, 440);
+      wake(false); // loop may be asleep — wake it so the pop animates
+    }
   }
 
   // ---- the loop -----------------------------------------------------------
@@ -1928,13 +2154,18 @@ function initTouchGlow(){
 
     // Stretch from the POINTER's own (smoothed) velocity — the liquid
     // glide elongation without a single pixel of positional lag.
+    // v35: gated OFF for reduced-motion users (continuous decorative
+    // deformation), everything else about the cursor stays premium.
     const pvx = pdx / dt, pvy = pdy / dt; // px/s (dt > 0 guaranteed above)
     const v = Math.hypot(pvx, pvy);
     vSmooth += (v - vSmooth) * (1 - Math.exp(-VEL_SMOOTH * dt));
-    const sTarget = vSmooth > STRETCH_ON
+    const sTarget = (!REDUCED_MOTION && vSmooth > STRETCH_ON)
       ? Math.min(vSmooth * STRETCH_GAIN, STRETCH_MAX)
       : 0;
     stretch += (sTarget - stretch) * (1 - Math.exp(-ANGLE_RATE * dt));
+    if (stretch > window.__BLOB_STATS.maxStretch) {
+      window.__BLOB_STATS.maxStretch = stretch;
+    }
     if (v > 120) {
       // shortest-arc smoothing — the blob never spins the long way round
       const target = Math.atan2(pvy, pvx);
