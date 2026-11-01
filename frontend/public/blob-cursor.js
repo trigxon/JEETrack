@@ -1,4 +1,39 @@
-// blob-cursor.js v33 — "the butter-everywhere law".
+// blob-cursor.js v34 — "the zero-latency glide law".
+//
+//  23. THE v34 ZERO-LATENCY GLIDE LAW (owner report #20: "the blob is not
+//      smooth and glidy in both, make it glide smoothly with 0 latency and
+//      premium touch — keep that hover pop effect a bit"). v33 tightened the
+//      halo spring to omega 64 — the trail fell from ~88px to ~34px at a
+//      casual 1000px/s glide, but 34px of pink mass still dragging behind
+//      the dot still reads as "not smooth and glidy": ANY spring trail is
+//      latency. v34 deletes the position spring entirely:
+//
+//      (a) THE GLUED-HALO LAW. The halo's position is now the pointer's
+//          position — gx = mx, gy = my, painted synchronously in the event
+//          exactly like the dot (the v16 prime directive, extended to the
+//          whole cursor). 0.00px trail at ANY speed, by construction. What
+//          made the trailing halo feel "liquid" is preserved a different
+//          way: the velocity STRETCH (elongation along the motion vector)
+//          is now driven by the smoothed POINTER velocity instead of the
+//          spring's own velocity — the blob still elongates into a glide
+//          and relaxes on landing, without a single pixel of positional
+//          lag. The angle follows the pointer's motion vector.
+//
+//      (b) THE PREMIUM-TOUCH LAW. The tap glow's halo gets the same
+//          treatment: gx = mx, gy = my — the halo sits EXACTLY under the
+//          finger from the first touchmove, 0.00px drag trail at any
+//          swipe speed (omega 56 still left ~16px at a casual 400px/s
+//          drag). The scale bloom stays a real underdamped spring (omega
+//          34, zeta 0.5): the tap pop blooms fast (~50ms), overshoots
+//          ~16%, settles elastically, releases with a 1.45 expansion and
+//          fades — instant under the finger, buttery in time.
+//
+//      (c) THE POP-PRESERVATION LAW. "Keep that hover pop effect a bit":
+//          the hover pop (HOVER_DOT 1.65 / HOVER_GLOW 1.40 underdamped
+//          springs, ~16% overshoot) ships UNCHANGED, and REST_MS 70→50 —
+//          the rest gate opens 20ms sooner so the pop lands the moment
+//          the pointer does, still never hit-testing mid-glide (the v33
+//          rest-only hover law stands: zero forced layouts while moving).
 //
 //  22. THE v33 BUTTER-EVERYWHERE LAW (owner report #19: "the blob should
 //      come everywhere in the whole website, and it is lagging a lot, so
@@ -634,14 +669,14 @@ function initTouchGlow(){
   const dpr = () => Math.max(1, window.devicePixelRatio || 1);
   const snap = (v) => Math.round(v * dpr()) / dpr();
   const DOT_HALF = TG_DOT_STAGE / 2, GLOW_HALF = TG_GLOW_STAGE / 2;
-  // v33 TRAIL-TIGHTNESS: omega 22→56, zeta 1.05→1.10 — the halo GLUES to the
-  // finger during swipes (steady trail = 2*zeta/omega * speed: at a 1500px/s
-  // flick it fell from ~143px to ~59px; at a casual 400px/s drag from ~38px
-  // to ~16px). A trailing mass under a moving finger reads as "lag"; the
-  // dot was always instant (the v16 law), now the halo is too.
-  const GLOW_OMEGA = 56, GLOW_ZETA = 1.10;
+  // v34 PREMIUM-TOUCH GLUED-HALO: the halo position IS the touch position —
+  // the position spring is DELETED (omega 56/zeta 1.10 still left ~16px of
+  // trail at a casual 400px/s drag, ~59px at a 1500px/s flick — any trail
+  // reads as lag under a finger that is PHYSICALLY on the glass). 0.00px
+  // at any swipe speed, painted synchronously in the event.
   // v33: scale springs 22→34 — the tap pop blooms ~1/3 faster ("smooth touch
-  // response taps"), same underdamped overshoot character.
+  // response taps"), same underdamped overshoot character. The bloom (the
+  // premium feel) is temporal, never positional.
   const SCALE_OMEGA = 34, SCALE_ZETA = 0.5;  // underdamped pop
   const PRESS = 0.82, MAX_DT = 0.05;
 
@@ -711,6 +746,7 @@ function initTouchGlow(){
       gx = mx; gy = my; gvx = gvy = 0;
     }
     paintDot();                    // zero lag, the prime directive
+    paintGlow();                   // v34: the halo too — glued under the finger
     wake();
   }
   function lift() {
@@ -744,8 +780,9 @@ function initTouchGlow(){
     if (dt > MAX_DT) dt = MAX_DT;
     if (dt <= 0) { rafId = requestAnimationFrame(render); return; }
 
-    [gx, gvx] = springStep(gx, gvx, mx, GLOW_OMEGA, GLOW_ZETA, dt);
-    [gy, gvy] = springStep(gy, gvy, my, GLOW_OMEGA, GLOW_ZETA, dt);
+    // v34 GLUED-HALO (touch): no position spring — the halo sits EXACTLY
+    // under the finger every frame; only the scale bloom animates here.
+    gx = mx; gy = my; gvx = gvy = 0;
     [scale, scaleVel] = springStep(scale, scaleVel, target, SCALE_OMEGA, SCALE_ZETA, dt);
     target += (1 - target) * (1 - Math.exp(-9 * dt)); // release pop decays to rest
 
@@ -824,9 +861,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v33';
+  window.__BLOB_CURSOR_VERSION = 'v34';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v33 (butter-everywhere: trail-tight springs, motion-relief, rest-only hover, tap-response, popup-perf specificity, same-origin frame bridge; visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v34 (zero-latency glide: glued halo, pointer-velocity stretch, premium touch, pop preserved; butter-everywhere: motion-relief, rest-only hover, tap-response, popup-perf, frame bridge; visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -891,7 +928,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:33';
+      var GUARD = 'blobParachute:34';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -917,7 +954,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:33';
+      var GUARD2 = 'blobProbe2:34';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
@@ -1132,27 +1169,28 @@ function initTouchGlow(){
   // ---- tuning ------------------------------------------------------------
   // v16: the dot has NO position spring — its position IS the pointer's
   // position, painted synchronously in the event (zero lag by construction,
-  // the v9 law). Only the glow springs.
-  // v33 TRAIL-TIGHTNESS: omega 24→64, zeta 1.05→1.10. The old spring's
-  // steady-state trail (2*zeta/omega * speed) left the 192px halo ~88px
-  // behind the pointer at a casual 1000px/s glide and ~175px at a real hand
-  // flick — the pink mass the user aims with read as "the blob is lagging
-  // a lot". Now: ~34px at 1000px/s, ~10px at 300px/s (time constant ~14ms
-  // — still liquid, now hugging the dot).
-  const GLOW_OMEGA  = 64;    // glow trail stiffness — the mass hugs the aim point
-  const GLOW_ZETA   = 1.10;  // hair overdamped: no rubber-band wobble
+  // the v9 law). v34 GLUED-HALO: the glow gets the same law — NO position
+  // spring at all; gx = mx / gy = my, painted synchronously in the event.
+  // The v33 spring (omega 64, zeta 1.10) still trailed the halo ~34px at a
+  // casual 1000px/s glide (2*zeta/omega * speed) and ~175px at a real hand
+  // flick — ANY trail is latency the user reads as "not smooth and glidy".
+  // 0.00px at any speed, by construction. The liquid glide character now
+  // lives in the velocity STRETCH (pointer-velocity driven since v34):
+  // elongation without positional lag.
+  // v34: the glow position constants are GONE — the halo is glued.
   const SCALE_OMEGA = 24;    // hover/press scale spring stiffness
   const SCALE_ZETA  = 0.5;   // UNDERDAMPED: ~16% overshoot = the pop
   const GLOW_SCALE_ZETA = 0.6; // glow pops slightly calmer
   const MAX_DT      = 0.05;  // clamp frame delta (50ms) — stalls never explode
   const STRETCH_MAX = 0.42;  // max elongation (+42% along motion)
-  // v33: tighter spring => lower glow velocity for the same pointer speed;
-  // stretch engages earlier (60 vs 90 px/s) and gains harder so the liquid
-  // elongation survives the tightening.
-  const STRETCH_GAIN = 0.00022; // px/s of glow velocity → stretch amount
-  const STRETCH_ON  = 60;    // px/s: glow speed above which stretch engages
+  // v34: stretch is driven by the smoothed POINTER velocity (the position
+  // spring is gone — its velocity no longer exists to measure). Same gain
+  // and threshold as v33: at a 1000px/s glide the halo elongates ~22%
+  // along the motion vector and relaxes on landing.
+  const STRETCH_GAIN = 0.00022; // px/s of pointer velocity → stretch amount
+  const STRETCH_ON  = 60;    // px/s: pointer speed above which stretch engages
   const ANGLE_RATE  = 14;    // 1/s — velocity-angle smoothing
-  const VEL_SMOOTH  = 10;    // 1/s — glow-velocity smoothing for stretch
+  const VEL_SMOOTH  = 10;    // 1/s — pointer-velocity smoothing for stretch
   const IDLE_MS     = 1200;  // at rest this long → sleep rAF
   const HOVER_MIN_MOVE = 2;  // px pointer travel before hover re-evaluation
   const HOVER_SLOW_PXMS = 1.5; // px/ms — pointer faster than this relaxes, no pops
@@ -1170,7 +1208,10 @@ function initTouchGlow(){
   // flush, and hit-testing mid-glide on the mutating dashboard made the
   // ENGINE part of the jank ("lagging a lot"). The pop plays when you LAND
   // on a button, which is what a pop is for.
-  const REST_MS     = 70;    // pointer still for this long → hover may sense
+  // v34 POP-PRESERVATION: "keep that hover pop effect a bit" — the pop
+  // itself is untouched; the rest gate opens 20ms sooner (70→50) so it
+  // lands the moment the pointer does. Still zero hit-tests mid-glide.
+  const REST_MS     = 50;    // pointer still for this long → hover may sense
   const TRAVEL_RELAX_PX = 24; // glided this far off the last target → relax NOW
                              // (pure arithmetic — no hit-test mid-travel)
 
@@ -1457,9 +1498,16 @@ function initTouchGlow(){
   // The dot's position is the pointer's position, painted SYNCHRONOUSLY in
   // the event — no rAF round-trip, no spring state. A click can never land
   // anywhere but exactly under the dot the user is aiming with.
+  // v34 GLUED-HALO: the halo obeys the same directive — its position is
+  // painted synchronously in the event too. The WHOLE cursor is zero-lag
+  // by construction, not just the dot.
   function paintDot() {
     dotStage.style.transform =
       `translate3d(${snap(mx) - DOT_STAGE_HALF}px, ${snap(my) - DOT_STAGE_HALF}px, 0)`;
+  }
+  function paintGlow() {
+    glowStage.style.transform =
+      `translate3d(${snap(gx) - GLOW_STAGE_HALF}px, ${snap(gy) - GLOW_STAGE_HALF}px, 0)`;
   }
 
   // ---- events: store + paint dot + wake ----------------------------------
@@ -1487,9 +1535,11 @@ function initTouchGlow(){
     lastMoveAt = performance.now();
     motionTake(); // v33: a glide is visible motion — relief for its duration
     // Zero lag BY CONSTRUCTION: dot = pointer, painted inline, every event,
-    // even while the render loop is asleep.
+    // even while the render loop is asleep. v34: the halo too (glued law).
     dx = mx; dy = my; dvx = dvy = 0;
+    gx = mx; gy = my; gvx = gvy = 0;
     paintDot();
+    paintGlow();
     // First contact OR re-show after any hide path (mouseleave, touch,
     // recording overlays eating events): snap the GLOW to the FRESH position
     // and show. This is what makes "cursor disappeared forever" impossible.
@@ -1871,12 +1921,15 @@ function initTouchGlow(){
       gx = mx; gy = my; gvx = gvy = 0;
     }
 
-    // Glow spring → pointer (the trail).
-    [gx, gvx] = springStep(gx, gvx, mx, GLOW_OMEGA, GLOW_ZETA, dt);
-    [gy, gvy] = springStep(gy, gvy, my, GLOW_OMEGA, GLOW_ZETA, dt);
+    // v34 GLUED-HALO: the halo position IS the pointer position — no
+    // spring, no trail, 0.00px at any speed (also painted synchronously in
+    // the event; this line keeps every render path coherent).
+    gx = mx; gy = my; gvx = gvy = 0;
 
-    // Stretch from the glow spring's own (continuous) velocity.
-    const v = Math.hypot(gvx, gvy);
+    // Stretch from the POINTER's own (smoothed) velocity — the liquid
+    // glide elongation without a single pixel of positional lag.
+    const pvx = pdx / dt, pvy = pdy / dt; // px/s (dt > 0 guaranteed above)
+    const v = Math.hypot(pvx, pvy);
     vSmooth += (v - vSmooth) * (1 - Math.exp(-VEL_SMOOTH * dt));
     const sTarget = vSmooth > STRETCH_ON
       ? Math.min(vSmooth * STRETCH_GAIN, STRETCH_MAX)
@@ -1884,7 +1937,7 @@ function initTouchGlow(){
     stretch += (sTarget - stretch) * (1 - Math.exp(-ANGLE_RATE * dt));
     if (v > 120) {
       // shortest-arc smoothing — the blob never spins the long way round
-      const target = Math.atan2(gvy, gvx);
+      const target = Math.atan2(pvy, pvx);
       let delta = target - angle;
       while (delta > Math.PI) delta -= 2 * Math.PI;
       while (delta < -Math.PI) delta += 2 * Math.PI;

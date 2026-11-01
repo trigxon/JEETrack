@@ -4474,20 +4474,43 @@ Return ONLY valid JSON. No markdown. insights array: 3-7 items following the inc
 }`;
 
   try {
-    
-    const response=await fetch(`${SUPABASE_URL}/functions/v1/ai-insights`,{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+session.access_token
-      },
-      body:JSON.stringify({prompt})
-    });
-    if(!response.ok){
-      const err=await response.json().catch(()=>({}));
-      throw new Error(err.error?.message||`HTTP ${response.status}`);
+
+    // report #20 AI chain: the same-origin /api/ai-insights route (deployed
+    // with the app, key from the hosting env) serves first; the Supabase
+    // edge function stays as the fallback leg. The route answers
+    // 503 {configured:false} when no AI key lives in its env — in that
+    // world the edge function remains the single source of AI exactly as
+    // before, so this chain can only add a working path, never remove one.
+    let _errA=null,_errB=null;
+    const callAI=async(url)=>{
+      const r=await fetch(url,{
+        method:'POST',
+        headers:{
+          'Content-Type':'application/json',
+          'Authorization':'Bearer '+session.access_token
+        },
+        body:JSON.stringify({prompt})
+      });
+      if(!r.ok){
+        const err=await r.json().catch(()=>({}));
+        if(r.status===503&&err&&err.configured===false) return null;
+        throw new Error(err?.error?.message||('HTTP '+r.status));
+      }
+      return await r.json();
+    };
+    const tryChain=async()=>{
+      let d=null;
+      try{ d=await callAI('/api/ai-insights'); }catch(e){ _errA=e; }
+      if(!d){ try{ d=await callAI(`${SUPABASE_URL}/functions/v1/ai-insights`); }catch(e){ _errB=e; } }
+      return d;
+    };
+    let data=await tryChain();
+    if(!data&&((_errB&&/rate|429/i.test(_errB.message))||(_errA&&/rate|429/i.test(_errA.message)))){
+      await new Promise(r=>setTimeout(r,2500));
+      _errA=null;_errB=null;
+      data=await tryChain();
     }
-    const data=await response.json();
+    if(!data) throw (_errB||_errA||new Error('AI service unavailable. Try again.'));
     clearInterval(msgInt);
     if(progressBar)progressBar.style.width='100%';
     await new Promise(r=>setTimeout(r,400));
