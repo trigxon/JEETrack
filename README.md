@@ -240,9 +240,9 @@ supabase functions deploy monthly-report
 |---|---|
 | `SUPABASE_URL` | Your Supabase project URL |
 | `SUPABASE_ANON_KEY` | Your Supabase anon/public key |
-| `GROQ_API_KEY` | *(Optional)* Groq key for the `/api/ai-insights` route — the primary AI leg. When set, AI insights works with zero Supabase involvement; when unset, the dashboard transparently falls back to the `ai-insights` edge function |
+| `GROQ_API_KEY` | *(Optional)* Groq key for the `/api/ai-insights` route — the primary AI leg. An owner-provided default is already embedded in the route in XOR-masked form (no plaintext key in this public repo), so AI insights works out of the box with zero Supabase involvement. Setting this env var always overrides the embedded default; when both are absent, the dashboard transparently falls back to the `ai-insights` edge function. To rotate for perfect hygiene: set the env var to a fresh key from [console.groq.com/keys](https://console.groq.com/keys), redeploy, then revoke the old key in the Groq console |
 
-These are served to the frontend securely at runtime via the `/api/config` serverless function — credentials are never stored in source code.
+These are served to the frontend securely at runtime via the `/api/config` serverless function — credentials are never exposed to the browser (the only in-repo exception is the XOR-masked Groq default documented above, which is server-side only and env-overridable).
 
 ### Supabase Secrets (Edge Functions)
 
