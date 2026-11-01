@@ -1,4 +1,19 @@
-// blob-cursor.js v35 — "the premium-feel law".
+// blob-cursor.js v36 — "the premium-feel law + fade ownership".
+//
+//  25. THE v36 FADE-OWNERSHIP LAW (found live while proving v35: jt_v26 D2
+//      raced the glow watchdog's 2500ms tick INSIDE the 260ms release-bloom
+//      window and the glow vanished mid-bloom at +120ms). The v22 watchdog
+//      hides any glow with pid === null — but post-LIFT pid is ALWAYS null
+//      while the release bloom plays, so any watchdog tick landing in that
+//      window truncated the release at a random moment: a non-deterministic
+//      tap animation that reads as janky touch feedback (v34's 140ms window
+//      made it a ~5% race per tap; v35's 260ms bloom doubled it). The fade
+//      path now OWNS the hide for exactly the release window (fading flag:
+//      set in lift(), cleared in hide()/show() — a re-tap reclaims
+//      ownership instantly), and the watchdog keeps every genuinely-stuck
+//      case: a missed pointerup (pid stuck non-null, 3s no-activity) and a
+//      held-then-abandoned finger both still get repaired. Everything else
+//      in this file is the shipped v35 premium-feel law, unchanged.
 //
 //  24. THE v35 PREMIUM-FEEL LAW (owner report #22: "remember what i said to
 //      do with the blob in mobile and laptop, it still didn't happen, it is
@@ -825,6 +840,15 @@ function initTouchGlow(){
 
   let pid = null;                    // tracked pointer/touch id
   let visible = false, fadeTimer = 0;
+  // v35 FADE-OWNERSHIP: true while the post-lift release bloom's hide timer
+  // is pending. The 2.5s watchdog used to hide any glow with pid === null —
+  // which is the NORMAL state during the whole release window (lift sets
+  // pid null immediately, the bloom plays for 260ms). A watchdog tick
+  // landing inside that window truncated the release bloom at a random
+  // moment — a non-deterministic release animation that reads as janky
+  // touch feedback. The fade path owns the hide while fading; the watchdog
+  // keeps every genuinely-stuck case (missed pointerup, 3s no-activity).
+  let fading = false;
   let lastAct = 0;                   // last real down/move (the v22 freeze law)
   let motionOn = false;              // v33: this module's blob-motion ref
   let mx = -300, my = -300;
@@ -872,6 +896,7 @@ function initTouchGlow(){
 
   function show(x, y, id) {
     pid = id;
+    fading = false;                // v35: a new contact reclaims ownership
     lastAct = performance.now();
     mx = gx = x; my = gy = y; gvx = gvy = 0;
     scale = 0.55; scaleVel = 0; target = PRESS;  // born small, blooms out
@@ -914,6 +939,7 @@ function initTouchGlow(){
   }
   function lift() {
     pid = null;
+    fading = true;                 // v35: the fade path owns the hide now
     target = 1.8;                   // v35: full release bloom (was 1.45) …
     clearTimeout(fadeTimer);
     fadeTimer = setTimeout(hide, 260); // … and hold it 260ms (was 140) so the
@@ -923,6 +949,7 @@ function initTouchGlow(){
   function hide() {
     // v26: strip the cursor law FIRST — if anything below throws, the worst
     // state is the old one (glow + arrow), never the pointerless inverse.
+    fading = false; // v35: fade ownership ends with the hide itself
     window.__jtTouchGlowActive = false; // v29: hand the pointer back
     document.documentElement.classList.remove('blob-touch-live');
     visible = false;
@@ -1012,8 +1039,13 @@ function initTouchGlow(){
   // it was built for. A finger held still >3s loses the glow — acceptable:
   // the tap feedback has long since played, and a frozen glow that sits on
   // screen forever reads as "the blob is broken".
+  // v35 FADE-OWNERSHIP: skip while the release bloom's own hide timer is
+  // pending (fading) — post-lift pid===null is the NORMAL release state, not
+  // a stuck glow; truncating the bloom at a random tick read as janky touch
+  // feedback (proven live: jt_v26 D2 raced the 2500ms tick inside the 260ms
+  // release window and the glow vanished at +120ms).
   setInterval(() => {
-    if (visible && (pid === null || performance.now() - lastAct > 3000)) hide();
+    if (visible && !fading && (pid === null || performance.now() - lastAct > 3000)) hide();
   }, 2500);
 }
 
@@ -1029,9 +1061,9 @@ function initTouchGlow(){
 
   // Support marker (see header note 13): the admin engine chip reads this
   // out of the SERVED file and compares it with the ?v= the page loaded.
-  window.__BLOB_CURSOR_VERSION = 'v35';
+  window.__BLOB_CURSOR_VERSION = 'v36';
   try {
-    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v35 (premium-feel: reduced-motion keeps the full cursor, instant tap feedback + ripple, unmissable hover pop + ring burst, expressive glued glide, scoped inline motion-relief; zero-latency glide, butter-everywhere, visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
+    console.info('%c\u25C8 JEE ADV OSINT \u2014 cursor engine v36 (fade-ownership + premium-feel: reduced-motion keeps the full cursor, instant tap feedback + ripple, unmissable hover pop + ring burst, expressive glued glide, scoped inline motion-relief; zero-latency glide, butter-everywhere, visual-truth, coherence-heartbeat, pointer-class, glow-active, solo-cursor, parachute law)',
       'color:#f472b6;font-weight:700');
   } catch (e) {}
 
@@ -1096,7 +1128,7 @@ function initTouchGlow(){
   (function parachuteCheck() {
     try {
       if (!navigator.serviceWorker || !navigator.serviceWorker.getRegistrations) return;
-      var GUARD = 'blobParachute:35';
+      var GUARD = 'blobParachute:36';
       try { if (sessionStorage.getItem(GUARD)) return; } catch (e0) {}
       navigator.serviceWorker.getRegistrations().then(function (regs) {
         var waiting = null;
@@ -1122,7 +1154,7 @@ function initTouchGlow(){
   (function focusReprobe() {
     try {
       if (!window.fetch) return;
-      var GUARD2 = 'blobProbe2:35';
+      var GUARD2 = 'blobProbe2:36';
       var expected2 = null;
       try { expected2 = document.currentScript
         ? new URL(document.currentScript.src).searchParams.get('v') : null;
