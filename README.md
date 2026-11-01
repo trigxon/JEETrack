@@ -75,7 +75,7 @@
 | 📝 | **Test Tracker** | Log JEE Mains / Advanced mock scores with trend charts and performance analytics |
 | 📚 | **Syllabus Tracker** | Topic-level coverage across Physics, Chemistry & Maths |
 | 🗂️ | **To-Do & Backlog** | Task management with priority levels and no-backlog streak |
-| 🤖 | **AI Insights** | Personalised coaching analysis powered by **Groq (LLaMA 3.3 70B)** — pinpoints weak areas and suggests a plan |
+| 🤖 | **AI Insights** | Personalised coaching analysis powered by **Groq (GPT-OSS 120B)** — pinpoints weak areas and suggests a plan |
 | 📧 | **Monthly Reports** | Automated PDF report card delivered via email |
 | 📱 | **PWA** | Installable on Android & iOS, works fully offline |
 | 🔔 | **Push Notifications** | Daily study reminders via service worker |
@@ -240,6 +240,7 @@ supabase functions deploy monthly-report
 |---|---|
 | `SUPABASE_URL` | Your Supabase project URL |
 | `SUPABASE_ANON_KEY` | Your Supabase anon/public key |
+| `GROQ_API_KEY` | *(Optional)* Groq key for the `/api/ai-insights` route — the primary AI leg. When set, AI insights works with zero Supabase involvement; when unset, the dashboard transparently falls back to the `ai-insights` edge function |
 
 These are served to the frontend securely at runtime via the `/api/config` serverless function — credentials are never stored in source code.
 
